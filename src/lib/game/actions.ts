@@ -207,9 +207,14 @@ export function nextPlotCost(state: GameState): number {
   return Math.floor(CONFIG.plotBaseCost * Math.pow(CONFIG.plotCostFactor, bought))
 }
 
+/** Current plot cap (later parcels extend it). */
+export function maxPlots(_state: GameState): number {
+  return CONFIG.maxPlots
+}
+
 export function buyPlot(): boolean {
   const s = getState()
-  if (s.plots.length >= CONFIG.maxPlots) return false
+  if (s.plots.length >= maxPlots(s)) return false
   const cost = nextPlotCost(s)
   if (s.money < cost) return false
   s.money -= cost

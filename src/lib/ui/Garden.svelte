@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { CONFIG } from '../data/config'
-  import { buyPlot, harvestAllReady, nextPlotCost } from '../game/actions'
+  import { buyPlot, harvestAllReady, maxPlots, nextPlotCost } from '../game/actions'
   import { gameStore } from '../game/state'
   import { plotReady } from '../game/tick'
   import { formatNumber } from '../util/format'
@@ -14,7 +13,10 @@
 
   const readyCount = $derived($gameStore.plots.filter(plotReady).length)
   const plotCost = $derived(nextPlotCost($gameStore))
-  const canBuyMore = $derived($gameStore.plots.length < CONFIG.maxPlots)
+  const canBuyMore = $derived($gameStore.plots.length < maxPlots($gameStore))
+  // roughly square field, 4–7 columns depending on plot count
+  const tileCount = $derived($gameStore.plots.length + (canBuyMore ? 1 : 0))
+  const cols = $derived(Math.min(Math.max(4, Math.ceil(Math.sqrt(tileCount))), 7))
 
   function eventCenter(e: MouseEvent): [number, number] {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -65,7 +67,7 @@
 
 <section class="garden" aria-label="Dein Garten">
   <div class="garden-head">
-    <span class="chip num">Beete {$gameStore.plots.length}/{CONFIG.maxPlots}</span>
+    <span class="chip num">Beete {$gameStore.plots.length}/{maxPlots($gameStore)}</span>
     <button
       class="pxbtn primary"
       class:attention={readyCount > 0}
@@ -77,7 +79,7 @@
     </button>
   </div>
 
-  <div class="grid">
+  <div class="grid" style:grid-template-columns={`repeat(${cols}, var(--cell))`}>
     {#each $gameStore.plots as plot, index (index)}
       <Plot {plot} {index} selectedId={$gameStore.selectedPlantId} money={$gameStore.money} />
     {/each}
@@ -98,13 +100,13 @@
   </div>
 
   {#if !canBuyMore}
-    <p class="hint full-note">Alle {CONFIG.maxPlots} Beete angelegt — mehr Platz gibt es später mit neuen Parzellen.</p>
+    <p class="hint full-note">Alle {maxPlots($gameStore)} Beete dieser Parzelle angelegt.</p>
   {/if}
 </section>
 
 <style>
   .garden {
-    width: calc(4 * var(--cell) + 3 * 14px);
+    width: fit-content;
     max-width: 100%;
   }
 
@@ -136,7 +138,6 @@
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, var(--cell));
     gap: 14px;
     justify-content: center;
   }
