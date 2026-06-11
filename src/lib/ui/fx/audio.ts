@@ -13,6 +13,7 @@ export type SoundId =
   | 'perfect'
   | 'legendary'
   | 'levelup'
+  | 'water'
 
 const PREF_KEY = 'garten-imperium-sound'
 
@@ -119,6 +120,10 @@ export function playSound(id: SoundId): void {
       blip(523, 523, 90, 'square', 0.11, 100)
       blip(659, 659, 90, 'square', 0.11, 200)
       blip(784, 1046, 260, 'triangle', 0.13, 300)
+      break
+    case 'water':
+      blip(440, 280, 70, 'sine', 0.12)
+      blip(330, 200, 90, 'sine', 0.09, 55)
       break
   }
 }

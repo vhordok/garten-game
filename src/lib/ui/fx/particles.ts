@@ -75,6 +75,11 @@ export function leafBurst(x: number, y: number, count = 10): void {
   burst(x, y, { colors: ['leaf2', 'leaf3', 'leaf4'], count, speed: 90, gravity: 260, lift: 70, ttl: 0.7 })
 }
 
+/** Blue splash — active watering. */
+export function waterBurst(x: number, y: number): void {
+  burst(x, y, { colors: ['blue1', 'blue2', 'cloud'], count: 12, speed: 110, gravity: 480, lift: 90, sizeMax: 4, ttl: 0.6 })
+}
+
 /** Big golden moment — perfect harvests. */
 export function perfectBurst(x: number, y: number): void {
   burst(x, y, { colors: ['gold0', 'gold1', 'gold2', 'leaf5'], count: 22, speed: 180, lift: 150, ttl: 0.9 })

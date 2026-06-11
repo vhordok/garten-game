@@ -13,7 +13,7 @@
     </li>
     <li>
       <span class="icon"><PixelIcon name="basilikum-3" scale={2} /></span>
-      <span>Klicke ein leeres Beet zum <b>Säen</b> — und die reife Pflanze zum <b>Ernten</b>.</span>
+      <span>Klicke ein leeres Beet zum <b>Säen</b>, wachsende Beete zum <b>Gießen</b> (3× pro Aussaat) — und die reife Pflanze zum <b>Ernten</b>.</span>
     </li>
     <li>
       <span class="icon"><PixelIcon name="sparkle" scale={2} /></span>

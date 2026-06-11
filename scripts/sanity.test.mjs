@@ -28,6 +28,7 @@ import {
   skipQuest,
   sowPlot,
   upgradeLevel,
+  waterPlot,
 } from '../src/lib/game/actions.ts'
 import { growthMultiplier } from '../src/lib/game/modifiers.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
@@ -315,6 +316,44 @@ test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', ()
     fresh()
     assert.notEqual(importSave(code), null)
     assert.deepEqual(getState().quests, questsBefore)
+  })
+})
+
+test('watering: charges skip growth, deplete and reset on harvest', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    const basil = PLANTS[0]
+    assert.ok(sowPlot(0))
+    assert.equal(s.plots[0].waterLeft, CONFIG.waterChargesPerCrop)
+
+    assert.ok(waterPlot(0))
+    assert.ok(Math.abs(s.plots[0].progress - basil.growTime * CONFIG.waterProgressBoost) < 1e-9)
+    assert.ok(waterPlot(0))
+    assert.ok(waterPlot(0))
+    assert.equal(s.plots[0].waterLeft, 0)
+    assert.equal(waterPlot(0), false, 'no charges left')
+
+    // watering may finish ripening, and ready plots refuse further water
+    s.plots[0].waterLeft = 2
+    s.plots[0].progress = basil.growTime * 0.95
+    assert.ok(waterPlot(0))
+    assert.equal(s.plots[0].progress, basil.growTime)
+    assert.ok(plotReady(s.plots[0]))
+    assert.equal(waterPlot(0), false, 'ready plots cannot be watered')
+
+    harvestPlot(0)
+    assert.equal(s.plots[0].waterLeft, 0, 'harvest clears leftover charges')
+    assert.equal(waterPlot(0), false, 'empty plots cannot be watered')
+
+    // old saves without the field get full charges for growing crops
+    const v6 = JSON.stringify({
+      version: 6,
+      savedAt: Date.now(),
+      state: { money: 1, plots: [{ plantId: 'basilikum', progress: 2 }] },
+    })
+    assert.notEqual(importSave(v6), null)
+    assert.equal(getState().plots[0].waterLeft, CONFIG.waterChargesPerCrop)
   })
 })
 

@@ -33,7 +33,24 @@ export function sowPlot(index: number): boolean {
   s.money -= def.seedCost
   plot.plantId = def.id
   plot.progress = 0
+  plot.waterLeft = CONFIG.waterChargesPerCrop
   s.stats.planted += 1
+  notify()
+  return true
+}
+
+/**
+ * Pour one watering charge on a growing plot: skips ahead by a fraction of
+ * the grow time (may finish ripening). Returns true on success.
+ */
+export function waterPlot(index: number): boolean {
+  const s = getState()
+  const plot = s.plots[index]
+  if (!plot || !plot.plantId || plot.waterLeft <= 0) return false
+  const def = plantById(plot.plantId)
+  if (!def || plot.progress >= def.growTime) return false
+  plot.progress = Math.min(plot.progress + def.growTime * CONFIG.waterProgressBoost, def.growTime)
+  plot.waterLeft -= 1
   notify()
   return true
 }
@@ -95,6 +112,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   if (crit.tier !== 'none') s.stats.crits += 1
   plot.plantId = null
   plot.progress = 0
+  plot.waterLeft = 0
   const levelUps = grantXp(s, units)
   return { units, crit: crit.tier, levelUps }
 }

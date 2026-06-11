@@ -50,6 +50,8 @@ export interface PlotState {
   plantId: string | null
   /** seconds grown so far (capped at the plant's growTime) */
   progress: number
+  /** active-watering charges left for the current crop */
+  waterLeft: number
 }
 
 export interface GameStats {
