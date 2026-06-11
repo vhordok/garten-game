@@ -3,6 +3,8 @@
   import { harvestPlot, sowPlot } from '../game/actions'
   import type { PlotState } from '../game/types'
   import { formatDuration } from '../util/format'
+  import { playSound } from './fx/audio'
+  import { coinBurst, leafBurst } from './fx/particles'
   import { spriteUrl } from './pixel/render'
 
   let {
@@ -36,26 +38,40 @@
   interface Floater {
     id: number
     text: string
+    kind: 'gain' | 'spend'
   }
 
   let floaters = $state<Floater[]>([])
   let floaterId = 0
 
-  function spawnFloater(text: string) {
+  function spawnFloater(text: string, kind: Floater['kind']) {
     const id = ++floaterId
-    floaters = [...floaters, { id, text }]
+    floaters = [...floaters, { id, text, kind }]
     setTimeout(() => {
       floaters = floaters.filter((f) => f.id !== id)
     }, 900)
   }
 
-  function handleClick() {
+  function handleClick(e: MouseEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
     if (def && ready) {
       const units = harvestPlot(index)
-      if (units > 0) spawnFloater(`+${units}`)
+      if (units > 0) {
+        spawnFloater(`+${units}`, 'gain')
+        coinBurst(cx, cy, 10 + units * 2)
+        playSound('harvest')
+      }
     } else if (!def && selectedDef) {
       const cost = selectedDef.seedCost
-      if (sowPlot(index)) spawnFloater(`-${cost}`)
+      if (sowPlot(index)) {
+        spawnFloater(`-${cost}`, 'spend')
+        leafBurst(cx, cy)
+        playSound('sow')
+      } else {
+        playSound('error')
+      }
     }
   }
 
@@ -81,7 +97,9 @@
   aria-label={title}
 >
   {#if stageSprite}
-    <img class="px plant" class:ripe={ready} src={spriteUrl(stageSprite)} alt="" draggable="false" />
+    {#key stageSprite}
+      <img class="px plant" class:ripe={ready} src={spriteUrl(stageSprite)} alt="" draggable="false" />
+    {/key}
     {#if ready}
       <span class="ready-tag">Ernten!</span>
     {:else}
@@ -94,7 +112,7 @@
     <img class="px sow-ghost" src={spriteUrl(`${selectedDef.id}-3`)} alt="" draggable="false" />
   {/if}
   {#each floaters as floater (floater.id)}
-    <span class="floater num">{floater.text}</span>
+    <span class="floater num" class:spend={floater.kind === 'spend'}>{floater.text}</span>
   {/each}
 </button>
 
@@ -134,11 +152,27 @@
     inset: 0;
     width: 100%;
     height: 100%;
+    transform-origin: 50% 82%;
+    animation: pop 0.2s ease-out;
   }
 
   .plant.ripe {
     filter: drop-shadow(0 0 7px rgba(168, 202, 88, 0.75));
-    animation: bob 1s steps(2) infinite;
+    animation:
+      pop 0.2s ease-out,
+      bob 1s steps(2) 0.2s infinite;
+  }
+
+  @keyframes pop {
+    0% {
+      transform: scale(0.55);
+    }
+    70% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   @keyframes bob {
@@ -221,6 +255,13 @@
       0 0 8px rgba(222, 158, 65, 0.5);
     white-space: nowrap;
     animation: float-up 0.9s ease-out forwards;
+  }
+
+  .floater.spend {
+    color: var(--c-red1);
+    text-shadow:
+      1px 1px 0 var(--c-night0),
+      0 0 8px rgba(207, 87, 60, 0.45);
   }
 
   @keyframes float-up {

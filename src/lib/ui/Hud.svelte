@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { cubicOut } from 'svelte/easing'
+  import { Tween } from 'svelte/motion'
   import { inventoryValue, sellAll } from '../game/actions'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
+  import { playSound } from './fx/audio'
+  import { coinBurst } from './fx/particles'
   import PixelIcon from './PixelIcon.svelte'
 
   let {
@@ -11,6 +15,27 @@
 
   const stockValue = $derived(inventoryValue($gameStore))
   const stockCount = $derived(Object.values($gameStore.inventory).reduce((a, b) => a + b, 0))
+
+  // money counts up/down instead of jumping
+  const shownMoney = Tween.of(() => $gameStore.money, { duration: 280, easing: cubicOut })
+
+  // pulse the coin whenever money increases
+  let pulseKey = $state(0)
+  let lastMoney = -1
+  $effect(() => {
+    const money = $gameStore.money
+    if (lastMoney >= 0 && money > lastMoney) pulseKey++
+    lastMoney = money
+  })
+
+  function handleSellAll(e: MouseEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const gain = sellAll()
+    if (gain > 0) {
+      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 16)
+      playSound('sell')
+    }
+  }
 </script>
 
 <header class="hud pxpanel">
@@ -20,14 +45,16 @@
   </div>
 
   <div class="money chip num" title="Geld — insgesamt verdient: {formatNumber($gameStore.totalEarned)}">
-    <PixelIcon name="coin" scale={2} />
-    <span class="amount">{formatNumber($gameStore.money)}</span>
+    {#key pulseKey}
+      <span class="coin-pulse"><PixelIcon name="coin" scale={2} /></span>
+    {/key}
+    <span class="amount">{formatNumber(shownMoney.current)}</span>
   </div>
 
   <div class="spacer"></div>
 
   {#if stockValue > 0}
-    <button class="pxbtn gold num" onclick={() => sellAll()} title="Komplettes Lager verkaufen">
+    <button class="pxbtn gold num" onclick={handleSellAll} title="Komplettes Lager verkaufen">
       Verkaufen +{formatNumber(stockValue)}
     </button>
   {/if}
@@ -72,6 +99,17 @@
 
   .money {
     padding: 2px 10px;
+  }
+
+  .coin-pulse {
+    display: inline-flex;
+    animation: coin-pulse 0.25s ease-out;
+  }
+
+  @keyframes coin-pulse {
+    40% {
+      transform: scale(1.35);
+    }
   }
 
   .amount {

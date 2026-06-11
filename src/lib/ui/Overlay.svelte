@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { fade, scale } from 'svelte/transition'
 
   let { title, onClose, children }: { title: string; onClose: () => void; children: Snippet } = $props()
 </script>
@@ -13,11 +14,18 @@
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div
   class="backdrop"
+  transition:fade={{ duration: 130 }}
   onclick={(e) => {
     if (e.target === e.currentTarget) onClose()
   }}
 >
-  <div class="modal pxpanel" role="dialog" aria-modal="true" aria-label={title}>
+  <div
+    class="modal pxpanel"
+    role="dialog"
+    aria-modal="true"
+    aria-label={title}
+    transition:scale={{ duration: 160, start: 0.93 }}
+  >
     <header>
       <h2>{title}</h2>
       <button class="pxbtn small" onclick={onClose} aria-label="Schließen">✕</button>

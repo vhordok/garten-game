@@ -3,6 +3,7 @@
   import { exportSave, importSave, resetSave, save } from '../game/save'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
+  import { playSound, setSoundEnabled, soundEnabled } from './fx/audio'
   import Overlay from './Overlay.svelte'
   import { pushToast } from './toasts'
 
@@ -11,6 +12,13 @@
   let exportText = $state('')
   let importText = $state('')
   let message = $state('')
+  let sound = $state(soundEnabled())
+
+  function toggleSound() {
+    sound = !sound
+    setSoundEnabled(sound)
+    if (sound) playSound('click')
+  }
 
   function handleSaveNow() {
     save()
@@ -62,6 +70,12 @@
       <span>Geerntet: <b>{formatNumber($gameStore.stats.harvested)}</b></span>
       <span>Verkauft: <b>{formatNumber($gameStore.stats.sold)}</b></span>
     </div>
+  </section>
+
+  <section>
+    <h3>Audio</h3>
+    <button class="pxbtn small" onclick={toggleSound}>Sound: {sound ? 'An' : 'Aus'}</button>
+    <p class="hint">Platzhalter-Klänge — richtige Sounds folgen später.</p>
   </section>
 
   <section>

@@ -3,14 +3,20 @@
   import { selectPlant } from '../game/actions'
   import { gameStore } from '../game/state'
   import { formatDuration, formatNumber } from '../util/format'
+  import { playSound } from './fx/audio'
   import PixelIcon from './PixelIcon.svelte'
   import { spriteUrl } from './pixel/render'
+
+  function select(plantId: string) {
+    selectPlant(plantId)
+    playSound('click')
+  }
 
   function handleKey(e: KeyboardEvent) {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
     const slot = Number.parseInt(e.key, 10)
     if (!Number.isInteger(slot) || slot < 1 || slot > PLANTS.length) return
-    selectPlant(PLANTS[slot - 1].id)
+    select(PLANTS[slot - 1].id)
   }
 </script>
 
@@ -26,7 +32,7 @@
       class:selected
       class:locked={!unlocked}
       disabled={!unlocked}
-      onclick={() => selectPlant(plant.id)}
+      onclick={() => select(plant.id)}
       aria-label={unlocked ? `${plant.name} auswählen` : 'Gesperrte Pflanze'}
     >
       <span class="key num">{i + 1}</span>
@@ -88,11 +94,14 @@
     border-width: calc(var(--ui) * 3px);
     border-image: var(--frame-chip) 3 fill / calc(var(--ui) * 3px) repeat;
     image-rendering: pixelated;
-    transition: filter 0.08s;
+    transition:
+      filter 0.08s,
+      transform 0.1s ease;
   }
 
   .slot:hover:not(:disabled) {
     filter: brightness(1.2);
+    transform: translateY(-3px);
   }
 
   .slot.selected {

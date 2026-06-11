@@ -3,6 +3,9 @@
   import { PLANTS } from './lib/data/plants'
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
+  import { playSound } from './lib/ui/fx/audio'
+  import FxLayer from './lib/ui/fx/FxLayer.svelte'
+  import { registerShakeTarget } from './lib/ui/fx/shake'
   import Garden from './lib/ui/Garden.svelte'
   import Hotbar from './lib/ui/Hotbar.svelte'
   import Hud from './lib/ui/Hud.svelte'
@@ -16,8 +19,11 @@
   let { offline }: { offline: OfflineReport | null } = $props()
 
   let openPanel = $state<'inventory' | 'settings' | null>(null)
+  // the world stage is the shake target — fixed HUD/hotbar stay put
+  let stageEl: HTMLElement
 
   onMount(() => {
+    registerShakeTarget(stageEl)
     if (offline && offline.awaySeconds >= 60) {
       const grown =
         offline.ripened > 0
@@ -35,6 +41,7 @@
       for (const plant of unlocked) {
         if (!knownUnlocks.includes(plant.id)) {
           pushToast(`Neue Pflanze freigeschaltet: ${plant.name}!`, plant.emoji, 8000)
+          playSound('unlock')
         }
       }
     }
@@ -46,11 +53,12 @@
 
 <div class="app">
   <Hud onOpenInventory={() => (openPanel = 'inventory')} onOpenSettings={() => (openPanel = 'settings')} />
-  <main>
+  <main bind:this={stageEl}>
     <Garden />
   </main>
   <Hotbar />
 </div>
+<FxLayer />
 
 {#if openPanel === 'inventory'}
   <InventoryPanel onClose={() => (openPanel = null)} />

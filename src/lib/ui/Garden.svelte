@@ -4,18 +4,50 @@
   import { gameStore } from '../game/state'
   import { plotReady } from '../game/tick'
   import { formatNumber } from '../util/format'
+  import { playSound } from './fx/audio'
+  import { coinBurst, leafBurst } from './fx/particles'
+  import { screenShake } from './fx/shake'
   import PixelIcon from './PixelIcon.svelte'
   import Plot from './Plot.svelte'
 
   const readyCount = $derived($gameStore.plots.filter(plotReady).length)
   const plotCost = $derived(nextPlotCost($gameStore))
   const canBuyMore = $derived($gameStore.plots.length < CONFIG.maxPlots)
+
+  function eventCenter(e: MouseEvent): [number, number] {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    return [rect.left + rect.width / 2, rect.top + rect.height / 2]
+  }
+
+  function handleHarvestAll(e: MouseEvent) {
+    const units = harvestAllReady()
+    if (units > 0) {
+      const [cx, cy] = eventCenter(e)
+      coinBurst(cx, cy, Math.min(10 + units * 2, 40))
+      playSound('harvest')
+      screenShake(0.5)
+    }
+  }
+
+  function handleBuyPlot(e: MouseEvent) {
+    const [cx, cy] = eventCenter(e)
+    if (buyPlot()) {
+      leafBurst(cx, cy, 16)
+      playSound('buy')
+      screenShake(0.8)
+    }
+  }
 </script>
 
 <section class="garden" aria-label="Dein Garten">
   <div class="garden-head">
     <span class="chip num">Beete {$gameStore.plots.length}/{CONFIG.maxPlots}</span>
-    <button class="pxbtn primary" disabled={readyCount === 0} onclick={() => harvestAllReady()}>
+    <button
+      class="pxbtn primary"
+      class:attention={readyCount > 0}
+      disabled={readyCount === 0}
+      onclick={handleHarvestAll}
+    >
       <PixelIcon name="basket" scale={2} />
       Alle ernten{readyCount > 0 ? ` (${readyCount})` : ''}
     </button>
@@ -29,7 +61,7 @@
       <button
         class="ghost num"
         disabled={$gameStore.money < plotCost}
-        onclick={() => buyPlot()}
+        onclick={handleBuyPlot}
         title="Neues Beet anlegen"
       >
         <PixelIcon name="plus" scale={2} />
@@ -66,6 +98,16 @@
     letter-spacing: 0.06em;
     color: var(--c-mist);
     padding: 2px 8px;
+  }
+
+  .attention {
+    animation: attention 1.5s ease-in-out infinite;
+  }
+
+  @keyframes attention {
+    50% {
+      box-shadow: 0 0 14px rgba(117, 167, 67, 0.65);
+    }
   }
 
   .grid {
