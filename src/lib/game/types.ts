@@ -97,8 +97,14 @@ export interface QuestState {
 
 export interface GameState {
   money: number
-  /** lifetime money earned from selling — drives unlocks, later prestige */
+  /** money earned from selling THIS round — drives unlocks and compost */
   totalEarned: number
+  /** money earned across all rounds (stats, never resets) */
+  lifetimeEarned: number
+  /** leased parcels (starts at 1); raises the plot cap */
+  parcels: number
+  /** prestige currency: permanent yield/growth bonuses */
+  compost: number
   /** gardener level (starts at 1); gates quest slots and future QoL */
   level: number
   /** progress within the current level (resets each level-up) */

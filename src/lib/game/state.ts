@@ -10,6 +10,9 @@ export function createDefaultState(now = Date.now()): GameState {
   return {
     money: CONFIG.startMoney,
     totalEarned: 0,
+    lifetimeEarned: 0,
+    parcels: 1,
+    compost: 0,
     level: 1,
     xp: 0,
     plots: Array.from({ length: CONFIG.startPlots }, emptyPlot),

@@ -3,7 +3,7 @@
   import { Tween } from 'svelte/motion'
   import { CONFIG } from '../data/config'
   import { xpToNext } from '../data/progression'
-  import { anyUpgradeAffordable, inventoryValue, questFulfillable, sellAll } from '../game/actions'
+  import { anyUpgradeAffordable, compostGain, inventoryValue, questFulfillable, sellAll } from '../game/actions'
   import { comboMultiplier } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -17,16 +17,20 @@
     onOpenShop,
     onOpenQuests,
     onOpenScratch,
+    onOpenPrestige,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
     onOpenShop: () => void
     onOpenQuests: () => void
     onOpenScratch: () => void
+    onOpenPrestige: () => void
   } = $props()
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
   const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
+  const prestigeGain = $derived(compostGain($gameStore))
+  const showPrestige = $derived(prestigeGain >= 1 || $gameStore.parcels > 1)
 
   const stockValue = $derived(inventoryValue($gameStore))
   const stockCount = $derived(Object.values($gameStore.inventory).reduce((a, b) => a + b, 0))
@@ -120,6 +124,13 @@
     {#if questHint}<span class="dot quest" aria-hidden="true"></span>{/if}
   </button>
 
+  {#if showPrestige}
+    <button class="pxbtn" onclick={onOpenPrestige} title="Neue Parzelle pachten — Kompost wirkt für immer">
+      <PixelIcon name="duenger" scale={1} />
+      {#if prestigeGain >= 1}<span class="dot prestige" aria-hidden="true"></span>{/if}
+    </button>
+  {/if}
+
   <button class="pxbtn" onclick={onOpenInventory} title="Lager öffnen">
     <PixelIcon name="basket" scale={2} />
     {#if stockCount > 0}<span class="badge num">{formatNumber(stockCount)}</span>{/if}
@@ -130,7 +141,10 @@
     </button>
   </div>
 
-  <div class="xp-row num" title="Gärtner-Level — XP gibt es für jede geerntete Einheit">
+  <div
+    class="xp-row num"
+    title={`Gärtner-Level — XP für jede geerntete Einheit. Dauerhaft +${Math.max($gameStore.level - 1, 0)} % Ertrag, bleibt auch beim Parzellen-Wechsel.`}
+  >
     {#key $gameStore.level}
       <span class="level-badge">LV {$gameStore.level}</span>
     {/key}
@@ -316,6 +330,11 @@
   .dot.quest {
     background: var(--c-leaf4);
     box-shadow: 0 0 8px rgba(168, 202, 88, 0.8);
+  }
+
+  .dot.prestige {
+    background: var(--c-plum2);
+    box-shadow: 0 0 8px rgba(198, 81, 151, 0.85);
   }
 
   .boost {

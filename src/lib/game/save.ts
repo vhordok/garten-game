@@ -8,7 +8,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 9
+export const SAVE_VERSION = 10
 
 interface SaveEnvelope {
   version: number
@@ -135,6 +135,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 8:
       // v8 → v9: regrow flag per plot (berries/trees); defaults to false.
       return { ...envelope, version: 9 }
+    case 9:
+      // v9 → v10: prestige (parcels/compost) + lifetimeEarned; sanitize()
+      // seeds lifetimeEarned from the round earnings of old saves.
+      return { ...envelope, version: 10 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -151,6 +155,9 @@ function sanitize(raw: unknown): GameState {
 
   state.money = clampNumber(r.money, state.money)
   state.totalEarned = clampNumber(r.totalEarned, 0)
+  state.lifetimeEarned = clampNumber(r.lifetimeEarned, state.totalEarned, state.totalEarned)
+  state.parcels = Math.floor(clampNumber(r.parcels, 1, 1, 1000))
+  state.compost = Math.floor(clampNumber(r.compost, 0, 0, 1e9))
   state.level = Math.floor(clampNumber(r.level, 1, 1, 9999))
   state.xp = clampNumber(r.xp, 0)
   state.createdAt = clampNumber(r.createdAt, state.createdAt)

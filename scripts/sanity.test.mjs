@@ -18,11 +18,14 @@ import {
   buyPlot,
   buyUpgrade,
   clearPlot,
+  compostGain,
   drawScratchCard,
   ensureQuests,
   fulfillQuest,
   harvestAllReady,
   harvestPlot,
+  leaseParcel,
+  maxPlots,
   nextPlotCost,
   nextUpgradeCost,
   selectPlant,
@@ -33,7 +36,7 @@ import {
   waterPlot,
 } from '../src/lib/game/actions.ts'
 import { bestHarvestValue } from '../src/lib/data/scratch.ts'
-import { growthMultiplier } from '../src/lib/game/modifiers.ts'
+import { growthMultiplier, yieldMultiplier } from '../src/lib/game/modifiers.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
@@ -502,6 +505,40 @@ test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () =
     assert.ok(clearPlot(0))
     assert.equal(getState().plots[0].plantId, null)
     assert.equal(clearPlot(0), false)
+  })
+})
+
+test('prestige: compost payout, round reset, permanent perks stay', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    assert.equal(compostGain(s), 0)
+    assert.equal(leaseParcel(), 0, 'no prestige below the threshold')
+
+    s.totalEarned = 4 * CONFIG.prestigeBase // → floor(sqrt(4)) = 2 compost
+    s.lifetimeEarned = 4 * CONFIG.prestigeBase
+    s.money = 5e6
+    s.level = 7
+    s.upgrades['giesskanne'] = 5
+    s.inventory['basilikum'] = 99
+    assert.equal(compostGain(s), 2)
+
+    assert.equal(leaseParcel(), 2)
+    assert.equal(s.parcels, 2)
+    assert.equal(s.compost, 2)
+    assert.equal(s.money, CONFIG.startMoney)
+    assert.equal(s.totalEarned, 0)
+    assert.equal(s.lifetimeEarned, 4 * CONFIG.prestigeBase, 'lifetime stats survive')
+    assert.equal(s.plots.length, CONFIG.startPlots)
+    assert.deepEqual(s.upgrades, {})
+    assert.deepEqual(s.inventory, {})
+    assert.equal(s.level, 7, 'gardener level is permanent')
+    assert.equal(s.quests.length >= 1, true, 'fresh quest board')
+    assert.equal(maxPlots(s), CONFIG.maxPlots + CONFIG.parcelExtraPlots)
+
+    // compost beats the lost upgrades? not necessarily — but it must apply:
+    const expectedYield =
+      (1 + CONFIG.compostYieldPerPoint * 2) * (1 + CONFIG.levelYieldPerLevel * 6)
+    assert.ok(Math.abs(yieldMultiplier(s) - expectedYield) < 1e-9)
   })
 })
 

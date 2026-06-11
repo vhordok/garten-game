@@ -29,6 +29,15 @@ export const CONFIG = {
   critPerfectMult: 3,
   critLegendaryChance: 0.01,
   critLegendaryMult: 10,
+  /** prestige (GAME_DESIGN.md §6): compost = floor(sqrt(roundEarned / base)) */
+  prestigeBase: 1e6,
+  /** additional plot cap per leased parcel */
+  parcelExtraPlots: 4,
+  /** permanent bonuses per compost point */
+  compostYieldPerPoint: 0.05,
+  compostGrowthPerPoint: 0.02,
+  /** permanent yield bonus per gardener level above 1 */
+  levelYieldPerLevel: 0.01,
   /** offline simulation cap; later extendable through upgrades (GAME_DESIGN.md §5) */
   offlineCapHours: 8,
   /** ignore gaps shorter than this when applying offline progress */

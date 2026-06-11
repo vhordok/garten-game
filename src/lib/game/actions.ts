@@ -205,6 +205,7 @@ function sellInternal(s: GameState, plantId: string): number {
   delete s.inventory[plantId]
   s.money += gain
   s.totalEarned += gain
+  s.lifetimeEarned += gain
   s.stats.sold += count
   return gain
 }
@@ -231,9 +232,38 @@ export function nextPlotCost(state: GameState): number {
   return Math.floor(CONFIG.plotBaseCost * Math.pow(CONFIG.plotCostFactor, bought))
 }
 
-/** Current plot cap (later parcels extend it). */
-export function maxPlots(_state: GameState): number {
-  return CONFIG.maxPlots
+/** Current plot cap — every leased parcel extends it. */
+export function maxPlots(state: GameState): number {
+  return CONFIG.maxPlots + (state.parcels - 1) * CONFIG.parcelExtraPlots
+}
+
+/** Compost earned by leasing a new parcel right now (GAME_DESIGN.md §6). */
+export function compostGain(state: GameState): number {
+  return Math.floor(Math.sqrt(state.totalEarned / CONFIG.prestigeBase))
+}
+
+/**
+ * Prestige: lease a new parcel. Resets the round (money, plots, storage,
+ * upgrades, quests, round earnings) and pays out compost. Level/XP, stats,
+ * tickets and fertilizer persist — the gardener stays experienced.
+ */
+export function leaseParcel(): number {
+  const s = getState()
+  const gain = compostGain(s)
+  if (gain < 1) return 0
+  s.compost += gain
+  s.parcels += 1
+  s.money = CONFIG.startMoney
+  s.totalEarned = 0
+  s.plots = Array.from({ length: CONFIG.startPlots }, emptyPlot)
+  s.inventory = {}
+  s.upgrades = {}
+  s.quests = []
+  s.combo = { count: 0, remaining: 0 }
+  s.selectedPlantId = PLANTS[0].id
+  refillQuests(s)
+  notify()
+  return gain
 }
 
 export function buyPlot(): boolean {
@@ -323,6 +353,7 @@ export function fulfillQuest(questId: number): QuestReward | null {
   else delete s.inventory[quest.plantId]
   s.money += quest.reward
   s.totalEarned += quest.reward
+  s.lifetimeEarned += quest.reward
   s.stats.sold += quest.amount
   const levelUps = grantXp(s, quest.xp)
   s.quests[index] = generateQuest(s)
