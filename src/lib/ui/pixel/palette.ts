@@ -44,6 +44,8 @@ export const COLORS = {
   // danger
   red0: '#a53030',
   red1: '#cf573c',
+  // combo heat (UI only, no sprite legend char)
+  ember: '#ff9f43',
 } as const
 
 export type ColorName = keyof typeof COLORS

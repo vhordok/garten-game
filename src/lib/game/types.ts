@@ -63,11 +63,23 @@ export interface GameStats {
   crits: number
 }
 
+/**
+ * Harvest chain state. Deliberately transient: ticks drain `remaining`,
+ * loading a save resets it (offline play earns no combo).
+ */
+export interface ComboState {
+  /** chain length; bonus stacks are count − 1, capped in config */
+  count: number
+  /** seconds left before the chain breaks */
+  remaining: number
+}
+
 export interface GameState {
   money: number
   /** lifetime money earned from selling — drives unlocks, later prestige */
   totalEarned: number
   plots: PlotState[]
+  combo: ComboState
   /** harvested units in storage, keyed by plant id */
   inventory: Record<string, number>
   /** plant sown when clicking an empty plot */

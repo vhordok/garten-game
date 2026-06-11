@@ -4,7 +4,7 @@
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
 import { UPGRADES, upgradeById } from '../data/upgrades'
-import { rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
+import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
 import { emptyPlot, getState, notify } from './state'
 import { plotReady } from './tick'
 import type { GameState, PlantDef, UpgradeDef } from './types'
@@ -55,13 +55,13 @@ function rollCrit(): { tier: CritTier; mult: number } {
   return { tier: 'none', mult: 1 }
 }
 
-function harvestInternal(s: GameState, index: number): HarvestResult {
+function harvestInternal(s: GameState, index: number, comboMult: number): HarvestResult {
   const plot = s.plots[index]
   if (!plot || !plotReady(plot)) return { units: 0, crit: 'none' }
   const def = plantById(plot.plantId!)
   if (!def) return { units: 0, crit: 'none' }
   const crit = rollCrit()
-  const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult)
+  const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult * comboMult)
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
@@ -70,25 +70,41 @@ function harvestInternal(s: GameState, index: number): HarvestResult {
   return { units, crit: crit.tier }
 }
 
+/** Extend the harvest chain by one link (current bonus applied beforehand). */
+function bumpCombo(s: GameState): void {
+  s.combo.count = s.combo.remaining > 0 ? s.combo.count + 1 : 1
+  s.combo.remaining = CONFIG.comboWindowSeconds
+}
+
 /** Harvest one ready plot into storage. units = 0 means nothing happened. */
 export function harvestPlot(index: number): HarvestResult {
   const s = getState()
-  const result = harvestInternal(s, index)
-  if (result.units > 0) notify()
+  const result = harvestInternal(s, index, comboMultiplier(s))
+  if (result.units > 0) {
+    bumpCombo(s)
+    notify()
+  }
   return result
 }
 
-/** Harvest every ready plot. crit reports the best tier rolled. */
+/**
+ * Harvest every ready plot. crit reports the best tier rolled. The whole
+ * batch counts as ONE combo link — chains come from active clicking.
+ */
 export function harvestAllReady(): HarvestResult {
   const s = getState()
+  const comboMult = comboMultiplier(s)
   let units = 0
   let best: CritTier = 'none'
   for (let i = 0; i < s.plots.length; i++) {
-    const result = harvestInternal(s, i)
+    const result = harvestInternal(s, i, comboMult)
     units += result.units
     if (CRIT_RANK[result.crit] > CRIT_RANK[best]) best = result.crit
   }
-  if (units > 0) notify()
+  if (units > 0) {
+    bumpCombo(s)
+    notify()
+  }
   return { units, crit: best }
 }
 

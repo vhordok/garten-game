@@ -14,6 +14,7 @@ export function createDefaultState(now = Date.now()): GameState {
     inventory: {},
     selectedPlantId: PLANTS[0].id,
     upgrades: {},
+    combo: { count: 0, remaining: 0 },
     stats: { planted: 0, harvested: 0, sold: 0, crits: 0 },
     createdAt: now,
   }

@@ -9,6 +9,10 @@ export const CONFIG = {
   /** plot n (0-based beyond the free ones) costs plotBaseCost * plotCostFactor^n */
   plotBaseCost: 25,
   plotCostFactor: 1.5,
+  /** combo harvesting (GAME_DESIGN.md §9.4): chain window and per-stack bonus */
+  comboWindowSeconds: 4,
+  comboPerStack: 0.05,
+  comboMaxStacks: 20,
   /** golden harvests (GAME_DESIGN.md §9.4): roll per harvested plot */
   critPerfectChance: 0.08,
   critPerfectMult: 3,

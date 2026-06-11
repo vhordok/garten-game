@@ -7,7 +7,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 interface SaveEnvelope {
   version: number
@@ -115,6 +115,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 2:
       // v2 → v3: stats gained the crits counter; sanitize() defaults it to 0.
       return { ...envelope, version: 3 }
+    case 3:
+      // v3 → v4: combo state added — transient anyway, sanitize() resets it.
+      return { ...envelope, version: 4 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -167,6 +170,9 @@ function sanitize(raw: unknown): GameState {
     }
   }
   state.upgrades = upgrades
+
+  // combo is session-only by design: loading always starts chainless
+  state.combo = { count: 0, remaining: 0 }
 
   if (typeof r.stats === 'object' && r.stats !== null) {
     const stats = r.stats as Record<string, unknown>

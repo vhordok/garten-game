@@ -20,6 +20,12 @@ export function tick(state: GameState, dtSeconds: number): boolean {
       changed = true
     }
   }
+  // drain the harvest chain in real time (no growth multiplier here)
+  if (state.combo.remaining > 0) {
+    state.combo.remaining = Math.max(state.combo.remaining - dtSeconds, 0)
+    if (state.combo.remaining === 0) state.combo.count = 0
+    changed = true
+  }
   return changed
 }
 

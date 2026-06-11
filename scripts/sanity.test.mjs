@@ -16,6 +16,7 @@ import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
   buyUpgrade,
+  harvestAllReady,
   harvestPlot,
   nextPlotCost,
   nextUpgradeCost,
@@ -188,6 +189,37 @@ test('golden harvests: tiers, multipliers and stats counter', () => {
   } finally {
     Math.random = origRandom
   }
+})
+
+test('combo chain: bonus applies, drains via tick, batch counts once', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e6
+    while (s.plots.length < 12) assert.ok(buyPlot())
+    selectPlant('minze')
+    for (let i = 0; i < 12; i++) assert.ok(sowPlot(i))
+    tick(s, 99999) // ripen everything; also proves a huge tick breaks no chain
+    assert.equal(s.combo.count, 0)
+
+    // 12 back-to-back harvests: the 12th carries 10 stacks → ×1.5 → 2×1.5 = 3
+    let lastUnits = 0
+    for (let i = 0; i < 12; i++) lastUnits = harvestPlot(i).units
+    assert.equal(s.combo.count, 12)
+    assert.equal(lastUnits, 3)
+
+    // chain drains via tick and breaks exactly at the window
+    tick(s, CONFIG.comboWindowSeconds + 0.1)
+    assert.equal(s.combo.count, 0)
+    assert.equal(s.combo.remaining, 0)
+
+    // a harvest-all batch is a single link
+    for (let i = 0; i < 3; i++) assert.ok(sowPlot(i))
+    tick(s, 99999)
+    const batch = harvestAllReady()
+    assert.ok(batch.units >= 6) // 3 × minze yield 2, no bonus on first link
+    assert.equal(s.combo.count, 1)
+  })
 })
 
 test('offline progress runs through the same tick', () => {

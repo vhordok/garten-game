@@ -2,6 +2,7 @@
 // Pure functions over GameState — tick and actions consume these, so live
 // and offline simulation automatically agree.
 
+import { CONFIG } from '../data/config'
 import { UPGRADES } from '../data/upgrades'
 import type { GameState, UpgradeEffect } from './types'
 
@@ -28,6 +29,16 @@ export function yieldMultiplier(state: GameState): number {
 /** Sale price factor. */
 export function sellMultiplier(state: GameState): number {
   return multiplierFor(state, 'sellPrice')
+}
+
+/** Active combo bonus stacks (chain length − 1, capped). */
+export function comboStacks(state: GameState): number {
+  return Math.min(Math.max(state.combo.count - 1, 0), CONFIG.comboMaxStacks)
+}
+
+/** Yield factor from the current harvest chain. */
+export function comboMultiplier(state: GameState): number {
+  return 1 + CONFIG.comboPerStack * comboStacks(state)
 }
 
 /**

@@ -1,7 +1,9 @@
 <script lang="ts">
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
+  import { CONFIG } from '../data/config'
   import { anyUpgradeAffordable, inventoryValue, sellAll } from '../game/actions'
+  import { comboMultiplier } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -31,6 +33,12 @@
     lastMoney = money
   })
 
+  const comboActive = $derived($gameStore.combo.count >= 2)
+  const comboMult = $derived(comboMultiplier($gameStore))
+  const comboFraction = $derived(
+    Math.min($gameStore.combo.remaining / CONFIG.comboWindowSeconds, 1)
+  )
+
   function handleSellAll(e: MouseEvent) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const gain = sellAll()
@@ -53,6 +61,18 @@
     {/key}
     <span class="amount">{formatNumber(shownMoney.current)}</span>
   </div>
+
+  {#if comboActive}
+    <div class="combo chip num" title="Ernte-Kette: weiterernten, bevor die Leiste leer ist!">
+      {#key $gameStore.combo.count}
+        <span class="combo-x">×{comboMult.toFixed(2)}</span>
+      {/key}
+      <span class="combo-info">
+        <span class="combo-count">{$gameStore.combo.count}er-Kette</span>
+        <span class="combo-bar"><span class="combo-fill" style:width={`${comboFraction * 100}%`}></span></span>
+      </span>
+    </div>
+  {/if}
 
   <div class="spacer"></div>
 
@@ -129,6 +149,58 @@
 
   .spacer {
     flex: 1;
+  }
+
+  .combo {
+    padding: 2px 8px;
+    gap: 8px;
+  }
+
+  .combo-x {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-ember);
+    text-shadow: 0 0 10px rgba(255, 159, 67, 0.55);
+    animation: combo-pop 0.18s ease-out;
+  }
+
+  @keyframes combo-pop {
+    40% {
+      transform: scale(1.3);
+    }
+  }
+
+  .combo-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .combo-count {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--c-mist);
+  }
+
+  .combo-bar {
+    display: block;
+    width: 72px;
+    height: 6px;
+    background: var(--c-night0);
+    border: 1px solid var(--c-edge);
+  }
+
+  .combo-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--c-ember), var(--c-gold1));
+  }
+
+  @media (max-width: 640px) {
+    .combo-count {
+      display: none;
+    }
   }
 
   .badge {
