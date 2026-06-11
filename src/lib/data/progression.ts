@@ -3,12 +3,12 @@
 
 /** XP required to advance FROM the given level to the next. */
 export function xpToNext(level: number): number {
-  return Math.round(30 * Math.pow(level, 1.55))
+  return Math.round(20 * Math.pow(level, 1.4))
 }
 
 /** Instant money payout for REACHING the given level. */
 export function levelUpReward(level: number): number {
-  return Math.round(15 * Math.pow(level, 2.2))
+  return Math.round(20 * Math.pow(level, 2))
 }
 
 /** Quest-board slots unlocked at the given gardener level (1 → 3). */

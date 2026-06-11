@@ -16,16 +16,37 @@
   import ShopPanel from './lib/ui/ShopPanel.svelte'
   import Toasts from './lib/ui/Toasts.svelte'
   import { pushToast } from './lib/ui/toasts'
+  import TutorialPanel from './lib/ui/TutorialPanel.svelte'
   import { formatDuration } from './lib/util/format'
 
   let { offline }: { offline: OfflineReport | null } = $props()
 
-  let openPanel = $state<'inventory' | 'settings' | 'shop' | 'quests' | null>(null)
+  let openPanel = $state<'inventory' | 'settings' | 'shop' | 'quests' | 'tutorial' | null>(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
 
+  const TUTORIAL_KEY = 'garten-imperium-tutorial'
+
+  function closeTutorial() {
+    try {
+      localStorage.setItem(TUTORIAL_KEY, 'done')
+    } catch {
+      /* ignore */
+    }
+    openPanel = null
+  }
+
   onMount(() => {
     registerShakeTarget(stageEl)
+
+    // first run only: short onboarding before anything was ever planted
+    let tutorialSeen = true
+    try {
+      tutorialSeen = localStorage.getItem(TUTORIAL_KEY) === 'done'
+    } catch {
+      /* ignore */
+    }
+    if (!tutorialSeen && $gameStore.stats.planted === 0) openPanel = 'tutorial'
     if (offline && offline.awaySeconds >= 60) {
       const grown =
         offline.ripened > 0
@@ -75,6 +96,8 @@
   <ShopPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'quests'}
   <QuestPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'tutorial'}
+  <TutorialPanel onClose={closeTutorial} />
 {/if}
 <Toasts />
 

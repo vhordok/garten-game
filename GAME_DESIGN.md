@@ -209,8 +209,9 @@ außer gebundelten Fonts).
   Beetkacheln im Boden, kein Karten-Container.
 - **Hotbar (unten):** Saatgut-Slots wie eine Item-Leiste (Tasten 1–9,
   Preis und Lock-Status sichtbar, aktiver Slot hervorgehoben).
-- **Dock (seitlich):** Buttons öffnen Overlays: Shop 🛒, Aufträge 📜,
-  Lager 🧺, Einstellungen. Keine Seitenspalten, kein Footer.
+- **Panel-Knöpfe im HUD** (statt separatem Seiten-Dock — kompakter,
+  mobiltauglicher): Shop, Aufträge und Lager öffnen Overlays; Punkt-Badges
+  signalisieren „etwas ist bezahlbar/lieferbar". Kein Footer.
 
 ### 9.3 Geschärfter Core-Loop
 
@@ -230,13 +231,15 @@ Offline-Wachstum läuft weiter durch denselben `tick()`.
 2. **Goldene Ernten (Crits):** pro Ernte 8 % Chance „Perfekt" (×3 Ertrag,
    Gold-Effekt) und 1 % „Legendär" (×10, Lila-Effekt + Screenshake).
    Multipliziert sich mit der Combo.
-3. **Aufträge:** rotierende Bestellungen („Liefere 12× Minze") mit
-   Belohnung ≈ Marktwert ×1.5 plus XP; Slots wachsen per Level (1 → 3),
-   Skip mit Cooldown. Belohnt Sortenvielfalt, gibt Richtung.
-4. **Gärtner-Level:** XP für geerntete Einheiten und Aufträge;
-   `xpToNext(level) ≈ 30 × level^1.55`. Level-Ups zahlen einen
-   skalierenden Geldbonus aus und gaten Features (Auftragsslots, später
-   QoL). Großer Fanfaren-Moment.
+3. **Aufträge:** rotierende Bestellungen („Liefere 12× Minze") über die
+   freigeschalteten Sorten (6–14 Ernten), Belohnung = Marktwert ×1.5 plus
+   Bonus-XP in Höhe der Menge; zählt als Einnahme (treibt Unlocks).
+   Slots wachsen per Level (1/2/3 ab Level 1/3/5), Skip mit 60-s-Cooldown
+   pro Slot. Belohnt Sortenvielfalt, gibt Richtung.
+4. **Gärtner-Level:** 1 XP pro geernteter Einheit plus Auftrags-Boni;
+   `xpToNext(level) ≈ 20 × level^1.4`, Überschuss trägt über. Level-Ups
+   zahlen `≈ 20 × level²` Gold aus und gaten die Auftragsslots
+   (später weitere QoL). Großer Fanfaren-Moment.
 5. **Upgrade-Shop** (zieht §4 vor): kleine, gecappte Stufen-Upgrades —
    Gießkanne (+10 % Wachstumstempo/Stufe), Dünger (+10 % Ertrag/Stufe),
    Marktstand (+10 % Verkaufspreis/Stufe), je max. 10 Stufen,
@@ -269,10 +272,14 @@ Offline-Wachstum läuft weiter durch denselben `tick()`.
 | R-Phase | Inhalt | Status |
 |---|---|---|
 | R1 | Konzept (dieses Kapitel) | ✅ |
-| R2 | Visuelles Grundgerüst: Sprite-System, Palette/Fonts, Nachtszene, HUD-Layout | offen |
-| R3 | Juice: Partikel, Screenshake, Tweens, Audio-Hooks | offen |
-| R4 | Mechaniken einzeln: Upgrades → Crits → Combo → Level → Aufträge | offen |
-| R5 | Feinschliff: Balancing, Onboarding, Performance | offen |
+| R2 | Visuelles Grundgerüst: Sprite-System, Palette/Fonts, Nachtszene, HUD-Layout | ✅ |
+| R3 | Juice: Partikel, Screenshake, Tweens, Audio-Hooks | ✅ |
+| R4 | Mechaniken einzeln: Upgrades → Crits → Combo → Level → Aufträge (Save v2–v6) | ✅ |
+| R5 | Feinschliff: Balancing-Grundwerte, Onboarding-Panel (einmalig, localStorage), Performance | ✅ |
+
+Der Core bleibt headless testbar: `npm test` fährt die Sanity-Suite
+(`scripts/sanity.test.mjs`) über Tick, Aktionen, Migrationen und alle
+fünf Mechaniken — vor jedem Commit zusammen mit `npm run check` ausführen.
 
 Der ursprüngliche Phasenplan (§8) läuft danach ab Phase 2 weiter;
 der Upgrade-Shop aus R4 ersetzt die Bewässerungs-Upgrades aus Phase 2.
