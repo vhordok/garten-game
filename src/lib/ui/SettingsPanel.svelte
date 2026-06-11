@@ -76,7 +76,7 @@
   <section>
     <h3>Audio</h3>
     <button class="pxbtn small" onclick={toggleSound}>Sound: {sound ? 'An' : 'Aus'}</button>
-    <p class="hint">Platzhalter-Klänge — richtige Sounds folgen später.</p>
+    <p class="hint">Alle Klänge werden live synthetisiert — keine Audiodateien, kein Laden.</p>
   </section>
 
   <section>

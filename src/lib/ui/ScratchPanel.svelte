@@ -29,7 +29,7 @@
   function reveal(index: number, e: MouseEvent) {
     if (!card || revealed[index]) return
     revealed[index] = true
-    playSound('click')
+    playSound('scratch')
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     burst(rect.left + rect.width / 2, rect.top + rect.height / 2, {
       colors: ['mist', 'silver', 'gold2'],
@@ -43,7 +43,7 @@
 
   function revealAll() {
     revealed = Array(9).fill(true)
-    playSound('click')
+    playSound('scratch')
   }
 
   function nextCard() {

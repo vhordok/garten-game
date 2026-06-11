@@ -3,6 +3,8 @@
   import { inventoryValue, sellAll, sellPlant } from '../game/actions'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
+  import { playSound } from './fx/audio'
+  import { coinBurst } from './fx/particles'
   import Overlay from './Overlay.svelte'
   import PixelIcon from './PixelIcon.svelte'
   import { spriteUrl } from './pixel/render'
@@ -15,6 +17,13 @@
     )
   )
   const totalValue = $derived(inventoryValue($gameStore))
+
+  function sellFx(e: MouseEvent, gain: number) {
+    if (gain <= 0) return
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 12)
+    playSound('sell')
+  }
 </script>
 
 <Overlay title="Lager" {onClose}>
@@ -29,13 +38,13 @@
             {plant.name}
             <b class="num">×{formatNumber(count)}</b>
           </span>
-          <button class="pxbtn small num" onclick={() => sellPlant(plant.id)}>
+          <button class="pxbtn small num" onclick={(e) => sellFx(e, sellPlant(plant.id))}>
             Verkaufen +{formatNumber(count * plant.sellValue)}
           </button>
         </li>
       {/each}
     </ul>
-    <button class="pxbtn gold full num" onclick={() => sellAll()}>
+    <button class="pxbtn gold full num" onclick={(e) => sellFx(e, sellAll())}>
       <PixelIcon name="coin" scale={2} />
       Alles verkaufen +{formatNumber(totalValue)}
     </button>

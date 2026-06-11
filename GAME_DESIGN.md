@@ -254,8 +254,15 @@ Offline-Wachstum läuft weiter durch denselben `tick()`.
   Beet-/Upgrade-Kauf), kurz (< 250 ms) und gedeckelt.
 - Tweens statt harter Wechsel: Geldzähler zählt, Bars gleiten,
   Panels sliden ein; Squash & Stretch beim Pflanzen-Pop.
-- **Sound nur als Hook:** `audio.ts` mit `play(id)`-API, Platzhalter
-  (stumm/Blip) — echte Sounds später austauschbar.
+- **Sound als prozeduraler WebAudio-Synth** (`ui/fx/audio.ts`): alle
+  Effekte werden in Code synthetisiert (keine Audio-Assets), hinter der
+  stabilen API `playSound(id, pitch?)` mit Master-Kompressor,
+  Zufalls-Detune gegen Wiederholungsmüdigkeit und Pro-Event-Drosselung
+  (16 gleichzeitig reifende Beete = ein Pling). Ernte-Sounds steigen
+  mit der Combo-Kette im Pitch. Mute-Schalter in den Einstellungen
+  (localStorage). Vertonte Events: Säen, Gießen, Reife, Ernte,
+  Crits, Verkauf, Kauf, Klick/Fehler, Unlock, Level-Up, Los-Fund,
+  Rubbeln, Overlay auf/zu, Willkommen-zurück.
 - `prefers-reduced-motion` deaktiviert Shake/Partikel, nie Information.
 
 ### 9.6 Technik-Leitplanken

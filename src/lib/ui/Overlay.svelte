@@ -1,8 +1,13 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte'
+  import { onDestroy, onMount, type Snippet } from 'svelte'
   import { fade, scale } from 'svelte/transition'
+  import { playSound } from './fx/audio'
 
   let { title, onClose, children }: { title: string; onClose: () => void; children: Snippet } = $props()
+
+  // covers every close path (X, backdrop, Escape, child-initiated)
+  onMount(() => playSound('open'))
+  onDestroy(() => playSound('close'))
 </script>
 
 <svelte:window
