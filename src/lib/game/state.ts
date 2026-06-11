@@ -3,7 +3,7 @@ import { PLANTS } from '../data/plants'
 import type { GameState, PlotState } from './types'
 
 export function emptyPlot(): PlotState {
-  return { plantId: null, progress: 0 }
+  return { plantId: null, progress: 0, waterLeft: 0 }
 }
 
 export function createDefaultState(now = Date.now()): GameState {
@@ -18,6 +18,8 @@ export function createDefaultState(now = Date.now()): GameState {
     upgrades: {},
     quests: [],
     questCounter: 0,
+    scratchTickets: 0,
+    fertilizerCharges: 0,
     combo: { count: 0, remaining: 0 },
     stats: { planted: 0, harvested: 0, sold: 0, crits: 0 },
     createdAt: now,

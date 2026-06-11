@@ -8,7 +8,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 6
+export const SAVE_VERSION = 8
 
 interface SaveEnvelope {
   version: number
@@ -125,6 +125,13 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 5:
       // v5 → v6: quest board added; boot refills missing slots.
       return { ...envelope, version: 6 }
+    case 6:
+      // v6 → v7: watering charges per plot; sanitize() grants growing
+      // crops the full charge set.
+      return { ...envelope, version: 7 }
+    case 7:
+      // v7 → v8: scratch tickets + fertilizer charges; default 0.
+      return { ...envelope, version: 8 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -151,7 +158,14 @@ function sanitize(raw: unknown): GameState {
       const plot = p as Record<string, unknown>
       const def = typeof plot.plantId === 'string' ? plantById(plot.plantId) : undefined
       if (!def) return emptyPlot()
-      return { plantId: def.id, progress: clampNumber(plot.progress, 0, 0, def.growTime) }
+      return {
+        plantId: def.id,
+        progress: clampNumber(plot.progress, 0, 0, def.growTime),
+        // older saves lack the field — be generous and grant full charges
+        waterLeft: Math.floor(
+          clampNumber(plot.waterLeft, CONFIG.waterChargesPerCrop, 0, CONFIG.waterChargesPerCrop)
+        ),
+      }
     })
     while (plots.length < CONFIG.startPlots) plots.push(emptyPlot())
     state.plots = plots
@@ -182,6 +196,9 @@ function sanitize(raw: unknown): GameState {
 
   // combo is session-only by design: loading always starts chainless
   state.combo = { count: 0, remaining: 0 }
+
+  state.scratchTickets = Math.floor(clampNumber(r.scratchTickets, 0, 0, CONFIG.scratchMaxPending))
+  state.fertilizerCharges = Math.floor(clampNumber(r.fertilizerCharges, 0, 0, 999))
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
   const quests: GameState['quests'] = []

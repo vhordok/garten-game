@@ -16,11 +16,13 @@
     onOpenSettings,
     onOpenShop,
     onOpenQuests,
+    onOpenScratch,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
     onOpenShop: () => void
     onOpenQuests: () => void
+    onOpenScratch: () => void
   } = $props()
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
@@ -74,6 +76,13 @@
     <span class="amount">{formatNumber(shownMoney.current)}</span>
   </div>
 
+  {#if $gameStore.fertilizerCharges > 0}
+    <div class="chip num boost" title="Turbo-Dünger aktiv: die nächsten Ernten bringen das Doppelte">
+      <PixelIcon name="duenger" scale={1} />
+      ×{formatNumber($gameStore.fertilizerCharges)}
+    </div>
+  {/if}
+
   {#if comboActive}
     <div class="combo chip num" title="Ernte-Kette: weiterernten, bevor die Leiste leer ist!">
       {#key $gameStore.combo.count}
@@ -91,6 +100,13 @@
   {#if stockValue > 0}
     <button class="pxbtn gold num" onclick={handleSellAll} title="Komplettes Lager verkaufen">
       Verkaufen +{formatNumber(stockValue)}
+    </button>
+  {/if}
+
+  {#if $gameStore.scratchTickets > 0}
+    <button class="pxbtn gold ticket num" onclick={onOpenScratch} title="Rubbellos gefunden — Glück versuchen!">
+      <PixelIcon name="los" scale={1} />
+      {$gameStore.scratchTickets}
     </button>
   {/if}
 
@@ -300,6 +316,32 @@
   .dot.quest {
     background: var(--c-leaf4);
     box-shadow: 0 0 8px rgba(168, 202, 88, 0.8);
+  }
+
+  .boost {
+    padding: 2px 8px;
+    color: var(--c-leaf5);
+  }
+
+  .ticket {
+    animation: ticket-wiggle 1.8s ease-in-out infinite;
+  }
+
+  @keyframes ticket-wiggle {
+    0%,
+    78%,
+    100% {
+      transform: translateY(0);
+    }
+    84% {
+      transform: translateY(-2px);
+    }
+    90% {
+      transform: translateY(1px);
+    }
+    96% {
+      transform: translateY(-1px);
+    }
   }
 
   @media (max-width: 640px) {

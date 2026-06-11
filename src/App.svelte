@@ -12,6 +12,7 @@
   import InventoryPanel from './lib/ui/InventoryPanel.svelte'
   import QuestPanel from './lib/ui/QuestPanel.svelte'
   import Scene from './lib/ui/Scene.svelte'
+  import ScratchPanel from './lib/ui/ScratchPanel.svelte'
   import SettingsPanel from './lib/ui/SettingsPanel.svelte'
   import ShopPanel from './lib/ui/ShopPanel.svelte'
   import Toasts from './lib/ui/Toasts.svelte'
@@ -21,7 +22,9 @@
 
   let { offline }: { offline: OfflineReport | null } = $props()
 
-  let openPanel = $state<'inventory' | 'settings' | 'shop' | 'quests' | 'tutorial' | null>(null)
+  let openPanel = $state<'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'tutorial' | null>(
+    null
+  )
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
 
@@ -80,6 +83,7 @@
     onOpenSettings={() => (openPanel = 'settings')}
     onOpenShop={() => (openPanel = 'shop')}
     onOpenQuests={() => (openPanel = 'quests')}
+    onOpenScratch={() => (openPanel = 'scratch')}
   />
   <main bind:this={stageEl}>
     <Garden />
@@ -96,6 +100,8 @@
   <ShopPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'quests'}
   <QuestPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'scratch'}
+  <ScratchPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'tutorial'}
   <TutorialPanel onClose={closeTutorial} />
 {/if}

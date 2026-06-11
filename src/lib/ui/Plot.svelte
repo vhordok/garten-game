@@ -1,13 +1,14 @@
 <script lang="ts">
   import { plantById } from '../data/plants'
-  import { harvestPlot, sowPlot, type CritTier } from '../game/actions'
+  import { harvestPlot, sowPlot, waterPlot, type CritTier } from '../game/actions'
   import type { PlotState } from '../game/types'
   import { formatDuration } from '../util/format'
   import { playSound } from './fx/audio'
   import { celebrateLevelUps } from './fx/celebrate'
-  import { coinBurst, leafBurst, legendaryBurst, perfectBurst } from './fx/particles'
+  import { coinBurst, leafBurst, legendaryBurst, perfectBurst, waterBurst } from './fx/particles'
   import { screenShake } from './fx/shake'
   import { spriteUrl } from './pixel/render'
+  import { pushToast } from './toasts'
 
   let {
     plot,
@@ -40,7 +41,7 @@
   interface Floater {
     id: number
     text: string
-    kind: 'gain' | 'spend' | 'perfect' | 'legendary'
+    kind: 'gain' | 'spend' | 'perfect' | 'legendary' | 'water'
   }
 
   let floaters = $state<Floater[]>([])
@@ -76,10 +77,17 @@
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
     if (def && ready) {
-      const { units, crit, levelUps } = harvestPlot(index)
+      const { units, crit, levelUps, tickets } = harvestPlot(index)
       if (units > 0) {
         harvestFx(cx, cy, units, crit)
         celebrateLevelUps(levelUps, cx, cy)
+        if (tickets > 0) pushToast('Ein Rubbellos lag in der Ernte — oben im HUD rubbeln!', '🎟️', 7000)
+      }
+    } else if (def && !ready) {
+      if (waterPlot(index)) {
+        spawnFloater('Wachstum!', 'water')
+        waterBurst(cx, cy)
+        playSound('water')
       }
     } else if (!def && selectedDef) {
       const cost = selectedDef.seedCost
@@ -97,7 +105,8 @@
     def && ready
       ? `${def.name} ernten`
       : def
-        ? `${def.name} — reif in ${formatDuration(remaining)}`
+        ? `${def.name} — reif in ${formatDuration(remaining)}` +
+          (plot.waterLeft > 0 ? ` · Klick = gießen (${plot.waterLeft}× übrig)` : '')
         : canSow && selectedDef
           ? `${selectedDef.name} säen (${selectedDef.seedCost})`
           : 'Leeres Beet'
@@ -108,6 +117,7 @@
   class="plot"
   class:ready
   class:growing={def && !ready}
+  class:can-water={def && !ready && plot.waterLeft > 0}
   class:empty={!def}
   class:can-sow={canSow}
   onclick={handleClick}
@@ -122,6 +132,13 @@
       <span class="ready-tag">Ernten!</span>
     {:else}
       <span class="timer chip num">{formatDuration(remaining)}</span>
+      {#if plot.waterLeft > 0}
+        <span class="drops" aria-hidden="true">
+          {#each Array(plot.waterLeft) as _, i (i)}
+            <i></i>
+          {/each}
+        </span>
+      {/if}
       <div class="bar">
         <div class="bar-fill" style:width={`${Math.round(fraction * 100)}%`}></div>
       </div>
@@ -159,6 +176,26 @@
 
   .plot.growing {
     cursor: default;
+  }
+
+  .plot.can-water {
+    cursor: pointer;
+  }
+
+  /* remaining watering charges */
+  .drops {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    display: flex;
+    gap: 3px;
+  }
+
+  .drops i {
+    width: 5px;
+    height: 5px;
+    background: var(--c-blue2);
+    box-shadow: 0 0 4px rgba(115, 190, 211, 0.7);
   }
 
   .plot.empty:not(.can-sow) {
@@ -297,6 +334,14 @@
       1px 1px 0 var(--c-night0),
       0 0 14px rgba(198, 81, 151, 0.95);
     animation-duration: 1.1s;
+  }
+
+  .floater.water {
+    font-size: 0.78rem;
+    color: var(--c-blue2);
+    text-shadow:
+      1px 1px 0 var(--c-night0),
+      0 0 8px rgba(115, 190, 211, 0.6);
   }
 
   @keyframes float-up {

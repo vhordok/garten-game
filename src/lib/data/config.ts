@@ -9,10 +9,18 @@ export const CONFIG = {
   /** plot n (0-based beyond the free ones) costs plotBaseCost * plotCostFactor^n */
   plotBaseCost: 25,
   plotCostFactor: 1.5,
+  /** active watering: charges per sown crop, growth skip per splash */
+  waterChargesPerCrop: 3,
+  waterProgressBoost: 0.15,
   /** combo harvesting (GAME_DESIGN.md §9.4): chain window and per-stack bonus */
   comboWindowSeconds: 4,
   comboPerStack: 0.05,
   comboMaxStacks: 20,
+  /** scratch tickets: drop chance per harvested plot, pending cap */
+  scratchDropChance: 0.04,
+  scratchMaxPending: 5,
+  /** turbo fertilizer: yield factor while charges last (one per harvest) */
+  fertilizerChargeMult: 2,
   /** quests (GAME_DESIGN.md §9.4): reward over market value, skip cooldown */
   questRewardFactor: 1.5,
   questSkipCooldownSeconds: 60,
