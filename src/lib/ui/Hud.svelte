@@ -1,7 +1,7 @@
 <script lang="ts">
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
-  import { inventoryValue, sellAll } from '../game/actions'
+  import { anyUpgradeAffordable, inventoryValue, sellAll } from '../game/actions'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -11,7 +11,10 @@
   let {
     onOpenInventory,
     onOpenSettings,
-  }: { onOpenInventory: () => void; onOpenSettings: () => void } = $props()
+    onOpenShop,
+  }: { onOpenInventory: () => void; onOpenSettings: () => void; onOpenShop: () => void } = $props()
+
+  const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
 
   const stockValue = $derived(inventoryValue($gameStore))
   const stockCount = $derived(Object.values($gameStore.inventory).reduce((a, b) => a + b, 0))
@@ -58,6 +61,11 @@
       Verkaufen +{formatNumber(stockValue)}
     </button>
   {/if}
+
+  <button class="pxbtn" onclick={onOpenShop} title="Shop — dauerhafte Upgrades">
+    <PixelIcon name="giesskanne" scale={1} />
+    {#if upgradeHint}<span class="dot" aria-hidden="true"></span>{/if}
+  </button>
 
   <button class="pxbtn" onclick={onOpenInventory} title="Lager öffnen">
     <PixelIcon name="basket" scale={2} />
@@ -126,6 +134,28 @@
   .badge {
     font-size: 0.7rem;
     color: var(--c-leaf5);
+  }
+
+  .pxbtn {
+    position: relative;
+  }
+
+  /* "something is affordable" nudge */
+  .dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    background: var(--c-gold1);
+    box-shadow: 0 0 8px rgba(222, 158, 65, 0.8);
+    animation: dot-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes dot-pulse {
+    50% {
+      opacity: 0.45;
+    }
   }
 
   @media (max-width: 640px) {

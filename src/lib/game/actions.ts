@@ -3,9 +3,11 @@
 
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
+import { UPGRADES, upgradeById } from '../data/upgrades'
+import { rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
 import { emptyPlot, getState, notify } from './state'
 import { plotReady } from './tick'
-import type { GameState, PlantDef } from './types'
+import type { GameState, PlantDef, UpgradeDef } from './types'
 
 export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
   return state.totalEarned >= def.unlockAtTotalEarned
@@ -39,11 +41,12 @@ function harvestInternal(s: GameState, index: number): number {
   if (!plot || !plotReady(plot)) return 0
   const def = plantById(plot.plantId!)
   if (!def) return 0
-  s.inventory[def.id] = (s.inventory[def.id] ?? 0) + def.yield
-  s.stats.harvested += def.yield
+  const units = rollUnits(def.yield * yieldMultiplier(s))
+  s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
+  s.stats.harvested += units
   plot.plantId = null
   plot.progress = 0
-  return def.yield
+  return units
 }
 
 /** Harvest one ready plot into storage. Returns harvested units (0 if not ready). */
@@ -67,7 +70,7 @@ function sellInternal(s: GameState, plantId: string): number {
   const def = plantById(plantId)
   const count = s.inventory[plantId] ?? 0
   if (!def || count <= 0) return 0
-  const gain = count * def.sellValue
+  const gain = Math.round(count * def.sellValue * sellMultiplier(s))
   delete s.inventory[plantId]
   s.money += gain
   s.totalEarned += gain
@@ -113,7 +116,39 @@ export function inventoryValue(state: GameState): number {
   let sum = 0
   for (const [id, count] of Object.entries(state.inventory)) {
     const def = plantById(id)
-    if (def) sum += count * def.sellValue
+    if (def) sum += Math.round(count * def.sellValue * sellMultiplier(state))
   }
   return sum
+}
+
+/** Current level of an upgrade (0 = not owned). */
+export function upgradeLevel(state: GameState, upgradeId: string): number {
+  return state.upgrades[upgradeId] ?? 0
+}
+
+/** Cost of the next level, or null when maxed out. */
+export function nextUpgradeCost(def: UpgradeDef, state: GameState): number | null {
+  const level = upgradeLevel(state, def.id)
+  if (level >= def.maxLevel) return null
+  return Math.floor(def.baseCost * Math.pow(def.costFactor, level))
+}
+
+export function buyUpgrade(upgradeId: string): boolean {
+  const s = getState()
+  const def = upgradeById(upgradeId)
+  if (!def) return false
+  const cost = nextUpgradeCost(def, s)
+  if (cost === null || s.money < cost) return false
+  s.money -= cost
+  s.upgrades[def.id] = upgradeLevel(s, def.id) + 1
+  notify()
+  return true
+}
+
+/** True if any upgrade level is currently affordable (HUD badge). */
+export function anyUpgradeAffordable(state: GameState): boolean {
+  return UPGRADES.some((def) => {
+    const cost = nextUpgradeCost(def, state)
+    return cost !== null && state.money >= cost
+  })
 }

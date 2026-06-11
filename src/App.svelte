@@ -12,13 +12,14 @@
   import InventoryPanel from './lib/ui/InventoryPanel.svelte'
   import Scene from './lib/ui/Scene.svelte'
   import SettingsPanel from './lib/ui/SettingsPanel.svelte'
+  import ShopPanel from './lib/ui/ShopPanel.svelte'
   import Toasts from './lib/ui/Toasts.svelte'
   import { pushToast } from './lib/ui/toasts'
   import { formatDuration } from './lib/util/format'
 
   let { offline }: { offline: OfflineReport | null } = $props()
 
-  let openPanel = $state<'inventory' | 'settings' | null>(null)
+  let openPanel = $state<'inventory' | 'settings' | 'shop' | null>(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
 
@@ -52,7 +53,11 @@
 <Scene />
 
 <div class="app">
-  <Hud onOpenInventory={() => (openPanel = 'inventory')} onOpenSettings={() => (openPanel = 'settings')} />
+  <Hud
+    onOpenInventory={() => (openPanel = 'inventory')}
+    onOpenSettings={() => (openPanel = 'settings')}
+    onOpenShop={() => (openPanel = 'shop')}
+  />
   <main bind:this={stageEl}>
     <Garden />
   </main>
@@ -64,6 +69,8 @@
   <InventoryPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'settings'}
   <SettingsPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'shop'}
+  <ShopPanel onClose={() => (openPanel = null)} />
 {/if}
 <Toasts />
 

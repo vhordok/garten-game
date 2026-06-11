@@ -303,6 +303,65 @@ const sparkle: SpriteGrid = [
   '........',
 ]
 
+// --- 16×16 upgrade icons ---
+
+const giesskanne: SpriteGrid = [
+  '................',
+  '......nn........',
+  '.....n..n.......',
+  '.....n..n.......',
+  '....nnnnnnnn....',
+  '....nNNNNNNn..nn',
+  '....nNhhNNNn.nn.',
+  '....nNhhNNNnnn..',
+  '....nNNNNNNn....',
+  '....nNNNNNNn....',
+  '....nnnnnnnn....',
+  '..............c.',
+  '..............c.',
+  '................',
+  '................',
+  '................',
+]
+
+const duenger: SpriteGrid = [
+  '................',
+  '......bb........',
+  '.....bDDb.......',
+  '....bDDDDb......',
+  '...bDDDDDDb.....',
+  '..bDDDDDDDDb....',
+  '..bDDDllDDDb....',
+  '..bDDlflfDDb....',
+  '..bDDDfFDDDb....',
+  '..bDDDDfDDDb....',
+  '..bDDDDDDDDb....',
+  '...bDDDDDDb.....',
+  '....bbbbbb......',
+  '................',
+  '................',
+  '................',
+]
+
+const marktstand: SpriteGrid = [
+  '................',
+  '................',
+  '.mwmwmwmwmwmw...',
+  '.mwmwmwmwmwmw...',
+  '.b..........b...',
+  '.b..........b...',
+  '.b..........b...',
+  '.bDDDDDDDDDDb...',
+  '.bDDDDDDDDDDb...',
+  '.b..........b...',
+  '.b..........b...',
+  '.b..........b...',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
 /** Crescent moon, 16×16. */
 const moon: SpriteGrid = [
   '......wwww......',
@@ -375,6 +434,9 @@ export const SPRITES: Record<string, SpriteGrid> = {
   'lavendel-3': lavendel3,
   soil,
   'ghost-plot': ghostPlot,
+  giesskanne,
+  duenger,
+  marktstand,
   coin,
   lock,
   gear,

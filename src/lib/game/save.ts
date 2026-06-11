@@ -3,10 +3,11 @@
 
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
+import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 
 interface SaveEnvelope {
   version: number
@@ -107,6 +108,10 @@ function parseEnvelope(json: string): { savedAt: number; state: GameState } | nu
  */
 function migrate(envelope: Record<string, unknown>): Record<string, unknown> | null {
   switch (envelope.version) {
+    case 1:
+      // v1 → v2: upgrades were introduced; sanitize() fills the missing
+      // field with level 0 for everything.
+      return { ...envelope, version: 2 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -149,6 +154,16 @@ function sanitize(raw: unknown): GameState {
 
   const selected = typeof r.selectedPlantId === 'string' ? plantById(r.selectedPlantId) : undefined
   state.selectedPlantId = selected ? selected.id : PLANTS[0].id
+
+  const upgrades: Record<string, number> = {}
+  if (typeof r.upgrades === 'object' && r.upgrades !== null) {
+    const rawUpgrades = r.upgrades as Record<string, unknown>
+    for (const def of UPGRADES) {
+      const level = Math.floor(clampNumber(rawUpgrades[def.id], 0, 0, def.maxLevel))
+      if (level > 0) upgrades[def.id] = level
+    }
+  }
+  state.upgrades = upgrades
 
   if (typeof r.stats === 'object' && r.stats !== null) {
     const stats = r.stats as Record<string, unknown>

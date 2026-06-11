@@ -13,6 +13,7 @@ export function createDefaultState(now = Date.now()): GameState {
     plots: Array.from({ length: CONFIG.startPlots }, emptyPlot),
     inventory: {},
     selectedPlantId: PLANTS[0].id,
+    upgrades: {},
     stats: { planted: 0, harvested: 0, sold: 0 },
     createdAt: now,
   }

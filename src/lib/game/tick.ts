@@ -1,4 +1,5 @@
 import { plantById } from '../data/plants'
+import { growthMultiplier } from './modifiers'
 import type { GameState, PlotState } from './types'
 
 /**
@@ -8,13 +9,14 @@ import type { GameState, PlotState } from './types'
  */
 export function tick(state: GameState, dtSeconds: number): boolean {
   if (dtSeconds <= 0) return false
+  const grownSeconds = dtSeconds * growthMultiplier(state)
   let changed = false
   for (const plot of state.plots) {
     if (!plot.plantId) continue
     const def = plantById(plot.plantId)
     if (!def) continue
     if (plot.progress < def.growTime) {
-      plot.progress = Math.min(plot.progress + dtSeconds, def.growTime)
+      plot.progress = Math.min(plot.progress + grownSeconds, def.growTime)
       changed = true
     }
   }

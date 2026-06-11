@@ -28,6 +28,23 @@ export interface PlantDef {
   unlockAtTotalEarned: number
 }
 
+export type UpgradeEffect = 'growth' | 'yield' | 'sellPrice'
+
+export interface UpgradeDef {
+  id: string
+  name: string
+  /** sprite name in src/lib/ui/pixel/sprites.ts */
+  sprite: string
+  description: string
+  effect: UpgradeEffect
+  /** additive bonus per level, e.g. 0.1 = +10 % per level */
+  perLevel: number
+  maxLevel: number
+  baseCost: number
+  /** cost(level) = baseCost × costFactor^level */
+  costFactor: number
+}
+
 export interface PlotState {
   /** id of the planted PlantDef, null = empty plot */
   plantId: string | null
@@ -53,6 +70,8 @@ export interface GameState {
   inventory: Record<string, number>
   /** plant sown when clicking an empty plot */
   selectedPlantId: string
+  /** upgrade levels keyed by UpgradeDef id (absent = level 0) */
+  upgrades: Record<string, number>
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number
