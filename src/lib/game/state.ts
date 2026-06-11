@@ -10,10 +10,16 @@ export function createDefaultState(now = Date.now()): GameState {
   return {
     money: CONFIG.startMoney,
     totalEarned: 0,
+    level: 1,
+    xp: 0,
     plots: Array.from({ length: CONFIG.startPlots }, emptyPlot),
     inventory: {},
     selectedPlantId: PLANTS[0].id,
-    stats: { planted: 0, harvested: 0, sold: 0 },
+    upgrades: {},
+    quests: [],
+    questCounter: 0,
+    combo: { count: 0, remaining: 0 },
+    stats: { planted: 0, harvested: 0, sold: 0, crits: 0 },
     createdAt: now,
   }
 }

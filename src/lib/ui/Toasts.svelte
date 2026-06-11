@@ -5,7 +5,7 @@
 
 <div class="toasts">
   {#each $toasts as toast (toast.id)}
-    <button class="toast" transition:fly={{ y: 16, duration: 250 }} onclick={() => dismissToast(toast.id)}>
+    <button class="toast pxpanel" transition:fly={{ y: -14, duration: 220 }} onclick={() => dismissToast(toast.id)}>
       <span class="toast-icon">{toast.icon}</span>
       <span>{toast.text}</span>
     </button>
@@ -15,7 +15,7 @@
 <style>
   .toasts {
     position: fixed;
-    bottom: 18px;
+    top: 72px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -31,18 +31,14 @@
     display: flex;
     gap: 10px;
     align-items: center;
-    background: var(--green-800);
-    color: #f2f8ee;
-    border: none;
-    border-radius: 12px;
-    padding: 10px 16px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    color: var(--c-white);
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     text-align: left;
+    padding: 4px 10px;
   }
 
   .toast-icon {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
   }
 </style>

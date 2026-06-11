@@ -28,6 +28,23 @@ export interface PlantDef {
   unlockAtTotalEarned: number
 }
 
+export type UpgradeEffect = 'growth' | 'yield' | 'sellPrice'
+
+export interface UpgradeDef {
+  id: string
+  name: string
+  /** sprite name in src/lib/ui/pixel/sprites.ts */
+  sprite: string
+  description: string
+  effect: UpgradeEffect
+  /** additive bonus per level, e.g. 0.1 = +10 % per level */
+  perLevel: number
+  maxLevel: number
+  baseCost: number
+  /** cost(level) = baseCost × costFactor^level */
+  costFactor: number
+}
+
 export interface PlotState {
   /** id of the planted PlantDef, null = empty plot */
   plantId: string | null
@@ -42,17 +59,56 @@ export interface GameStats {
   harvested: number
   /** units sold */
   sold: number
+  /** golden harvests (perfect + legendary) */
+  crits: number
+}
+
+/**
+ * Harvest chain state. Deliberately transient: ticks drain `remaining`,
+ * loading a save resets it (offline play earns no combo).
+ */
+export interface ComboState {
+  /** chain length; bonus stacks are count − 1, capped in config */
+  count: number
+  /** seconds left before the chain breaks */
+  remaining: number
+}
+
+/** One rotating delivery order on the quest board. */
+export interface QuestState {
+  /** unique per save (questCounter) — used for UI keying */
+  id: number
+  plantId: string
+  /** units to deliver from storage */
+  amount: number
+  /** money payout on delivery */
+  reward: number
+  /** bonus XP on delivery */
+  xp: number
+  /** seconds until this slot may be rerolled (drained by tick) */
+  skipCooldown: number
 }
 
 export interface GameState {
   money: number
   /** lifetime money earned from selling — drives unlocks, later prestige */
   totalEarned: number
+  /** gardener level (starts at 1); gates quest slots and future QoL */
+  level: number
+  /** progress within the current level (resets each level-up) */
+  xp: number
   plots: PlotState[]
+  combo: ComboState
   /** harvested units in storage, keyed by plant id */
   inventory: Record<string, number>
   /** plant sown when clicking an empty plot */
   selectedPlantId: string
+  /** upgrade levels keyed by UpgradeDef id (absent = level 0) */
+  upgrades: Record<string, number>
+  /** active delivery orders (slot count gated by level, see progression) */
+  quests: QuestState[]
+  /** running id source for quests */
+  questCounter: number
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

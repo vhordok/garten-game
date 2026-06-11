@@ -3,20 +3,50 @@
   import { PLANTS } from './lib/data/plants'
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
+  import { playSound } from './lib/ui/fx/audio'
+  import FxLayer from './lib/ui/fx/FxLayer.svelte'
+  import { registerShakeTarget } from './lib/ui/fx/shake'
   import Garden from './lib/ui/Garden.svelte'
-  import Header from './lib/ui/Header.svelte'
+  import Hotbar from './lib/ui/Hotbar.svelte'
+  import Hud from './lib/ui/Hud.svelte'
   import InventoryPanel from './lib/ui/InventoryPanel.svelte'
-  import SeedPanel from './lib/ui/SeedPanel.svelte'
+  import QuestPanel from './lib/ui/QuestPanel.svelte'
+  import Scene from './lib/ui/Scene.svelte'
   import SettingsPanel from './lib/ui/SettingsPanel.svelte'
+  import ShopPanel from './lib/ui/ShopPanel.svelte'
   import Toasts from './lib/ui/Toasts.svelte'
   import { pushToast } from './lib/ui/toasts'
+  import TutorialPanel from './lib/ui/TutorialPanel.svelte'
   import { formatDuration } from './lib/util/format'
 
   let { offline }: { offline: OfflineReport | null } = $props()
 
-  let settingsOpen = $state(false)
+  let openPanel = $state<'inventory' | 'settings' | 'shop' | 'quests' | 'tutorial' | null>(null)
+  // the world stage is the shake target — fixed HUD/hotbar stay put
+  let stageEl: HTMLElement
+
+  const TUTORIAL_KEY = 'garten-imperium-tutorial'
+
+  function closeTutorial() {
+    try {
+      localStorage.setItem(TUTORIAL_KEY, 'done')
+    } catch {
+      /* ignore */
+    }
+    openPanel = null
+  }
 
   onMount(() => {
+    registerShakeTarget(stageEl)
+
+    // first run only: short onboarding before anything was ever planted
+    let tutorialSeen = true
+    try {
+      tutorialSeen = localStorage.getItem(TUTORIAL_KEY) === 'done'
+    } catch {
+      /* ignore */
+    }
+    if (!tutorialSeen && $gameStore.stats.planted === 0) openPanel = 'tutorial'
     if (offline && offline.awaySeconds >= 60) {
       const grown =
         offline.ripened > 0
@@ -34,6 +64,7 @@
       for (const plant of unlocked) {
         if (!knownUnlocks.includes(plant.id)) {
           pushToast(`Neue Pflanze freigeschaltet: ${plant.name}!`, plant.emoji, 8000)
+          playSound('unlock')
         }
       }
     }
@@ -41,68 +72,53 @@
   })
 </script>
 
-<div class="app">
-  <Header onOpenSettings={() => (settingsOpen = true)} />
-  <main>
-    <section class="garden-col">
-      <Garden />
-    </section>
-    <aside class="side-col">
-      <SeedPanel />
-      <InventoryPanel />
-    </aside>
-  </main>
-  <footer>🌱 Phase 1 · Dein Garten wird automatisch gespeichert — auch wenn du weg bist, wächst alles weiter.</footer>
-</div>
+<Scene />
 
-{#if settingsOpen}
-  <SettingsPanel onClose={() => (settingsOpen = false)} />
+<div class="app">
+  <Hud
+    onOpenInventory={() => (openPanel = 'inventory')}
+    onOpenSettings={() => (openPanel = 'settings')}
+    onOpenShop={() => (openPanel = 'shop')}
+    onOpenQuests={() => (openPanel = 'quests')}
+  />
+  <main bind:this={stageEl}>
+    <Garden />
+  </main>
+  <Hotbar />
+</div>
+<FxLayer />
+
+{#if openPanel === 'inventory'}
+  <InventoryPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'settings'}
+  <SettingsPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'shop'}
+  <ShopPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'quests'}
+  <QuestPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'tutorial'}
+  <TutorialPanel onClose={closeTutorial} />
 {/if}
 <Toasts />
 
 <style>
   .app {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 20px 32px;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* keep clear of the fixed HUD (top) and hotbar (bottom) */
+    padding: 84px 16px 130px;
   }
 
   main {
+    flex: 1;
+    width: 100%;
     display: flex;
-    gap: 20px;
+    justify-content: center;
     align-items: flex-start;
-    margin-top: 20px;
-  }
-
-  .garden-col {
-    flex: 1 1 60%;
-    min-width: 0;
-  }
-
-  .side-col {
-    flex: 1 1 40%;
-    min-width: 280px;
-    max-width: 360px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  footer {
-    margin-top: 28px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.8rem;
-  }
-
-  @media (max-width: 840px) {
-    main {
-      flex-direction: column;
-    }
-
-    .side-col {
-      max-width: none;
-      width: 100%;
-    }
+    padding-top: 9vh;
   }
 </style>

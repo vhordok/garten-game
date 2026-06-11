@@ -1,4 +1,5 @@
 import { plantById } from '../data/plants'
+import { growthMultiplier } from './modifiers'
 import type { GameState, PlotState } from './types'
 
 /**
@@ -8,13 +9,27 @@ import type { GameState, PlotState } from './types'
  */
 export function tick(state: GameState, dtSeconds: number): boolean {
   if (dtSeconds <= 0) return false
+  const grownSeconds = dtSeconds * growthMultiplier(state)
   let changed = false
   for (const plot of state.plots) {
     if (!plot.plantId) continue
     const def = plantById(plot.plantId)
     if (!def) continue
     if (plot.progress < def.growTime) {
-      plot.progress = Math.min(plot.progress + dtSeconds, def.growTime)
+      plot.progress = Math.min(plot.progress + grownSeconds, def.growTime)
+      changed = true
+    }
+  }
+  // drain the harvest chain in real time (no growth multiplier here)
+  if (state.combo.remaining > 0) {
+    state.combo.remaining = Math.max(state.combo.remaining - dtSeconds, 0)
+    if (state.combo.remaining === 0) state.combo.count = 0
+    changed = true
+  }
+  // quest skip cooldowns drain in real time too
+  for (const quest of state.quests) {
+    if (quest.skipCooldown > 0) {
+      quest.skipCooldown = Math.max(quest.skipCooldown - dtSeconds, 0)
       changed = true
     }
   }

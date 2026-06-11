@@ -15,6 +15,7 @@ Design-Entscheidungen aktuell halten.
 ```bash
 npm run dev      # Dev-Server
 npm run check    # svelte-check + TS — vor jedem Commit ausführen
+npm test         # Core-Sanity-Tests (scripts/sanity.test.mjs) — vor jedem Commit
 npm run build    # Produktions-Build
 npm run preview  # gebauten Stand lokal serven
 ```
@@ -48,14 +49,25 @@ npm run preview  # gebauten Stand lokal serven
 ## Struktur
 
 ```
-src/lib/game/   State, Tick, Loop, Actions, Save/Offline (pures TS)
-src/lib/data/   Inhalts- & Balance-Definitionen (plants.ts, config.ts, …)
-src/lib/ui/     Svelte-Komponenten + Toast-Store
-src/lib/util/   Helfer (Zahlen-/Zeitformatierung)
+src/lib/game/      State, Tick, Loop, Actions, Modifiers, Quests, Save/Offline (pures TS)
+src/lib/data/      Inhalts- & Balance-Definitionen (plants, upgrades, progression, config)
+src/lib/ui/        Svelte-Komponenten + Toast-Store
+src/lib/ui/pixel/  Pixel-Art-System: Palette, Sprite-Grids, 9-Slice-Frames, Renderer
+src/lib/ui/fx/     Juice: Partikel, Screenshake, Audio-Hooks, Level-Up-Fanfare
+src/lib/util/      Helfer (Zahlen-/Zeitformatierung)
+scripts/           sanity.test.mjs — Core-Tests ohne Browser (npm test)
 ```
+
+Zusatzregeln seit dem Redesign: Sprites sind Code (Grids in
+`ui/pixel/sprites.ts`, keine Binär-Assets); alle Farben kommen aus
+`ui/pixel/palette.ts` (per `initPixelUi()` als `--c-*`-Variablen injiziert);
+FX-Aufrufe gehören in die UI-Schicht (`ui/fx/`), niemals in den Core.
 
 ## Stand
 
-Phase 1 ist umgesetzt (siehe Phasenplan in GAME_DESIGN.md §8): 3 Kräuter,
-manuelles Pflanzen/Ernten/Verkaufen, Beet-Kauf bis 16, Save/Load mit
-Export/Import, Offline-Wachstum. Weitere Phasen nur nach Absprache beginnen.
+Phase 1 (GAME_DESIGN.md §8) und das komplette Redesign
+„Mitternachts-Pixelgarten" (GAME_DESIGN.md §9, R1–R5) sind umgesetzt:
+Pixel-Art-Nachtszene mit Game-HUD und Hotbar, Juice-Schicht (Partikel,
+Shake, Sound-Hooks), Upgrade-Shop, goldene Ernten, Combo-Ketten,
+Gärtner-Level und Auftrags-Board (SAVE_VERSION 6). Weitere Phasen aus §8
+nur nach Absprache beginnen.

@@ -3,9 +3,13 @@
 
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
+import { levelUpReward, xpToNext } from '../data/progression'
+import { UPGRADES, upgradeById } from '../data/upgrades'
+import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
+import { generateQuest, refillQuests } from './quests'
 import { emptyPlot, getState, notify } from './state'
 import { plotReady } from './tick'
-import type { GameState, PlantDef } from './types'
+import type { GameState, PlantDef, UpgradeDef } from './types'
 
 export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
   return state.totalEarned >= def.unlockAtTotalEarned
@@ -34,40 +38,112 @@ export function sowPlot(index: number): boolean {
   return true
 }
 
-function harvestInternal(s: GameState, index: number): number {
+export type CritTier = 'none' | 'perfect' | 'legendary'
+
+export interface LevelUp {
+  level: number
+  reward: number
+}
+
+export interface HarvestResult {
+  units: number
+  crit: CritTier
+  levelUps: LevelUp[]
+}
+
+/**
+ * Add XP and resolve any level-ups (XP overflow carries into the next
+ * level, the money reward is paid out immediately).
+ */
+function grantXp(s: GameState, amount: number): LevelUp[] {
+  if (amount <= 0) return []
+  s.xp += amount
+  const ups: LevelUp[] = []
+  while (s.xp >= xpToNext(s.level)) {
+    s.xp -= xpToNext(s.level)
+    s.level += 1
+    const reward = levelUpReward(s.level)
+    s.money += reward
+    ups.push({ level: s.level, reward })
+  }
+  // higher levels may unlock additional quest slots
+  if (ups.length > 0) refillQuests(s)
+  return ups
+}
+
+const CRIT_RANK: Record<CritTier, number> = { none: 0, perfect: 1, legendary: 2 }
+
+/** Golden-harvest roll (GAME_DESIGN.md §9.4). */
+function rollCrit(): { tier: CritTier; mult: number } {
+  const roll = Math.random()
+  if (roll < CONFIG.critLegendaryChance) return { tier: 'legendary', mult: CONFIG.critLegendaryMult }
+  if (roll < CONFIG.critLegendaryChance + CONFIG.critPerfectChance) {
+    return { tier: 'perfect', mult: CONFIG.critPerfectMult }
+  }
+  return { tier: 'none', mult: 1 }
+}
+
+function harvestInternal(s: GameState, index: number, comboMult: number): HarvestResult {
   const plot = s.plots[index]
-  if (!plot || !plotReady(plot)) return 0
+  if (!plot || !plotReady(plot)) return { units: 0, crit: 'none', levelUps: [] }
   const def = plantById(plot.plantId!)
-  if (!def) return 0
-  s.inventory[def.id] = (s.inventory[def.id] ?? 0) + def.yield
-  s.stats.harvested += def.yield
+  if (!def) return { units: 0, crit: 'none', levelUps: [] }
+  const crit = rollCrit()
+  const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult * comboMult)
+  s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
+  s.stats.harvested += units
+  if (crit.tier !== 'none') s.stats.crits += 1
   plot.plantId = null
   plot.progress = 0
-  return def.yield
+  const levelUps = grantXp(s, units)
+  return { units, crit: crit.tier, levelUps }
 }
 
-/** Harvest one ready plot into storage. Returns harvested units (0 if not ready). */
-export function harvestPlot(index: number): number {
-  const s = getState()
-  const units = harvestInternal(s, index)
-  if (units > 0) notify()
-  return units
+/** Extend the harvest chain by one link (current bonus applied beforehand). */
+function bumpCombo(s: GameState): void {
+  s.combo.count = s.combo.remaining > 0 ? s.combo.count + 1 : 1
+  s.combo.remaining = CONFIG.comboWindowSeconds
 }
 
-/** Harvest every ready plot. Returns total harvested units. */
-export function harvestAllReady(): number {
+/** Harvest one ready plot into storage. units = 0 means nothing happened. */
+export function harvestPlot(index: number): HarvestResult {
   const s = getState()
+  const result = harvestInternal(s, index, comboMultiplier(s))
+  if (result.units > 0) {
+    bumpCombo(s)
+    notify()
+  }
+  return result
+}
+
+/**
+ * Harvest every ready plot. crit reports the best tier rolled. The whole
+ * batch counts as ONE combo link — chains come from active clicking.
+ */
+export function harvestAllReady(): HarvestResult {
+  const s = getState()
+  const comboMult = comboMultiplier(s)
   let units = 0
-  for (let i = 0; i < s.plots.length; i++) units += harvestInternal(s, i)
-  if (units > 0) notify()
-  return units
+  let best: CritTier = 'none'
+  const levelUps: LevelUp[] = []
+  for (let i = 0; i < s.plots.length; i++) {
+    const result = harvestInternal(s, i, comboMult)
+    units += result.units
+    levelUps.push(...result.levelUps)
+    if (CRIT_RANK[result.crit] > CRIT_RANK[best]) best = result.crit
+  }
+  if (units > 0) {
+    bumpCombo(s)
+    notify()
+  }
+  return { units, crit: best, levelUps }
 }
 
 function sellInternal(s: GameState, plantId: string): number {
   const def = plantById(plantId)
   const count = s.inventory[plantId] ?? 0
   if (!def || count <= 0) return 0
-  const gain = count * def.sellValue
+  const gain = Math.round(count * def.sellValue * sellMultiplier(s))
   delete s.inventory[plantId]
   s.money += gain
   s.totalEarned += gain
@@ -113,7 +189,93 @@ export function inventoryValue(state: GameState): number {
   let sum = 0
   for (const [id, count] of Object.entries(state.inventory)) {
     const def = plantById(id)
-    if (def) sum += count * def.sellValue
+    if (def) sum += Math.round(count * def.sellValue * sellMultiplier(state))
   }
   return sum
+}
+
+/** Current level of an upgrade (0 = not owned). */
+export function upgradeLevel(state: GameState, upgradeId: string): number {
+  return state.upgrades[upgradeId] ?? 0
+}
+
+/** Cost of the next level, or null when maxed out. */
+export function nextUpgradeCost(def: UpgradeDef, state: GameState): number | null {
+  const level = upgradeLevel(state, def.id)
+  if (level >= def.maxLevel) return null
+  return Math.floor(def.baseCost * Math.pow(def.costFactor, level))
+}
+
+export function buyUpgrade(upgradeId: string): boolean {
+  const s = getState()
+  const def = upgradeById(upgradeId)
+  if (!def) return false
+  const cost = nextUpgradeCost(def, s)
+  if (cost === null || s.money < cost) return false
+  s.money -= cost
+  s.upgrades[def.id] = upgradeLevel(s, def.id) + 1
+  notify()
+  return true
+}
+
+/** True if any upgrade level is currently affordable (HUD badge). */
+export function anyUpgradeAffordable(state: GameState): boolean {
+  return UPGRADES.some((def) => {
+    const cost = nextUpgradeCost(def, state)
+    return cost !== null && state.money >= cost
+  })
+}
+
+/** Fill empty quest slots (boot + after imports). */
+export function ensureQuests(): void {
+  if (refillQuests(getState())) notify()
+}
+
+export interface QuestReward {
+  reward: number
+  xp: number
+  levelUps: LevelUp[]
+}
+
+/** True if storage holds enough produce to deliver the quest. */
+export function questFulfillable(state: GameState, questId: number): boolean {
+  const quest = state.quests.find((q) => q.id === questId)
+  if (!quest) return false
+  return (state.inventory[quest.plantId] ?? 0) >= quest.amount
+}
+
+/**
+ * Deliver a quest from storage: pays money (counts as earnings), grants
+ * bonus XP and rolls a fresh order into the slot.
+ */
+export function fulfillQuest(questId: number): QuestReward | null {
+  const s = getState()
+  const index = s.quests.findIndex((q) => q.id === questId)
+  if (index === -1) return null
+  const quest = s.quests[index]
+  const have = s.inventory[quest.plantId] ?? 0
+  if (have < quest.amount) return null
+  const left = have - quest.amount
+  if (left > 0) s.inventory[quest.plantId] = left
+  else delete s.inventory[quest.plantId]
+  s.money += quest.reward
+  s.totalEarned += quest.reward
+  s.stats.sold += quest.amount
+  const levelUps = grantXp(s, quest.xp)
+  s.quests[index] = generateQuest(s)
+  notify()
+  return { reward: quest.reward, xp: quest.xp, levelUps }
+}
+
+/** Reroll a quest; the fresh order arrives with the skip cooldown armed. */
+export function skipQuest(questId: number): boolean {
+  const s = getState()
+  const index = s.quests.findIndex((q) => q.id === questId)
+  if (index === -1) return false
+  if (s.quests[index].skipCooldown > 0) return false
+  const fresh = generateQuest(s)
+  fresh.skipCooldown = CONFIG.questSkipCooldownSeconds
+  s.quests[index] = fresh
+  notify()
+  return true
 }
