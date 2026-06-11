@@ -2,6 +2,7 @@
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
   import { CONFIG } from '../data/config'
+  import { xpToNext } from '../data/progression'
   import { anyUpgradeAffordable, inventoryValue, sellAll } from '../game/actions'
   import { comboMultiplier } from '../game/modifiers'
   import { gameStore } from '../game/state'
@@ -39,6 +40,9 @@
     Math.min($gameStore.combo.remaining / CONFIG.comboWindowSeconds, 1)
   )
 
+  const xpNeeded = $derived(xpToNext($gameStore.level))
+  const xpFraction = $derived(Math.min($gameStore.xp / xpNeeded, 1))
+
   function handleSellAll(e: MouseEvent) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const gain = sellAll()
@@ -50,10 +54,11 @@
 </script>
 
 <header class="hud pxpanel">
-  <div class="logo">
-    <PixelIcon name="sparkle" scale={2} />
-    <h1>Garten-Imperium</h1>
-  </div>
+  <div class="row">
+    <div class="logo">
+      <PixelIcon name="sparkle" scale={2} />
+      <h1>Garten-Imperium</h1>
+    </div>
 
   <div class="money chip num" title="Geld — insgesamt verdient: {formatNumber($gameStore.totalEarned)}">
     {#key pulseKey}
@@ -92,9 +97,18 @@
     {#if stockCount > 0}<span class="badge num">{formatNumber(stockCount)}</span>{/if}
   </button>
 
-  <button class="pxbtn" onclick={onOpenSettings} title="Einstellungen & Spielstand" aria-label="Einstellungen">
-    <PixelIcon name="gear" scale={2} />
-  </button>
+    <button class="pxbtn" onclick={onOpenSettings} title="Einstellungen & Spielstand" aria-label="Einstellungen">
+      <PixelIcon name="gear" scale={2} />
+    </button>
+  </div>
+
+  <div class="xp-row num" title="Gärtner-Level — XP gibt es für jede geerntete Einheit">
+    {#key $gameStore.level}
+      <span class="level-badge">LV {$gameStore.level}</span>
+    {/key}
+    <span class="xp-bar"><span class="xp-fill" style:width={`${xpFraction * 100}%`}></span></span>
+    <span class="xp-text">{formatNumber(Math.floor($gameStore.xp))}/{formatNumber(xpNeeded)}</span>
+  </div>
 </header>
 
 <style>
@@ -106,9 +120,50 @@
     width: min(1060px, calc(100vw - 20px));
     z-index: 20;
     display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 2px 8px 6px;
+  }
+
+  .row {
+    display: flex;
     align-items: center;
     gap: 12px;
-    padding: 2px 8px;
+  }
+
+  .xp-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .level-badge {
+    display: inline-flex;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--c-plum3);
+    text-shadow: 0 0 8px rgba(223, 132, 165, 0.45);
+    animation: combo-pop 0.25s ease-out;
+  }
+
+  .xp-bar {
+    flex: 1;
+    height: 7px;
+    background: var(--c-night0);
+    border: 1px solid var(--c-edge);
+  }
+
+  .xp-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--c-plum1), var(--c-plum2));
+    transition: width 0.25s ease-out;
+  }
+
+  .xp-text {
+    font-size: 0.62rem;
+    color: var(--c-mist);
   }
 
   .logo {

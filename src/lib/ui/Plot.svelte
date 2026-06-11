@@ -4,6 +4,7 @@
   import type { PlotState } from '../game/types'
   import { formatDuration } from '../util/format'
   import { playSound } from './fx/audio'
+  import { celebrateLevelUps } from './fx/celebrate'
   import { coinBurst, leafBurst, legendaryBurst, perfectBurst } from './fx/particles'
   import { screenShake } from './fx/shake'
   import { spriteUrl } from './pixel/render'
@@ -75,8 +76,11 @@
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
     if (def && ready) {
-      const { units, crit } = harvestPlot(index)
-      if (units > 0) harvestFx(cx, cy, units, crit)
+      const { units, crit, levelUps } = harvestPlot(index)
+      if (units > 0) {
+        harvestFx(cx, cy, units, crit)
+        celebrateLevelUps(levelUps, cx, cy)
+      }
     } else if (!def && selectedDef) {
       const cost = selectedDef.seedCost
       if (sowPlot(index)) {

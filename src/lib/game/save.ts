@@ -7,7 +7,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 interface SaveEnvelope {
   version: number
@@ -118,6 +118,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 3:
       // v3 → v4: combo state added — transient anyway, sanitize() resets it.
       return { ...envelope, version: 4 }
+    case 4:
+      // v4 → v5: gardener level/xp added; sanitize() defaults to level 1.
+      return { ...envelope, version: 5 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -134,6 +137,8 @@ function sanitize(raw: unknown): GameState {
 
   state.money = clampNumber(r.money, state.money)
   state.totalEarned = clampNumber(r.totalEarned, 0)
+  state.level = Math.floor(clampNumber(r.level, 1, 1, 9999))
+  state.xp = clampNumber(r.xp, 0)
   state.createdAt = clampNumber(r.createdAt, state.createdAt)
 
   if (Array.isArray(r.plots)) {

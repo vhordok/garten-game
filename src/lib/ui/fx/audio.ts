@@ -12,6 +12,7 @@ export type SoundId =
   | 'unlock'
   | 'perfect'
   | 'legendary'
+  | 'levelup'
 
 const PREF_KEY = 'garten-imperium-sound'
 
@@ -112,6 +113,12 @@ export function playSound(id: SoundId): void {
       blip(440, 440, 70, 'square', 0.12)
       blip(660, 660, 70, 'square', 0.12, 80)
       blip(880, 1760, 220, 'triangle', 0.14, 160)
+      break
+    case 'levelup':
+      blip(392, 392, 90, 'square', 0.11)
+      blip(523, 523, 90, 'square', 0.11, 100)
+      blip(659, 659, 90, 'square', 0.11, 200)
+      blip(784, 1046, 260, 'triangle', 0.13, 300)
       break
   }
 }

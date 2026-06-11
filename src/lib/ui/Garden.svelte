@@ -5,6 +5,7 @@
   import { plotReady } from '../game/tick'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
+  import { celebrateLevelUps } from './fx/celebrate'
   import { coinBurst, leafBurst, legendaryBurst, perfectBurst } from './fx/particles'
   import { screenShake } from './fx/shake'
   import PixelIcon from './PixelIcon.svelte'
@@ -20,9 +21,10 @@
   }
 
   function handleHarvestAll(e: MouseEvent) {
-    const { units, crit } = harvestAllReady()
+    const { units, crit, levelUps } = harvestAllReady()
     if (units > 0) {
       const [cx, cy] = eventCenter(e)
+      celebrateLevelUps(levelUps, cx, cy)
       if (crit === 'legendary') {
         legendaryBurst(cx, cy)
         playSound('legendary')

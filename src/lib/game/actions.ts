@@ -3,6 +3,7 @@
 
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
+import { levelUpReward, xpToNext } from '../data/progression'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
 import { emptyPlot, getState, notify } from './state'
@@ -38,9 +39,33 @@ export function sowPlot(index: number): boolean {
 
 export type CritTier = 'none' | 'perfect' | 'legendary'
 
+export interface LevelUp {
+  level: number
+  reward: number
+}
+
 export interface HarvestResult {
   units: number
   crit: CritTier
+  levelUps: LevelUp[]
+}
+
+/**
+ * Add XP and resolve any level-ups (XP overflow carries into the next
+ * level, the money reward is paid out immediately).
+ */
+function grantXp(s: GameState, amount: number): LevelUp[] {
+  if (amount <= 0) return []
+  s.xp += amount
+  const ups: LevelUp[] = []
+  while (s.xp >= xpToNext(s.level)) {
+    s.xp -= xpToNext(s.level)
+    s.level += 1
+    const reward = levelUpReward(s.level)
+    s.money += reward
+    ups.push({ level: s.level, reward })
+  }
+  return ups
 }
 
 const CRIT_RANK: Record<CritTier, number> = { none: 0, perfect: 1, legendary: 2 }
@@ -57,9 +82,9 @@ function rollCrit(): { tier: CritTier; mult: number } {
 
 function harvestInternal(s: GameState, index: number, comboMult: number): HarvestResult {
   const plot = s.plots[index]
-  if (!plot || !plotReady(plot)) return { units: 0, crit: 'none' }
+  if (!plot || !plotReady(plot)) return { units: 0, crit: 'none', levelUps: [] }
   const def = plantById(plot.plantId!)
-  if (!def) return { units: 0, crit: 'none' }
+  if (!def) return { units: 0, crit: 'none', levelUps: [] }
   const crit = rollCrit()
   const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult * comboMult)
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
@@ -67,7 +92,8 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   if (crit.tier !== 'none') s.stats.crits += 1
   plot.plantId = null
   plot.progress = 0
-  return { units, crit: crit.tier }
+  const levelUps = grantXp(s, units)
+  return { units, crit: crit.tier, levelUps }
 }
 
 /** Extend the harvest chain by one link (current bonus applied beforehand). */
@@ -96,16 +122,18 @@ export function harvestAllReady(): HarvestResult {
   const comboMult = comboMultiplier(s)
   let units = 0
   let best: CritTier = 'none'
+  const levelUps: LevelUp[] = []
   for (let i = 0; i < s.plots.length; i++) {
     const result = harvestInternal(s, i, comboMult)
     units += result.units
+    levelUps.push(...result.levelUps)
     if (CRIT_RANK[result.crit] > CRIT_RANK[best]) best = result.crit
   }
   if (units > 0) {
     bumpCombo(s)
     notify()
   }
-  return { units, crit: best }
+  return { units, crit: best, levelUps }
 }
 
 function sellInternal(s: GameState, plantId: string): number {

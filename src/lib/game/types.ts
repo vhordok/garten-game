@@ -78,6 +78,10 @@ export interface GameState {
   money: number
   /** lifetime money earned from selling — drives unlocks, later prestige */
   totalEarned: number
+  /** gardener level (starts at 1); gates quest slots and future QoL */
+  level: number
+  /** progress within the current level (resets each level-up) */
+  xp: number
   plots: PlotState[]
   combo: ComboState
   /** harvested units in storage, keyed by plant id */

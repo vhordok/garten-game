@@ -12,6 +12,7 @@ globalThis.localStorage ??= {
 }
 import { CONFIG } from '../src/lib/data/config.ts'
 import { PLANTS } from '../src/lib/data/plants.ts'
+import { levelUpReward, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
@@ -219,6 +220,42 @@ test('combo chain: bonus applies, drains via tick, batch counts once', () => {
     const batch = harvestAllReady()
     assert.ok(batch.units >= 6) // 3 × minze yield 2, no bonus on first link
     assert.equal(s.combo.count, 1)
+  })
+})
+
+test('gardener level: xp per unit, level-up pays out, overflow carries', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1000
+    const basil = PLANTS[0]
+
+    // plain harvest grants 1 XP per unit
+    sowPlot(0)
+    tick(s, 99999)
+    assert.equal(harvestPlot(0).levelUps.length, 0)
+    assert.equal(s.xp, basil.yield)
+    assert.equal(s.level, 1)
+
+    // push to the threshold: next single harvest must level up
+    s.xp = xpToNext(1) - 1
+    const moneyBefore = s.money - basil.seedCost
+    sowPlot(0)
+    tick(s, 99999)
+    const { levelUps } = harvestPlot(0)
+    assert.equal(levelUps.length, 1)
+    assert.deepEqual(levelUps[0], { level: 2, reward: levelUpReward(2) })
+    assert.equal(s.level, 2)
+    assert.equal(s.xp, 0)
+    assert.equal(s.money, moneyBefore + levelUpReward(2))
+
+    // huge XP overflow resolves several levels in one grant
+    s.xp = xpToNext(2) + xpToNext(3) + 5
+    sowPlot(0)
+    tick(s, 99999)
+    const ups = harvestPlot(0).levelUps
+    assert.equal(ups.length, 2)
+    assert.equal(s.level, 4)
+    assert.equal(s.xp, 6) // 5 overflow + 1 fresh unit
   })
 })
 
