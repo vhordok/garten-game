@@ -69,6 +69,7 @@
       <span>Gepflanzt: <b>{formatNumber($gameStore.stats.planted)}</b></span>
       <span>Geerntet: <b>{formatNumber($gameStore.stats.harvested)}</b></span>
       <span>Verkauft: <b>{formatNumber($gameStore.stats.sold)}</b></span>
+      <span>Goldene Ernten: <b>{formatNumber($gameStore.stats.crits)}</b></span>
     </div>
   </section>
 

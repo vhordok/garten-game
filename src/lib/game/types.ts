@@ -59,6 +59,8 @@ export interface GameStats {
   harvested: number
   /** units sold */
   sold: number
+  /** golden harvests (perfect + legendary) */
+  crits: number
 }
 
 export interface GameState {

@@ -7,7 +7,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 
 interface SaveEnvelope {
   version: number
@@ -112,6 +112,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v1 → v2: upgrades were introduced; sanitize() fills the missing
       // field with level 0 for everything.
       return { ...envelope, version: 2 }
+    case 2:
+      // v2 → v3: stats gained the crits counter; sanitize() defaults it to 0.
+      return { ...envelope, version: 3 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -171,6 +174,7 @@ function sanitize(raw: unknown): GameState {
       planted: Math.floor(clampNumber(stats.planted, 0)),
       harvested: Math.floor(clampNumber(stats.harvested, 0)),
       sold: Math.floor(clampNumber(stats.sold, 0)),
+      crits: Math.floor(clampNumber(stats.crits, 0)),
     }
   }
 

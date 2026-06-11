@@ -36,34 +36,60 @@ export function sowPlot(index: number): boolean {
   return true
 }
 
-function harvestInternal(s: GameState, index: number): number {
+export type CritTier = 'none' | 'perfect' | 'legendary'
+
+export interface HarvestResult {
+  units: number
+  crit: CritTier
+}
+
+const CRIT_RANK: Record<CritTier, number> = { none: 0, perfect: 1, legendary: 2 }
+
+/** Golden-harvest roll (GAME_DESIGN.md §9.4). */
+function rollCrit(): { tier: CritTier; mult: number } {
+  const roll = Math.random()
+  if (roll < CONFIG.critLegendaryChance) return { tier: 'legendary', mult: CONFIG.critLegendaryMult }
+  if (roll < CONFIG.critLegendaryChance + CONFIG.critPerfectChance) {
+    return { tier: 'perfect', mult: CONFIG.critPerfectMult }
+  }
+  return { tier: 'none', mult: 1 }
+}
+
+function harvestInternal(s: GameState, index: number): HarvestResult {
   const plot = s.plots[index]
-  if (!plot || !plotReady(plot)) return 0
+  if (!plot || !plotReady(plot)) return { units: 0, crit: 'none' }
   const def = plantById(plot.plantId!)
-  if (!def) return 0
-  const units = rollUnits(def.yield * yieldMultiplier(s))
+  if (!def) return { units: 0, crit: 'none' }
+  const crit = rollCrit()
+  const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult)
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
   s.stats.harvested += units
+  if (crit.tier !== 'none') s.stats.crits += 1
   plot.plantId = null
   plot.progress = 0
-  return units
+  return { units, crit: crit.tier }
 }
 
-/** Harvest one ready plot into storage. Returns harvested units (0 if not ready). */
-export function harvestPlot(index: number): number {
+/** Harvest one ready plot into storage. units = 0 means nothing happened. */
+export function harvestPlot(index: number): HarvestResult {
   const s = getState()
-  const units = harvestInternal(s, index)
-  if (units > 0) notify()
-  return units
+  const result = harvestInternal(s, index)
+  if (result.units > 0) notify()
+  return result
 }
 
-/** Harvest every ready plot. Returns total harvested units. */
-export function harvestAllReady(): number {
+/** Harvest every ready plot. crit reports the best tier rolled. */
+export function harvestAllReady(): HarvestResult {
   const s = getState()
   let units = 0
-  for (let i = 0; i < s.plots.length; i++) units += harvestInternal(s, i)
+  let best: CritTier = 'none'
+  for (let i = 0; i < s.plots.length; i++) {
+    const result = harvestInternal(s, i)
+    units += result.units
+    if (CRIT_RANK[result.crit] > CRIT_RANK[best]) best = result.crit
+  }
   if (units > 0) notify()
-  return units
+  return { units, crit: best }
 }
 
 function sellInternal(s: GameState, plantId: string): number {

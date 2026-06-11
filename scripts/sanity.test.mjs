@@ -43,22 +43,36 @@ function test(name, fn) {
   console.log('✓', name)
 }
 
+/** Run fn with crit/extra-unit randomness pinned to "nothing special". */
+function withBoringRng(fn) {
+  const origRandom = Math.random
+  Math.random = () => 0.5
+  try {
+    fn()
+  } finally {
+    Math.random = origRandom
+  }
+}
+
 test('sow → grow → harvest → sell (baseline numbers)', () => {
-  const s = fresh()
-  s.money = 100
-  const basil = PLANTS[0]
-  assert.equal(sowPlot(0), true)
-  assert.equal(s.money, 100 - basil.seedCost)
-  assert.equal(plotReady(s.plots[0]), false)
-  tick(s, basil.growTime)
-  assert.ok(plotReady(s.plots[0]))
-  const units = harvestPlot(0)
-  assert.equal(units, basil.yield)
-  assert.equal(s.inventory[basil.id], units)
-  const gain = sellPlant(basil.id)
-  assert.equal(gain, units * basil.sellValue)
-  assert.equal(s.totalEarned, gain)
-  assert.equal(s.inventory[basil.id], undefined)
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    const basil = PLANTS[0]
+    assert.equal(sowPlot(0), true)
+    assert.equal(s.money, 100 - basil.seedCost)
+    assert.equal(plotReady(s.plots[0]), false)
+    tick(s, basil.growTime)
+    assert.ok(plotReady(s.plots[0]))
+    const { units, crit } = harvestPlot(0)
+    assert.equal(crit, 'none')
+    assert.equal(units, basil.yield)
+    assert.equal(s.inventory[basil.id], units)
+    const gain = sellPlant(basil.id)
+    assert.equal(gain, units * basil.sellValue)
+    assert.equal(s.totalEarned, gain)
+    assert.equal(s.inventory[basil.id], undefined)
+  })
 })
 
 test('plot cost curve & purchase', () => {
@@ -84,15 +98,17 @@ test('growth upgrade: max level doubles speed (also offline path)', () => {
 })
 
 test('yield upgrade multiplies harvested units (deterministic case)', () => {
-  const s = fresh()
-  s.money = 1e12
-  s.totalEarned = 1e6 // unlock everything
-  for (let i = 0; i < 5; i++) assert.ok(buyUpgrade('duenger')) // ×1.5
-  selectPlant('minze')
-  assert.ok(sowPlot(0))
-  tick(s, 99999)
-  const units = harvestPlot(0) // 2 × 1.5 = 3 exactly, no randomness involved
-  assert.equal(units, 3)
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e6 // unlock everything
+    for (let i = 0; i < 5; i++) assert.ok(buyUpgrade('duenger')) // ×1.5
+    selectPlant('minze')
+    assert.ok(sowPlot(0))
+    tick(s, 99999)
+    const { units } = harvestPlot(0) // 2 × 1.5 = 3 exactly, no randomness involved
+    assert.equal(units, 3)
+  })
 })
 
 test('sell price upgrade rounds the gain', () => {
@@ -137,6 +153,41 @@ test('save roundtrip keeps upgrades, v1 saves migrate, garbage is refused', () =
   assert.equal(st.inventory['fremdgewaechs'], undefined, 'unknown plants are dropped')
 
   assert.equal(importSave('!!!kein-save!!!'), null)
+})
+
+test('golden harvests: tiers, multipliers and stats counter', () => {
+  const s = fresh()
+  s.money = 100
+  const origRandom = Math.random
+  try {
+    // roll < legendary chance → ×10
+    Math.random = () => 0.0
+    sowPlot(0)
+    tick(s, 99999)
+    let result = harvestPlot(0)
+    assert.equal(result.crit, 'legendary')
+    assert.equal(result.units, PLANTS[0].yield * CONFIG.critLegendaryMult)
+
+    // legendary ≤ roll < legendary+perfect → ×3
+    Math.random = () => CONFIG.critLegendaryChance + 0.001
+    sowPlot(0)
+    tick(s, 99999)
+    result = harvestPlot(0)
+    assert.equal(result.crit, 'perfect')
+    assert.equal(result.units, PLANTS[0].yield * CONFIG.critPerfectMult)
+
+    // boring roll → normal harvest
+    Math.random = () => 0.5
+    sowPlot(0)
+    tick(s, 99999)
+    result = harvestPlot(0)
+    assert.equal(result.crit, 'none')
+    assert.equal(result.units, PLANTS[0].yield)
+
+    assert.equal(s.stats.crits, 2)
+  } finally {
+    Math.random = origRandom
+  }
 })
 
 test('offline progress runs through the same tick', () => {

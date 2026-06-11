@@ -5,7 +5,7 @@
   import { plotReady } from '../game/tick'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
-  import { coinBurst, leafBurst } from './fx/particles'
+  import { coinBurst, leafBurst, legendaryBurst, perfectBurst } from './fx/particles'
   import { screenShake } from './fx/shake'
   import PixelIcon from './PixelIcon.svelte'
   import Plot from './Plot.svelte'
@@ -20,12 +20,22 @@
   }
 
   function handleHarvestAll(e: MouseEvent) {
-    const units = harvestAllReady()
+    const { units, crit } = harvestAllReady()
     if (units > 0) {
       const [cx, cy] = eventCenter(e)
-      coinBurst(cx, cy, Math.min(10 + units * 2, 40))
-      playSound('harvest')
-      screenShake(0.5)
+      if (crit === 'legendary') {
+        legendaryBurst(cx, cy)
+        playSound('legendary')
+        screenShake(1.4)
+      } else if (crit === 'perfect') {
+        perfectBurst(cx, cy)
+        playSound('perfect')
+        screenShake(0.6)
+      } else {
+        coinBurst(cx, cy, Math.min(10 + units * 2, 40))
+        playSound('harvest')
+        screenShake(0.5)
+      }
     }
   }
 

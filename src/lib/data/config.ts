@@ -9,6 +9,11 @@ export const CONFIG = {
   /** plot n (0-based beyond the free ones) costs plotBaseCost * plotCostFactor^n */
   plotBaseCost: 25,
   plotCostFactor: 1.5,
+  /** golden harvests (GAME_DESIGN.md §9.4): roll per harvested plot */
+  critPerfectChance: 0.08,
+  critPerfectMult: 3,
+  critLegendaryChance: 0.01,
+  critLegendaryMult: 10,
   /** offline simulation cap; later extendable through upgrades (GAME_DESIGN.md §5) */
   offlineCapHours: 8,
   /** ignore gaps shorter than this when applying offline progress */

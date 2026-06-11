@@ -75,6 +75,16 @@ export function leafBurst(x: number, y: number, count = 10): void {
   burst(x, y, { colors: ['leaf2', 'leaf3', 'leaf4'], count, speed: 90, gravity: 260, lift: 70, ttl: 0.7 })
 }
 
+/** Big golden moment — perfect harvests. */
+export function perfectBurst(x: number, y: number): void {
+  burst(x, y, { colors: ['gold0', 'gold1', 'gold2', 'leaf5'], count: 22, speed: 180, lift: 150, ttl: 0.9 })
+}
+
+/** Huge plum/gold explosion — legendary harvests. */
+export function legendaryBurst(x: number, y: number): void {
+  burst(x, y, { colors: ['plum1', 'plum2', 'plum3', 'gold2'], count: 36, speed: 240, lift: 190, sizeMax: 6, ttl: 1.1 })
+}
+
 export function update(dt: number): void {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i]

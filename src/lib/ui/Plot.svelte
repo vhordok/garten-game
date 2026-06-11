@@ -1,10 +1,11 @@
 <script lang="ts">
   import { plantById } from '../data/plants'
-  import { harvestPlot, sowPlot } from '../game/actions'
+  import { harvestPlot, sowPlot, type CritTier } from '../game/actions'
   import type { PlotState } from '../game/types'
   import { formatDuration } from '../util/format'
   import { playSound } from './fx/audio'
-  import { coinBurst, leafBurst } from './fx/particles'
+  import { coinBurst, leafBurst, legendaryBurst, perfectBurst } from './fx/particles'
+  import { screenShake } from './fx/shake'
   import { spriteUrl } from './pixel/render'
 
   let {
@@ -38,7 +39,7 @@
   interface Floater {
     id: number
     text: string
-    kind: 'gain' | 'spend'
+    kind: 'gain' | 'spend' | 'perfect' | 'legendary'
   }
 
   let floaters = $state<Floater[]>([])
@@ -49,7 +50,24 @@
     floaters = [...floaters, { id, text, kind }]
     setTimeout(() => {
       floaters = floaters.filter((f) => f.id !== id)
-    }, 900)
+    }, 1100)
+  }
+
+  function harvestFx(cx: number, cy: number, units: number, crit: CritTier) {
+    if (crit === 'legendary') {
+      spawnFloater(`+${units} ✦LEGENDÄR✦`, 'legendary')
+      legendaryBurst(cx, cy)
+      playSound('legendary')
+      screenShake(1.4)
+    } else if (crit === 'perfect') {
+      spawnFloater(`+${units} ✦`, 'perfect')
+      perfectBurst(cx, cy)
+      playSound('perfect')
+    } else {
+      spawnFloater(`+${units}`, 'gain')
+      coinBurst(cx, cy, 10 + units * 2)
+      playSound('harvest')
+    }
   }
 
   function handleClick(e: MouseEvent) {
@@ -57,12 +75,8 @@
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
     if (def && ready) {
-      const units = harvestPlot(index)
-      if (units > 0) {
-        spawnFloater(`+${units}`, 'gain')
-        coinBurst(cx, cy, 10 + units * 2)
-        playSound('harvest')
-      }
+      const { units, crit } = harvestPlot(index)
+      if (units > 0) harvestFx(cx, cy, units, crit)
     } else if (!def && selectedDef) {
       const cost = selectedDef.seedCost
       if (sowPlot(index)) {
@@ -112,7 +126,7 @@
     <img class="px sow-ghost" src={spriteUrl(`${selectedDef.id}-3`)} alt="" draggable="false" />
   {/if}
   {#each floaters as floater (floater.id)}
-    <span class="floater num" class:spend={floater.kind === 'spend'}>{floater.text}</span>
+    <span class="floater num {floater.kind}">{floater.text}</span>
   {/each}
 </button>
 
@@ -262,6 +276,23 @@
     text-shadow:
       1px 1px 0 var(--c-night0),
       0 0 8px rgba(207, 87, 60, 0.45);
+  }
+
+  .floater.perfect {
+    font-size: 1.05rem;
+    color: var(--c-gold2);
+    text-shadow:
+      1px 1px 0 var(--c-night0),
+      0 0 12px rgba(232, 193, 112, 0.9);
+  }
+
+  .floater.legendary {
+    font-size: 1.15rem;
+    color: var(--c-plum3);
+    text-shadow:
+      1px 1px 0 var(--c-night0),
+      0 0 14px rgba(198, 81, 151, 0.95);
+    animation-duration: 1.1s;
   }
 
   @keyframes float-up {

@@ -2,7 +2,16 @@
 // behind a stable playSound() API — real samples can replace the presets
 // later without touching call sites. Preference persists outside the save.
 
-export type SoundId = 'sow' | 'harvest' | 'sell' | 'buy' | 'click' | 'error' | 'unlock'
+export type SoundId =
+  | 'sow'
+  | 'harvest'
+  | 'sell'
+  | 'buy'
+  | 'click'
+  | 'error'
+  | 'unlock'
+  | 'perfect'
+  | 'legendary'
 
 const PREF_KEY = 'garten-imperium-sound'
 
@@ -94,6 +103,15 @@ export function playSound(id: SoundId): void {
       blip(523, 523, 80, 'square', 0.1)
       blip(659, 659, 80, 'square', 0.1, 90)
       blip(784, 784, 130, 'square', 0.11, 180)
+      break
+    case 'perfect':
+      blip(660, 880, 70, 'square', 0.11)
+      blip(1100, 1480, 110, 'triangle', 0.12, 60)
+      break
+    case 'legendary':
+      blip(440, 440, 70, 'square', 0.12)
+      blip(660, 660, 70, 'square', 0.12, 80)
+      blip(880, 1760, 220, 'triangle', 0.14, 160)
       break
   }
 }
