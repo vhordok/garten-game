@@ -132,8 +132,9 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 - Immer sichtbar: Geldstand und das nächste erreichbare Ziel (nächstes Unlock).
 - Speichern passiert automatisch (Intervall + beim Verlassen), Export/Import
   als kopierbarer Code.
-- **Garten-Feeling:** warme Grün- und Erdtöne, Emojis als Pflanzen-Icons,
-  weiche Schatten, sanfte Wachstums-/Ernte-Animationen. Gemütlich, nicht grell.
+- **Visuelle Identität:** seit dem Redesign Pixel-Art im „Mitternachtsgarten"-
+  Stil — Details, Palette und Game-Feel-Regeln in §9. (Ursprünglich: helle
+  Webseiten-Optik mit Emoji-Icons — abgelöst.)
 
 ## 8. Phasenplan
 
@@ -157,3 +158,121 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 
 Beete: Start 4, Kauf 5–16 nach `25 × 1.5^n` (25, 38, 56, … 2.2K; gesamt ≈ 6.4K).
 Startgeld: 10. Ziel: Phase-1-Inhalt in 1–2 entspannten Stunden „durchgespielt".
+
+---
+
+## 9. Redesign „Mitternachts-Pixelgarten" (2026)
+
+Komplettes visuelles + spielerisches Redesign in Richtung moderner
+Indie-Steam-Games (Referenzen: Megabonk, Loot Loop, Oaken Tower, Coal LLC):
+knackiges Game-Feel, satte Farben, Juice, echtes Game-HUD statt
+Webseiten-Optik, dichte Belohnungsschleife. Tech-Stack bleibt unverändert
+(Vite + Svelte 5, kein Canvas-Framework, keine neuen Runtime-Dependencies
+außer gebundelten Fonts).
+
+### 9.1 Art Direction: Pixel-Art bei Nacht
+
+- **Stil:** 2D-Pixel-Art, Basisraster 16×16, nur ganzzahlige Skalierung
+  (`image-rendering: pixelated`). Szene: Garten bei Nacht — dunkler
+  Himmel mit Sternen/Mond, Silhouetten-Hecken in 2–3 Parallax-Ebenen,
+  Glühwürmchen; Pflanzen und UI leuchten satt dagegen an.
+- **Sprites als Code, keine Binär-Assets:** Alle Sprites (Pflanzen in 4
+  Wuchsstufen, Bodenkacheln, Icons, 9-Slice-Panelrahmen) sind als
+  Pixel-Grids (String-Arrays + Palettenindex) in `src/lib/ui/pixel/`
+  definiert und werden einmalig auf Canvas gerendert und als Data-URL
+  gecacht. Vorteile: diffbar, balancierbar, kein Asset-Pipeline-Zwang.
+- **Palette** (zentral als CSS-Variablen und Sprite-Palette, Auszug):
+
+  | Rolle | Werte |
+  |---|---|
+  | Nacht/Flächen | `#090a14`, `#10141f`, Panels `#151d28`, Kanten `#202e37` |
+  | Himmel | `#172038` → `#253a5e` |
+  | Pflanzgrün-Rampe | `#19332d`, `#25562e`, `#468232`, `#75a743`, `#a8ca58`, `#d0da91` |
+  | Boden/Holz | `#341c27`, `#602c2c`, `#884b2b` |
+  | Gold (Geld, Perfekt-Ernte) | `#be772b`, `#de9e41`, `#e8c170` |
+  | Lila (XP, Legendär-Ernte) | `#402751`, `#7a367b`, `#c65197`, `#df84a5` |
+  | Wasser/Selten | `#3c5e8b`, `#4f8fba`, `#73bed3` |
+  | Text / gedämpft / Danger | `#ebede9` / `#819796` / `#cf573c` |
+
+- **Typo:** Pixel-Font „Pixelify Sans" (über `@fontsource` gebundelt,
+  kein CDN) für UI und Zahlen, Fallback Monospace. Schriftgrößen in
+  festen Stufen, damit das Pixelraster ruhig bleibt.
+- **UI-Chrome:** 9-Slice-Pixelrahmen für Panels und Buttons (gedrückte
+  Buttons rutschen 2 px nach unten — Arcade-Kante), Progressbars mit
+  Pixel-Schimmer, Icons als Sprites statt Emojis.
+
+### 9.2 HUD-Layout statt Webseite
+
+- **Top-HUD:** Geld (Coin-Sprite pulsiert, Zahl zählt hoch), Level-Badge
+  mit XP-Bar, Combo-Meter, Settings-Knopf.
+- **Bühne (Mitte):** der Garten als Spielfeld in der Nachtszene —
+  Beetkacheln im Boden, kein Karten-Container.
+- **Hotbar (unten):** Saatgut-Slots wie eine Item-Leiste (Tasten 1–9,
+  Preis und Lock-Status sichtbar, aktiver Slot hervorgehoben).
+- **Dock (seitlich):** Buttons öffnen Overlays: Shop 🛒, Aufträge 📜,
+  Lager 🧺, Einstellungen. Keine Seitenspalten, kein Footer.
+
+### 9.3 Geschärfter Core-Loop
+
+Säen → Wachsen (4 sichtbare Sprite-Stufen) → **Ernten mit Combo- und
+Crit-Chance** → Verkaufen → Geld **+ XP** → Upgrades/Beete/Sorten →
+**Aufträge** erfüllen → größere Zyklen. Kurzfristig knallt jeder Klick
+(Partikel, fliegende Zahlen), mittelfristig belohnen Aufträge und
+Level-Ups, langfristig Unlocks und Upgrade-Stufen. Idle-Kern unverändert:
+Offline-Wachstum läuft weiter durch denselben `tick()`.
+
+### 9.4 Neue Mechaniken (Startwerte leben in `src/lib/data/`)
+
+1. **Combo-Ernte:** Jede Ernte ≤ 4 s nach der vorigen erhöht den Combo-
+   Zähler; +5 % Ertrag pro Stufe, Cap bei 20 Stufen (×2.0). Combo ist
+   transient (nicht im Save, offline = 0). Bruchteile werden
+   probabilistisch gerundet, damit das Lager ganzzahlig bleibt.
+2. **Goldene Ernten (Crits):** pro Ernte 8 % Chance „Perfekt" (×3 Ertrag,
+   Gold-Effekt) und 1 % „Legendär" (×10, Lila-Effekt + Screenshake).
+   Multipliziert sich mit der Combo.
+3. **Aufträge:** rotierende Bestellungen („Liefere 12× Minze") mit
+   Belohnung ≈ Marktwert ×1.5 plus XP; Slots wachsen per Level (1 → 3),
+   Skip mit Cooldown. Belohnt Sortenvielfalt, gibt Richtung.
+4. **Gärtner-Level:** XP für geerntete Einheiten und Aufträge;
+   `xpToNext(level) ≈ 30 × level^1.55`. Level-Ups zahlen einen
+   skalierenden Geldbonus aus und gaten Features (Auftragsslots, später
+   QoL). Großer Fanfaren-Moment.
+5. **Upgrade-Shop** (zieht §4 vor): kleine, gecappte Stufen-Upgrades —
+   Gießkanne (+10 % Wachstumstempo/Stufe), Dünger (+10 % Ertrag/Stufe),
+   Marktstand (+10 % Verkaufspreis/Stufe), je max. 10 Stufen,
+   Kosten `base × 1.9^n`. Der bisher fehlende Money-Sink nach Beet 16.
+
+### 9.5 Game-Feel-Regeln (Juice)
+
+- Partikel (Canvas-Layer mit Pool/Cap): Blätter beim Säen, Coin- und
+  Funken-Burst beim Ernten/Verkaufen, Gold-/Lila-Explosion bei Crits.
+- Fliegende Zahlen mit Gewicht (Crits größer, fett, eigene Farbe).
+- **Screenshake** nur bei Großereignissen (Legendär, Level-Up,
+  Beet-/Upgrade-Kauf), kurz (< 250 ms) und gedeckelt.
+- Tweens statt harter Wechsel: Geldzähler zählt, Bars gleiten,
+  Panels sliden ein; Squash & Stretch beim Pflanzen-Pop.
+- **Sound nur als Hook:** `audio.ts` mit `play(id)`-API, Platzhalter
+  (stumm/Blip) — echte Sounds später austauschbar.
+- `prefers-reduced-motion` deaktiviert Shake/Partikel, nie Information.
+
+### 9.6 Technik-Leitplanken
+
+- Core/UI-Trennung bleibt strikt: Combo/Crit/XP/Aufträge/Upgrades sind
+  Core-Logik (`game/` + `data/`), Partikel/Shake/Tweens reine UI.
+- Save-Format: Versionssprünge je Mechanik-Paket mit Migration
+  (`SAVE_VERSION` 2+), `sanitize()` ergänzt fehlende Felder defensiv.
+- Offline bleibt „ein großer Tick"; Upgrade-Multiplikatoren wirken
+  dadurch automatisch auch offline. Combo/Crits sind bewusst nur live.
+
+### 9.7 Redesign-Phasenplan
+
+| R-Phase | Inhalt | Status |
+|---|---|---|
+| R1 | Konzept (dieses Kapitel) | ✅ |
+| R2 | Visuelles Grundgerüst: Sprite-System, Palette/Fonts, Nachtszene, HUD-Layout | offen |
+| R3 | Juice: Partikel, Screenshake, Tweens, Audio-Hooks | offen |
+| R4 | Mechaniken einzeln: Upgrades → Crits → Combo → Level → Aufträge | offen |
+| R5 | Feinschliff: Balancing, Onboarding, Performance | offen |
+
+Der ursprüngliche Phasenplan (§8) läuft danach ab Phase 2 weiter;
+der Upgrade-Shop aus R4 ersetzt die Bewässerungs-Upgrades aus Phase 2.
