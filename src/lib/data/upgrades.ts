@@ -16,10 +16,12 @@ export const UPGRADES: UpgradeDef[] = [
     costFactor: 1.9,
   },
   {
+    // id kept for save compatibility; renamed to avoid clashing with the
+    // turbo-fertilizer charges from scratch tickets
     id: 'duenger',
-    name: 'Dünger',
+    name: 'Kompost',
     sprite: 'duenger',
-    description: 'Kräftigere Pflanzen, größere Ernte.',
+    description: 'Nährstoffreicher Boden — dauerhaft größere Ernte.',
     effect: 'yield',
     perLevel: 0.1,
     maxLevel: 10,

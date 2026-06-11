@@ -8,6 +8,7 @@
   import { coinBurst, leafBurst, legendaryBurst, perfectBurst, waterBurst } from './fx/particles'
   import { screenShake } from './fx/shake'
   import { spriteUrl } from './pixel/render'
+  import { pushToast } from './toasts'
 
   let {
     plot,
@@ -76,10 +77,11 @@
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
     if (def && ready) {
-      const { units, crit, levelUps } = harvestPlot(index)
+      const { units, crit, levelUps, tickets } = harvestPlot(index)
       if (units > 0) {
         harvestFx(cx, cy, units, crit)
         celebrateLevelUps(levelUps, cx, cy)
+        if (tickets > 0) pushToast('Ein Rubbellos lag in der Ernte — oben im HUD rubbeln!', '🎟️', 7000)
       }
     } else if (def && !ready) {
       if (waterPlot(index)) {

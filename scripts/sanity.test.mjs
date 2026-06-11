@@ -17,6 +17,7 @@ import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
   buyUpgrade,
+  drawScratchCard,
   ensureQuests,
   fulfillQuest,
   harvestAllReady,
@@ -30,6 +31,7 @@ import {
   upgradeLevel,
   waterPlot,
 } from '../src/lib/game/actions.ts'
+import { bestHarvestValue } from '../src/lib/data/scratch.ts'
 import { growthMultiplier } from '../src/lib/game/modifiers.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
@@ -354,6 +356,92 @@ test('watering: charges skip growth, deplete and reset on harvest', () => {
     })
     assert.notEqual(importSave(v6), null)
     assert.equal(getState().plots[0].waterLeft, CONFIG.waterChargesPerCrop)
+  })
+})
+
+/** Run fn with Math.random returning queued values (last one repeats). */
+function withRngQueue(values, fn) {
+  const orig = Math.random
+  let i = 0
+  Math.random = () => values[Math.min(i++, values.length - 1)]
+  try {
+    fn()
+  } finally {
+    Math.random = orig
+  }
+}
+
+test('scratch tickets: drop on lucky harvests, capped pending', () => {
+  const s = fresh()
+  s.money = 100
+  // rng order per harvest: crit roll, unit rounding, drop roll
+  withRngQueue([0.5, 0.5, 0.0], () => {
+    sowPlot(0)
+    tick(s, 99999)
+    const { tickets } = harvestPlot(0)
+    assert.equal(tickets, 1)
+    assert.equal(s.scratchTickets, 1)
+  })
+  // at the cap nothing more drops, even on a lucky roll
+  s.scratchTickets = CONFIG.scratchMaxPending
+  withRngQueue([0.5, 0.5, 0.0], () => {
+    sowPlot(0)
+    tick(s, 99999)
+    const { tickets } = harvestPlot(0)
+    assert.equal(tickets, 0)
+    assert.equal(s.scratchTickets, CONFIG.scratchMaxPending)
+  })
+})
+
+test('scratch cards: weighted prizes, board layout, no totalEarned', () => {
+  const s = fresh()
+  s.scratchTickets = 3
+  const hv = bestHarvestValue(s)
+
+  // constant 0 → first prize (small money), deterministic board
+  withRngQueue([0.0], () => {
+    const moneyBefore = s.money
+    const card = drawScratchCard()
+    assert.ok(card)
+    assert.equal(card.prizeType, 'money-small')
+    assert.equal(card.amount, 2 * hv)
+    assert.equal(s.money, moneyBefore + 2 * hv)
+    assert.equal(s.totalEarned, 0, 'lottery winnings are not sales')
+    assert.equal(s.scratchTickets, 2)
+    assert.equal(card.symbols.length, 9)
+    assert.equal(card.symbols.filter((sym) => sym === card.symbol).length, 3)
+  })
+
+  // 0.97 lands in the jackpot bracket
+  withRngQueue([0.97], () => {
+    const moneyBefore = s.money
+    const card = drawScratchCard()
+    assert.equal(card.prizeType, 'jackpot')
+    assert.equal(s.money, moneyBefore + 80 * hv)
+  })
+
+  // 0.90 lands on fertilizer charges
+  withRngQueue([0.9], () => {
+    const card = drawScratchCard()
+    assert.equal(card.prizeType, 'fertilizer')
+    assert.equal(s.fertilizerCharges, card.amount)
+    assert.ok(card.amount > 0)
+  })
+
+  assert.equal(drawScratchCard(), null, 'no ticket, no card')
+})
+
+test('turbo fertilizer: one charge doubles one harvest', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    s.fertilizerCharges = 2
+    for (const expected of [2, 2, 1]) {
+      sowPlot(0)
+      tick(s, 99999)
+      assert.equal(harvestPlot(0).units, expected)
+    }
+    assert.equal(s.fertilizerCharges, 0)
   })
 })
 

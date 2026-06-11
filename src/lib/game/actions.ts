@@ -4,6 +4,7 @@
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
 import { levelUpReward, xpToNext } from '../data/progression'
+import { SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
 import { generateQuest, refillQuests } from './quests'
@@ -66,6 +67,8 @@ export interface HarvestResult {
   units: number
   crit: CritTier
   levelUps: LevelUp[]
+  /** lucky scratch tickets dropped by this harvest */
+  tickets: number
 }
 
 /**
@@ -102,19 +105,30 @@ function rollCrit(): { tier: CritTier; mult: number } {
 
 function harvestInternal(s: GameState, index: number, comboMult: number): HarvestResult {
   const plot = s.plots[index]
-  if (!plot || !plotReady(plot)) return { units: 0, crit: 'none', levelUps: [] }
+  if (!plot || !plotReady(plot)) return { units: 0, crit: 'none', levelUps: [], tickets: 0 }
   const def = plantById(plot.plantId!)
-  if (!def) return { units: 0, crit: 'none', levelUps: [] }
+  if (!def) return { units: 0, crit: 'none', levelUps: [], tickets: 0 }
   const crit = rollCrit()
-  const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult * comboMult)
+  // one turbo-fertilizer charge boosts exactly one harvest
+  let fertilizerMult = 1
+  if (s.fertilizerCharges > 0) {
+    fertilizerMult = CONFIG.fertilizerChargeMult
+    s.fertilizerCharges -= 1
+  }
+  const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult * comboMult * fertilizerMult)
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
   plot.plantId = null
   plot.progress = 0
   plot.waterLeft = 0
+  let tickets = 0
+  if (Math.random() < CONFIG.scratchDropChance && s.scratchTickets < CONFIG.scratchMaxPending) {
+    s.scratchTickets += 1
+    tickets = 1
+  }
   const levelUps = grantXp(s, units)
-  return { units, crit: crit.tier, levelUps }
+  return { units, crit: crit.tier, levelUps, tickets }
 }
 
 /** Extend the harvest chain by one link (current bonus applied beforehand). */
@@ -142,11 +156,13 @@ export function harvestAllReady(): HarvestResult {
   const s = getState()
   const comboMult = comboMultiplier(s)
   let units = 0
+  let tickets = 0
   let best: CritTier = 'none'
   const levelUps: LevelUp[] = []
   for (let i = 0; i < s.plots.length; i++) {
     const result = harvestInternal(s, i, comboMult)
     units += result.units
+    tickets += result.tickets
     levelUps.push(...result.levelUps)
     if (CRIT_RANK[result.crit] > CRIT_RANK[best]) best = result.crit
   }
@@ -154,7 +170,7 @@ export function harvestAllReady(): HarvestResult {
     bumpCombo(s)
     notify()
   }
-  return { units, crit: best, levelUps }
+  return { units, crit: best, levelUps, tickets }
 }
 
 function sellInternal(s: GameState, plantId: string): number {
@@ -283,6 +299,67 @@ export function fulfillQuest(questId: number): QuestReward | null {
   s.quests[index] = generateQuest(s)
   notify()
   return { reward: quest.reward, xp: quest.xp, levelUps }
+}
+
+export interface ScratchCard {
+  /** nine cell symbols (sprite names); exactly three show the prize symbol */
+  symbols: string[]
+  prizeType: ScratchPrizeType
+  /** prize symbol (the matching one) */
+  symbol: string
+  /** money, xp or fertilizer charges depending on type */
+  amount: number
+  levelUps: LevelUp[]
+}
+
+/**
+ * Consume one ticket and draw a card. The prize is applied immediately —
+ * the UI only plays the reveal theater. Returns null without a ticket.
+ */
+export function drawScratchCard(): ScratchCard | null {
+  const s = getState()
+  if (s.scratchTickets <= 0) return null
+  s.scratchTickets -= 1
+
+  // weighted prize roll
+  const totalWeight = SCRATCH_PRIZES.reduce((sum, p) => sum + p.weight, 0)
+  let roll = Math.random() * totalWeight
+  let prize = SCRATCH_PRIZES[0]
+  for (const candidate of SCRATCH_PRIZES) {
+    roll -= candidate.weight
+    if (roll < 0) {
+      prize = candidate
+      break
+    }
+  }
+  const amount = scratchPrizeAmount(prize, s)
+
+  let levelUps: LevelUp[] = []
+  if (prize.type === 'xp') {
+    levelUps = grantXp(s, amount)
+  } else if (prize.type === 'fertilizer') {
+    s.fertilizerCharges += amount
+  } else {
+    // lottery winnings are not sales: money yes, totalEarned no
+    s.money += amount
+  }
+
+  // board: three matching symbols, six decoys as three pairs (never a triple)
+  const decoyPool = SCRATCH_PRIZES.filter((p) => p.symbol !== prize.symbol)
+  const cells = [prize.symbol, prize.symbol, prize.symbol]
+  for (let i = 0; i < 3; i++) {
+    const decoy = decoyPool[Math.floor(Math.random() * decoyPool.length)]
+    decoyPool.splice(decoyPool.indexOf(decoy), 1)
+    cells.push(decoy.symbol, decoy.symbol)
+  }
+  // Fisher-Yates shuffle
+  for (let i = cells.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[cells[i], cells[j]] = [cells[j], cells[i]]
+  }
+
+  notify()
+  return { symbols: cells, prizeType: prize.type, symbol: prize.symbol, amount, levelUps }
 }
 
 /** Reroll a quest; the fresh order arrives with the skip cooldown armed. */

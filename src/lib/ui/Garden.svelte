@@ -10,6 +10,7 @@
   import { screenShake } from './fx/shake'
   import PixelIcon from './PixelIcon.svelte'
   import Plot from './Plot.svelte'
+  import { pushToast } from './toasts'
 
   const readyCount = $derived($gameStore.plots.filter(plotReady).length)
   const plotCost = $derived(nextPlotCost($gameStore))
@@ -21,10 +22,19 @@
   }
 
   function handleHarvestAll(e: MouseEvent) {
-    const { units, crit, levelUps } = harvestAllReady()
+    const { units, crit, levelUps, tickets } = harvestAllReady()
     if (units > 0) {
       const [cx, cy] = eventCenter(e)
       celebrateLevelUps(levelUps, cx, cy)
+      if (tickets > 0) {
+        pushToast(
+          tickets === 1
+            ? 'Ein Rubbellos lag in der Ernte — oben im HUD rubbeln!'
+            : `${tickets} Rubbellose lagen in der Ernte!`,
+          '🎟️',
+          7000
+        )
+      }
       if (crit === 'legendary') {
         legendaryBurst(cx, cy)
         playSound('legendary')

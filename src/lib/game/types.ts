@@ -111,6 +111,10 @@ export interface GameState {
   quests: QuestState[]
   /** running id source for quests */
   questCounter: number
+  /** unscratched lucky tickets dropped by harvests */
+  scratchTickets: number
+  /** turbo-fertilizer charges: next harvests yield ×2, one charge each */
+  fertilizerCharges: number
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

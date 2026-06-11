@@ -16,6 +16,11 @@ export const CONFIG = {
   comboWindowSeconds: 4,
   comboPerStack: 0.05,
   comboMaxStacks: 20,
+  /** scratch tickets: drop chance per harvested plot, pending cap */
+  scratchDropChance: 0.04,
+  scratchMaxPending: 5,
+  /** turbo fertilizer: yield factor while charges last (one per harvest) */
+  fertilizerChargeMult: 2,
   /** quests (GAME_DESIGN.md §9.4): reward over market value, skip cooldown */
   questRewardFactor: 1.5,
   questSkipCooldownSeconds: 60,

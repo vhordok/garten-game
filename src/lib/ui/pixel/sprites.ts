@@ -533,6 +533,26 @@ const marktstand: SpriteGrid = [
   '................',
 ]
 
+/** Lucky scratch ticket, 16×16. */
+const los: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '.yyyyyyyyyyyy...',
+  '.yeeeeeeeeeey...',
+  '.yeeeeWeeeeey...',
+  '.yeeeWWWeeeey...',
+  '.yeeWWWWWeeey...',
+  '.yeeeWWWeeeey...',
+  '.yeeeeWeeeeey...',
+  '.yeeeeeeeeeey...',
+  '.yyyyyyyyyyyy...',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
 /** Delivery note / quest board icon, 16×16. */
 const scroll: SpriteGrid = [
   '................',
@@ -638,6 +658,7 @@ export const SPRITES: Record<string, SpriteGrid> = {
   duenger,
   marktstand,
   scroll,
+  los,
   coin,
   lock,
   gear,
