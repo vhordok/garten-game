@@ -21,9 +21,11 @@ export const CONFIG = {
   scratchMaxPending: 5,
   /** turbo fertilizer: yield factor while charges last (one per harvest) */
   fertilizerChargeMult: 2,
-  /** quests (GAME_DESIGN.md §9.4): reward over market value, skip cooldown */
-  questRewardFactor: 1.5,
+  /** quests (GAME_DESIGN.md §9.4): tier factors live in data/questFlavor.ts */
   questSkipCooldownSeconds: 60,
+  /** payout bonus per consecutive delivery, and its cap */
+  questStreakPerDelivery: 0.02,
+  questStreakMaxBonus: 0.3,
   /** golden harvests (GAME_DESIGN.md §9.4): roll per harvested plot */
   critPerfectChance: 0.08,
   critPerfectMult: 3,

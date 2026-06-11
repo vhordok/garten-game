@@ -21,6 +21,7 @@ export function createDefaultState(now = Date.now()): GameState {
     upgrades: {},
     quests: [],
     questCounter: 0,
+    questStreak: 0,
     scratchTickets: 0,
     fertilizerCharges: 0,
     combo: { count: 0, remaining: 0 },

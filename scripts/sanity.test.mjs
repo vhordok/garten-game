@@ -35,6 +35,7 @@ import {
   upgradeLevel,
   waterPlot,
 } from '../src/lib/game/actions.ts'
+import { questTier } from '../src/lib/data/questFlavor.ts'
 import { bestHarvestValue } from '../src/lib/data/scratch.ts'
 import { growthMultiplier, yieldMultiplier } from '../src/lib/game/modifiers.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
@@ -279,12 +280,13 @@ test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', ()
     const quest = s.quests[0]
     const plant = PLANTS.find((p) => p.id === quest.plantId)
     assert.ok(plant, 'quest plant must exist')
-    assert.equal(quest.reward, Math.round(quest.amount * plant.sellValue * CONFIG.questRewardFactor))
+    assert.equal(quest.reward, Math.round(quest.amount * plant.sellValue * questTier(quest.tier).rewardFactor))
+    assert.ok(quest.client.length > 0, 'every order has a client')
 
     // not enough in storage → refused, nothing changes
     assert.equal(fulfillQuest(quest.id), null)
 
-    // stock up and deliver
+    // stock up and deliver (streak 0 → payout = base reward, then streak 1)
     s.inventory[quest.plantId] = quest.amount + 2
     const moneyBefore = s.money
     const earnedBefore = s.totalEarned
@@ -292,13 +294,35 @@ test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', ()
     assert.ok(result)
     assert.equal(s.money, moneyBefore + quest.reward)
     assert.equal(s.totalEarned, earnedBefore + quest.reward)
+    assert.equal(s.questStreak, 1)
     assert.equal(s.inventory[quest.plantId], 2)
     assert.equal(s.quests.length, 1, 'slot is refilled')
     assert.notEqual(s.quests[0].id, quest.id, 'a fresh order replaces the delivered one')
 
-    // skip arms the cooldown; a second skip is refused until tick drains it
+    // a gold order pays the streak bonus and drops a ticket
+    s.quests[0] = {
+      id: 9999,
+      plantId: 'basilikum',
+      amount: 2,
+      reward: 100,
+      xp: 2,
+      tier: 'gold',
+      client: 'Testhof',
+      skipCooldown: 0,
+    }
+    s.inventory['basilikum'] = 2
+    const ticketsBefore = s.scratchTickets
+    const goldResult = fulfillQuest(9999)
+    assert.ok(goldResult)
+    assert.equal(goldResult.reward, Math.round(100 * (1 + CONFIG.questStreakPerDelivery)))
+    assert.equal(goldResult.bonusTicket, true)
+    assert.equal(s.scratchTickets, ticketsBefore + 1)
+    assert.equal(s.questStreak, 2)
+
+    // skip arms the cooldown, breaks the streak; refused until tick drains it
     const skipped = s.quests[0]
     assert.ok(skipQuest(skipped.id))
+    assert.equal(s.questStreak, 0, 'skipping breaks the delivery streak')
     const fresh1 = s.quests[0]
     assert.equal(fresh1.skipCooldown, CONFIG.questSkipCooldownSeconds)
     assert.equal(skipQuest(fresh1.id), false)

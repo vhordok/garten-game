@@ -4,11 +4,12 @@
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
 import { questSlots } from '../data/progression'
+import { QUEST_CLIENTS, QUEST_TIERS } from '../data/questFlavor'
 import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 10
+export const SAVE_VERSION = 11
 
 interface SaveEnvelope {
   version: number
@@ -139,6 +140,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v9 → v10: prestige (parcels/compost) + lifetimeEarned; sanitize()
       // seeds lifetimeEarned from the round earnings of old saves.
       return { ...envelope, version: 10 }
+    case 10:
+      // v10 → v11: quest tiers/clients + delivery streak; old quests get
+      // bronze tier and a fresh client via sanitize().
+      return { ...envelope, version: 11 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -214,6 +219,7 @@ function sanitize(raw: unknown): GameState {
   state.fertilizerCharges = Math.floor(clampNumber(r.fertilizerCharges, 0, 0, 999))
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
+  state.questStreak = Math.floor(clampNumber(r.questStreak, 0, 0, 1e6))
   const quests: GameState['quests'] = []
   if (Array.isArray(r.quests)) {
     for (const raw of r.quests.slice(0, questSlots(state.level))) {
@@ -222,12 +228,19 @@ function sanitize(raw: unknown): GameState {
       const plant = typeof q.plantId === 'string' ? plantById(q.plantId) : undefined
       if (!plant) continue
       const amount = Math.floor(clampNumber(q.amount, 0, 1))
+      const tier = typeof q.tier === 'string' && QUEST_TIERS.some((t) => t.id === q.tier) ? q.tier : 'bronze'
+      const client =
+        typeof q.client === 'string' && q.client.length > 0 && q.client.length <= 40
+          ? q.client
+          : QUEST_CLIENTS[0]
       quests.push({
         id: Math.floor(clampNumber(q.id, ++state.questCounter, 1)),
         plantId: plant.id,
         amount,
         reward: Math.floor(clampNumber(q.reward, amount * plant.sellValue, 0)),
         xp: Math.floor(clampNumber(q.xp, amount, 0)),
+        tier,
+        client,
         skipCooldown: clampNumber(q.skipCooldown, 0, 0, CONFIG.questSkipCooldownSeconds),
       })
     }

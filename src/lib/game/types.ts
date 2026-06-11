@@ -87,10 +87,14 @@ export interface QuestState {
   plantId: string
   /** units to deliver from storage */
   amount: number
-  /** money payout on delivery */
+  /** base money payout (delivery streak adds on top) */
   reward: number
   /** bonus XP on delivery */
   xp: number
+  /** order tier: gold pays best and drops a scratch ticket */
+  tier: string
+  /** who placed the order (flavor) */
+  client: string
   /** seconds until this slot may be rerolled (drained by tick) */
   skipCooldown: number
 }
@@ -121,6 +125,8 @@ export interface GameState {
   quests: QuestState[]
   /** running id source for quests */
   questCounter: number
+  /** consecutive deliveries without skipping — boosts quest payouts */
+  questStreak: number
   /** unscratched lucky tickets dropped by harvests */
   scratchTickets: number
   /** turbo-fertilizer charges: next harvests yield ×2, one charge each */

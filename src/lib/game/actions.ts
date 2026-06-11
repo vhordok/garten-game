@@ -6,8 +6,9 @@ import { PLANTS, plantById } from '../data/plants'
 import { levelUpReward, xpToNext } from '../data/progression'
 import { SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
+import { questTier } from '../data/questFlavor'
 import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
-import { generateQuest, refillQuests } from './quests'
+import { generateQuest, questStreakBonus, refillQuests } from './quests'
 import { emptyPlot, getState, notify } from './state'
 import { cycleTime, plotReady } from './tick'
 import type { GameState, PlantDef, UpgradeDef } from './types'
@@ -259,6 +260,7 @@ export function leaseParcel(): number {
   s.inventory = {}
   s.upgrades = {}
   s.quests = []
+  s.questStreak = 0
   s.combo = { count: 0, remaining: 0 }
   s.selectedPlantId = PLANTS[0].id
   refillQuests(s)
@@ -325,9 +327,14 @@ export function ensureQuests(): void {
 }
 
 export interface QuestReward {
+  /** actual payout including the streak bonus */
   reward: number
   xp: number
   levelUps: LevelUp[]
+  /** gold orders drop a scratch ticket */
+  bonusTicket: boolean
+  /** streak length after this delivery */
+  streak: number
 }
 
 /** True if storage holds enough produce to deliver the quest. */
@@ -351,14 +358,22 @@ export function fulfillQuest(questId: number): QuestReward | null {
   const left = have - quest.amount
   if (left > 0) s.inventory[quest.plantId] = left
   else delete s.inventory[quest.plantId]
-  s.money += quest.reward
-  s.totalEarned += quest.reward
-  s.lifetimeEarned += quest.reward
+  // streak bonus applies to this delivery, then the streak grows
+  const payout = Math.round(quest.reward * (1 + questStreakBonus(s)))
+  s.money += payout
+  s.totalEarned += payout
+  s.lifetimeEarned += payout
   s.stats.sold += quest.amount
+  s.questStreak += 1
+  let bonusTicket = false
+  if (questTier(quest.tier).bonusTicket && s.scratchTickets < CONFIG.scratchMaxPending) {
+    s.scratchTickets += 1
+    bonusTicket = true
+  }
   const levelUps = grantXp(s, quest.xp)
   s.quests[index] = generateQuest(s)
   notify()
-  return { reward: quest.reward, xp: quest.xp, levelUps }
+  return { reward: payout, xp: quest.xp, levelUps, bonusTicket, streak: s.questStreak }
 }
 
 export interface ScratchCard {
@@ -422,7 +437,10 @@ export function drawScratchCard(): ScratchCard | null {
   return { symbols: cells, prizeType: prize.type, symbol: prize.symbol, amount, levelUps }
 }
 
-/** Reroll a quest; the fresh order arrives with the skip cooldown armed. */
+/**
+ * Reroll a quest; the fresh order arrives with the skip cooldown armed and
+ * the delivery streak breaks.
+ */
 export function skipQuest(questId: number): boolean {
   const s = getState()
   const index = s.quests.findIndex((q) => q.id === questId)
@@ -431,6 +449,7 @@ export function skipQuest(questId: number): boolean {
   const fresh = generateQuest(s)
   fresh.skipCooldown = CONFIG.questSkipCooldownSeconds
   s.quests[index] = fresh
+  s.questStreak = 0
   notify()
   return true
 }
