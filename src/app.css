@@ -1,24 +1,7 @@
-/* Globale Basis: warme Garten-Palette, Karten, Buttons. Komponenten-Details
-   liegen scoped in den jeweiligen .svelte-Dateien. */
-
-:root {
-  --green-900: #1d3b24;
-  --green-800: #265c33;
-  --green-600: #3e8a50;
-  --green-300: #9cc7a4;
-  --soil-dark: #6a4a31;
-  --soil: #7e5a3e;
-  --soil-light: #96704e;
-  --cream: #fbf7ea;
-  --card-bg: #fffdf4;
-  --card-border: #e8e3cd;
-  --ink: #2c3a2e;
-  --muted: #6f7d6f;
-  --gold: #8a6414;
-  --danger: #b3402f;
-  --radius: 14px;
-  --shadow: 0 2px 10px rgba(40, 70, 40, 0.1);
-}
+/* Global base for the "Mitternachts-Pixelgarten" look (GAME_DESIGN.md §9).
+   All colors and frame assets arrive as CSS variables injected by
+   initPixelUi() (src/lib/ui/pixel/render.ts) — the palette lives in TS.
+   Component details stay scoped in their .svelte files. */
 
 * {
   box-sizing: border-box;
@@ -30,82 +13,159 @@ body {
   padding: 0;
 }
 
+:root {
+  /* integer pixel scales: world sprites ×5 (×4 on small screens), UI chrome ×2 */
+  --cell: 80px;
+  --ui: 2;
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --cell: 64px;
+  }
+}
+
 body {
-  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  color: var(--ink);
-  background:
-    radial-gradient(1100px 480px at 50% -10%, #fdf6dd 0%, transparent 60%),
-    linear-gradient(180deg, #f3f0df 0%, #e4eeda 45%, #d6e7cd 100%);
-  background-attachment: fixed;
+  font-family: 'Pixelify Sans', 'Courier New', monospace;
+  color: var(--c-white, #ebede9);
+  background: var(--c-night0, #090a14);
   min-height: 100vh;
+  -webkit-font-smoothing: none;
+  letter-spacing: 0.02em;
 }
 
 button {
   font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 h2 {
-  font-size: 1rem;
-  margin: 0;
-  color: var(--green-800);
+  font-size: 1.05rem;
+  color: var(--c-leaf4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px;
+/* pixel-crisp images (sprites) */
+img.px {
+  image-rendering: pixelated;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-.hint {
-  color: var(--muted);
-  font-size: 0.82rem;
-  margin: 6px 0 0;
-  line-height: 1.4;
+/* --- 9-slice chrome ------------------------------------------------- */
+
+.pxpanel {
+  border-style: solid;
+  border-width: calc(var(--ui) * 6px);
+  border-image: var(--frame-panel) 6 fill / calc(var(--ui) * 6px) repeat;
+  image-rendering: pixelated;
 }
 
-.btn {
-  border: none;
-  border-radius: 10px;
-  padding: 8px 14px;
+.pxbtn {
+  border-style: solid;
+  border-width: calc(var(--ui) * 4px);
+  border-image: var(--frame-btn) 4 fill / calc(var(--ui) * 4px) repeat;
+  image-rendering: pixelated;
+  padding: 2px 10px 6px;
   font-weight: 700;
   font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--c-white);
   cursor: pointer;
-  background: var(--green-600);
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.13);
-  transition:
-    filter 0.12s,
-    transform 0.12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
+  transition: filter 0.08s;
 }
 
-.btn:hover:not(:disabled) {
-  filter: brightness(1.07);
+.pxbtn.primary {
+  border-image-source: var(--frame-btn-primary);
 }
 
-.btn:active:not(:disabled) {
-  transform: scale(0.97);
+.pxbtn.gold {
+  border-image-source: var(--frame-btn-gold);
+  color: var(--c-night0);
+  text-shadow: 1px 1px 0 rgba(255, 244, 214, 0.35);
 }
 
-.btn:disabled {
-  opacity: 0.5;
+.pxbtn.danger {
+  border-image-source: var(--frame-btn-danger);
+}
+
+.pxbtn:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.pxbtn:active:not(:disabled) {
+  transform: translateY(2px);
+  filter: brightness(0.95);
+}
+
+.pxbtn:disabled {
+  opacity: 0.45;
+  filter: grayscale(0.6);
   cursor: not-allowed;
 }
 
-.btn.small {
-  padding: 5px 10px;
-  font-size: 0.78rem;
+.pxbtn.small {
+  font-size: 0.72rem;
+  padding: 1px 7px 4px;
 }
 
-.btn.full {
+.pxbtn.full {
   width: 100%;
 }
 
-.btn.primary {
-  background: linear-gradient(180deg, #56a868, #3e8a50);
+.chip {
+  border-style: solid;
+  border-width: calc(var(--ui) * 3px);
+  border-image: var(--frame-chip) 3 fill / calc(var(--ui) * 3px) repeat;
+  image-rendering: pixelated;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  font-weight: 700;
 }
 
-.btn.danger {
-  background: var(--danger);
+/* --- shared text helpers -------------------------------------------- */
+
+.hint {
+  color: var(--c-mist);
+  font-size: 0.78rem;
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-gold1);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

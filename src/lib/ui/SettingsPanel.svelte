@@ -3,6 +3,7 @@
   import { exportSave, importSave, resetSave, save } from '../game/save'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
+  import Overlay from './Overlay.svelte'
   import { pushToast } from './toasts'
 
   let { onClose }: { onClose: () => void } = $props()
@@ -53,99 +54,52 @@
   }
 </script>
 
-<svelte:window
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onClose()
-  }}
-/>
+<Overlay title="Einstellungen" {onClose}>
+  <section>
+    <h3>Statistik</h3>
+    <div class="stats-row num">
+      <span>Gepflanzt: <b>{formatNumber($gameStore.stats.planted)}</b></span>
+      <span>Geerntet: <b>{formatNumber($gameStore.stats.harvested)}</b></span>
+      <span>Verkauft: <b>{formatNumber($gameStore.stats.sold)}</b></span>
+    </div>
+  </section>
 
-<div class="overlay" role="dialog" aria-modal="true" aria-label="Einstellungen">
-  <div class="modal card">
-    <button class="close" onclick={onClose} aria-label="Schließen">✕</button>
-    <h2>⚙️ Einstellungen</h2>
+  <section>
+    <h3>Spielstand</h3>
+    <div class="row">
+      <button class="pxbtn small" onclick={handleSaveNow}>Jetzt speichern</button>
+      <button class="pxbtn small" onclick={handleExport}>Exportieren</button>
+      <button class="pxbtn small" onclick={copyExport}>Kopieren</button>
+    </div>
+    {#if exportText}
+      <textarea readonly rows="4" value={exportText} onclick={(e) => e.currentTarget.select()}></textarea>
+    {/if}
+  </section>
 
-    <section>
-      <h3>Statistik</h3>
-      <div class="stats-row">
-        <span>🌱 Gepflanzt: <b>{formatNumber($gameStore.stats.planted)}</b></span>
-        <span>🧺 Geerntet: <b>{formatNumber($gameStore.stats.harvested)}</b></span>
-        <span>💰 Verkauft: <b>{formatNumber($gameStore.stats.sold)}</b></span>
-      </div>
-    </section>
+  <section>
+    <h3>Import</h3>
+    <textarea rows="4" placeholder="Export-Code hier einfügen …" bind:value={importText}></textarea>
+    <button class="pxbtn small" disabled={!importText.trim()} onclick={handleImport}>Importieren</button>
+  </section>
 
-    <section>
-      <h3>Spielstand</h3>
-      <div class="row">
-        <button class="btn small" onclick={handleSaveNow}>💾 Jetzt speichern</button>
-        <button class="btn small" onclick={handleExport}>📤 Exportieren</button>
-        <button class="btn small" onclick={copyExport}>📋 Kopieren</button>
-      </div>
-      {#if exportText}
-        <textarea readonly rows="4" value={exportText} onclick={(e) => e.currentTarget.select()}></textarea>
-      {/if}
-    </section>
+  <section>
+    <h3>Gefahrenzone</h3>
+    <button class="pxbtn small danger" onclick={handleReset}>Kompletten Spielstand löschen</button>
+  </section>
 
-    <section>
-      <h3>Import</h3>
-      <textarea rows="4" placeholder="Export-Code hier einfügen …" bind:value={importText}></textarea>
-      <button class="btn small" disabled={!importText.trim()} onclick={handleImport}>📥 Importieren</button>
-    </section>
-
-    <section>
-      <h3>Gefahrenzone</h3>
-      <button class="btn small danger" onclick={handleReset}>🗑️ Kompletten Spielstand löschen</button>
-    </section>
-
-    {#if message}<p class="msg">{message}</p>{/if}
-  </div>
-</div>
+  {#if message}<p class="msg">{message}</p>{/if}
+</Overlay>
 
 <style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(44, 58, 46, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-    padding: 20px;
-  }
-
-  .modal {
-    width: 100%;
-    max-width: 520px;
-    max-height: 85vh;
-    overflow: auto;
-    position: relative;
-  }
-
-  .close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 6px 9px;
-    border-radius: 8px;
-    color: var(--muted);
-  }
-
-  .close:hover {
-    background: rgba(0, 0, 0, 0.06);
-  }
-
   section {
-    margin-top: 16px;
+    margin-top: 14px;
   }
 
   h3 {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--muted);
+    letter-spacing: 0.08em;
+    color: var(--c-mist);
     margin: 0 0 8px;
   }
 
@@ -157,9 +111,14 @@
 
   .stats-row {
     display: flex;
-    gap: 14px;
+    gap: 16px;
     flex-wrap: wrap;
     font-size: 0.85rem;
+    color: var(--c-cloud);
+  }
+
+  .stats-row b {
+    color: var(--c-leaf5);
   }
 
   textarea {
@@ -168,20 +127,23 @@
     margin: 8px 0;
     font-family: monospace;
     font-size: 0.7rem;
-    border: 1px solid #ddd8c4;
-    border-radius: 8px;
+    border: 2px solid var(--c-edge);
     padding: 8px;
     resize: vertical;
-    background: #fffef9;
-    color: var(--ink);
+    background: var(--c-night1);
+    color: var(--c-cloud);
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--c-leaf2);
   }
 
   .msg {
     font-size: 0.8rem;
-    color: var(--green-800);
-    background: #eef7ec;
+    color: var(--c-leaf5);
+    background: var(--c-night1);
     padding: 8px 10px;
-    border-radius: 8px;
     margin: 12px 0 0;
   }
 </style>

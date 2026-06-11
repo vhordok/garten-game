@@ -4,9 +4,10 @@
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
   import Garden from './lib/ui/Garden.svelte'
-  import Header from './lib/ui/Header.svelte'
+  import Hotbar from './lib/ui/Hotbar.svelte'
+  import Hud from './lib/ui/Hud.svelte'
   import InventoryPanel from './lib/ui/InventoryPanel.svelte'
-  import SeedPanel from './lib/ui/SeedPanel.svelte'
+  import Scene from './lib/ui/Scene.svelte'
   import SettingsPanel from './lib/ui/SettingsPanel.svelte'
   import Toasts from './lib/ui/Toasts.svelte'
   import { pushToast } from './lib/ui/toasts'
@@ -14,7 +15,7 @@
 
   let { offline }: { offline: OfflineReport | null } = $props()
 
-  let settingsOpen = $state(false)
+  let openPanel = $state<'inventory' | 'settings' | null>(null)
 
   onMount(() => {
     if (offline && offline.awaySeconds >= 60) {
@@ -41,68 +42,41 @@
   })
 </script>
 
+<Scene />
+
 <div class="app">
-  <Header onOpenSettings={() => (settingsOpen = true)} />
+  <Hud onOpenInventory={() => (openPanel = 'inventory')} onOpenSettings={() => (openPanel = 'settings')} />
   <main>
-    <section class="garden-col">
-      <Garden />
-    </section>
-    <aside class="side-col">
-      <SeedPanel />
-      <InventoryPanel />
-    </aside>
+    <Garden />
   </main>
-  <footer>🌱 Phase 1 · Dein Garten wird automatisch gespeichert — auch wenn du weg bist, wächst alles weiter.</footer>
+  <Hotbar />
 </div>
 
-{#if settingsOpen}
-  <SettingsPanel onClose={() => (settingsOpen = false)} />
+{#if openPanel === 'inventory'}
+  <InventoryPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'settings'}
+  <SettingsPanel onClose={() => (openPanel = null)} />
 {/if}
 <Toasts />
 
 <style>
   .app {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 20px 32px;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* keep clear of the fixed HUD (top) and hotbar (bottom) */
+    padding: 84px 16px 130px;
   }
 
   main {
+    flex: 1;
+    width: 100%;
     display: flex;
-    gap: 20px;
+    justify-content: center;
     align-items: flex-start;
-    margin-top: 20px;
-  }
-
-  .garden-col {
-    flex: 1 1 60%;
-    min-width: 0;
-  }
-
-  .side-col {
-    flex: 1 1 40%;
-    min-width: 280px;
-    max-width: 360px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  footer {
-    margin-top: 28px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.8rem;
-  }
-
-  @media (max-width: 840px) {
-    main {
-      flex-direction: column;
-    }
-
-    .side-col {
-      max-width: none;
-      width: 100%;
-    }
+    padding-top: 9vh;
   }
 </style>
