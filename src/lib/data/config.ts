@@ -13,6 +13,9 @@ export const CONFIG = {
   comboWindowSeconds: 4,
   comboPerStack: 0.05,
   comboMaxStacks: 20,
+  /** quests (GAME_DESIGN.md §9.4): reward over market value, skip cooldown */
+  questRewardFactor: 1.5,
+  questSkipCooldownSeconds: 60,
   /** golden harvests (GAME_DESIGN.md §9.4): roll per harvested plot */
   critPerfectChance: 0.08,
   critPerfectMult: 3,

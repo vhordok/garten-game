@@ -10,3 +10,10 @@ export function xpToNext(level: number): number {
 export function levelUpReward(level: number): number {
   return Math.round(15 * Math.pow(level, 2.2))
 }
+
+/** Quest-board slots unlocked at the given gardener level (1 → 3). */
+export function questSlots(level: number): number {
+  if (level >= 5) return 3
+  if (level >= 3) return 2
+  return 1
+}

@@ -3,7 +3,7 @@
   import { Tween } from 'svelte/motion'
   import { CONFIG } from '../data/config'
   import { xpToNext } from '../data/progression'
-  import { anyUpgradeAffordable, inventoryValue, sellAll } from '../game/actions'
+  import { anyUpgradeAffordable, inventoryValue, questFulfillable, sellAll } from '../game/actions'
   import { comboMultiplier } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -15,9 +15,16 @@
     onOpenInventory,
     onOpenSettings,
     onOpenShop,
-  }: { onOpenInventory: () => void; onOpenSettings: () => void; onOpenShop: () => void } = $props()
+    onOpenQuests,
+  }: {
+    onOpenInventory: () => void
+    onOpenSettings: () => void
+    onOpenShop: () => void
+    onOpenQuests: () => void
+  } = $props()
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
+  const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
 
   const stockValue = $derived(inventoryValue($gameStore))
   const stockCount = $derived(Object.values($gameStore.inventory).reduce((a, b) => a + b, 0))
@@ -90,6 +97,11 @@
   <button class="pxbtn" onclick={onOpenShop} title="Shop — dauerhafte Upgrades">
     <PixelIcon name="giesskanne" scale={1} />
     {#if upgradeHint}<span class="dot" aria-hidden="true"></span>{/if}
+  </button>
+
+  <button class="pxbtn" onclick={onOpenQuests} title="Aufträge — liefern lohnt sich">
+    <PixelIcon name="scroll" scale={1} />
+    {#if questHint}<span class="dot quest" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenInventory} title="Lager öffnen">
@@ -283,6 +295,11 @@
     50% {
       opacity: 0.45;
     }
+  }
+
+  .dot.quest {
+    background: var(--c-leaf4);
+    box-shadow: 0 0 8px rgba(168, 202, 88, 0.8);
   }
 
   @media (max-width: 640px) {

@@ -12,17 +12,20 @@ globalThis.localStorage ??= {
 }
 import { CONFIG } from '../src/lib/data/config.ts'
 import { PLANTS } from '../src/lib/data/plants.ts'
-import { levelUpReward, xpToNext } from '../src/lib/data/progression.ts'
+import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
   buyUpgrade,
+  ensureQuests,
+  fulfillQuest,
   harvestAllReady,
   harvestPlot,
   nextPlotCost,
   nextUpgradeCost,
   selectPlant,
   sellPlant,
+  skipQuest,
   sowPlot,
   upgradeLevel,
 } from '../src/lib/game/actions.ts'
@@ -256,6 +259,62 @@ test('gardener level: xp per unit, level-up pays out, overflow carries', () => {
     assert.equal(ups.length, 2)
     assert.equal(s.level, 4)
     assert.equal(s.xp, 6) // 5 overflow + 1 fresh unit
+  })
+})
+
+test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    ensureQuests()
+    assert.equal(s.quests.length, questSlots(1))
+    assert.equal(s.quests.length, 1)
+
+    const quest = s.quests[0]
+    const plant = PLANTS.find((p) => p.id === quest.plantId)
+    assert.ok(plant, 'quest plant must exist')
+    assert.equal(quest.reward, Math.round(quest.amount * plant.sellValue * CONFIG.questRewardFactor))
+
+    // not enough in storage → refused, nothing changes
+    assert.equal(fulfillQuest(quest.id), null)
+
+    // stock up and deliver
+    s.inventory[quest.plantId] = quest.amount + 2
+    const moneyBefore = s.money
+    const earnedBefore = s.totalEarned
+    const result = fulfillQuest(quest.id)
+    assert.ok(result)
+    assert.equal(s.money, moneyBefore + quest.reward)
+    assert.equal(s.totalEarned, earnedBefore + quest.reward)
+    assert.equal(s.inventory[quest.plantId], 2)
+    assert.equal(s.quests.length, 1, 'slot is refilled')
+    assert.notEqual(s.quests[0].id, quest.id, 'a fresh order replaces the delivered one')
+
+    // skip arms the cooldown; a second skip is refused until tick drains it
+    const skipped = s.quests[0]
+    assert.ok(skipQuest(skipped.id))
+    const fresh1 = s.quests[0]
+    assert.equal(fresh1.skipCooldown, CONFIG.questSkipCooldownSeconds)
+    assert.equal(skipQuest(fresh1.id), false)
+    tick(s, CONFIG.questSkipCooldownSeconds + 1)
+    assert.equal(s.quests[0].skipCooldown, 0)
+    assert.ok(skipQuest(s.quests[0].id))
+
+    // reaching level 3 must open the second slot
+    s.xp = xpToNext(1) + xpToNext(2) - 1
+    s.money = 1000
+    assert.ok(sowPlot(0))
+    tick(s, 99999)
+    harvestPlot(0)
+    assert.ok(s.level >= 3, `expected level 3, got ${s.level}`)
+    assert.equal(s.quests.length, questSlots(s.level))
+    assert.equal(s.quests.length, 2)
+
+    // quests survive a save roundtrip untouched
+    const questsBefore = structuredClone(s.quests)
+    const code = exportSave()
+    fresh()
+    assert.notEqual(importSave(code), null)
+    assert.deepEqual(getState().quests, questsBefore)
   })
 })
 

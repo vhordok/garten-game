@@ -6,6 +6,7 @@ import { PLANTS, plantById } from '../data/plants'
 import { levelUpReward, xpToNext } from '../data/progression'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
+import { generateQuest, refillQuests } from './quests'
 import { emptyPlot, getState, notify } from './state'
 import { plotReady } from './tick'
 import type { GameState, PlantDef, UpgradeDef } from './types'
@@ -65,6 +66,8 @@ function grantXp(s: GameState, amount: number): LevelUp[] {
     s.money += reward
     ups.push({ level: s.level, reward })
   }
+  // higher levels may unlock additional quest slots
+  if (ups.length > 0) refillQuests(s)
   return ups
 }
 
@@ -221,4 +224,58 @@ export function anyUpgradeAffordable(state: GameState): boolean {
     const cost = nextUpgradeCost(def, state)
     return cost !== null && state.money >= cost
   })
+}
+
+/** Fill empty quest slots (boot + after imports). */
+export function ensureQuests(): void {
+  if (refillQuests(getState())) notify()
+}
+
+export interface QuestReward {
+  reward: number
+  xp: number
+  levelUps: LevelUp[]
+}
+
+/** True if storage holds enough produce to deliver the quest. */
+export function questFulfillable(state: GameState, questId: number): boolean {
+  const quest = state.quests.find((q) => q.id === questId)
+  if (!quest) return false
+  return (state.inventory[quest.plantId] ?? 0) >= quest.amount
+}
+
+/**
+ * Deliver a quest from storage: pays money (counts as earnings), grants
+ * bonus XP and rolls a fresh order into the slot.
+ */
+export function fulfillQuest(questId: number): QuestReward | null {
+  const s = getState()
+  const index = s.quests.findIndex((q) => q.id === questId)
+  if (index === -1) return null
+  const quest = s.quests[index]
+  const have = s.inventory[quest.plantId] ?? 0
+  if (have < quest.amount) return null
+  const left = have - quest.amount
+  if (left > 0) s.inventory[quest.plantId] = left
+  else delete s.inventory[quest.plantId]
+  s.money += quest.reward
+  s.totalEarned += quest.reward
+  s.stats.sold += quest.amount
+  const levelUps = grantXp(s, quest.xp)
+  s.quests[index] = generateQuest(s)
+  notify()
+  return { reward: quest.reward, xp: quest.xp, levelUps }
+}
+
+/** Reroll a quest; the fresh order arrives with the skip cooldown armed. */
+export function skipQuest(questId: number): boolean {
+  const s = getState()
+  const index = s.quests.findIndex((q) => q.id === questId)
+  if (index === -1) return false
+  if (s.quests[index].skipCooldown > 0) return false
+  const fresh = generateQuest(s)
+  fresh.skipCooldown = CONFIG.questSkipCooldownSeconds
+  s.quests[index] = fresh
+  notify()
+  return true
 }

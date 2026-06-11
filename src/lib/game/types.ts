@@ -74,6 +74,21 @@ export interface ComboState {
   remaining: number
 }
 
+/** One rotating delivery order on the quest board. */
+export interface QuestState {
+  /** unique per save (questCounter) — used for UI keying */
+  id: number
+  plantId: string
+  /** units to deliver from storage */
+  amount: number
+  /** money payout on delivery */
+  reward: number
+  /** bonus XP on delivery */
+  xp: number
+  /** seconds until this slot may be rerolled (drained by tick) */
+  skipCooldown: number
+}
+
 export interface GameState {
   money: number
   /** lifetime money earned from selling — drives unlocks, later prestige */
@@ -90,6 +105,10 @@ export interface GameState {
   selectedPlantId: string
   /** upgrade levels keyed by UpgradeDef id (absent = level 0) */
   upgrades: Record<string, number>
+  /** active delivery orders (slot count gated by level, see progression) */
+  quests: QuestState[]
+  /** running id source for quests */
+  questCounter: number
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

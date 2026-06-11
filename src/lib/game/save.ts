@@ -3,11 +3,12 @@
 
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
+import { questSlots } from '../data/progression'
 import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 5
+export const SAVE_VERSION = 6
 
 interface SaveEnvelope {
   version: number
@@ -121,6 +122,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 4:
       // v4 → v5: gardener level/xp added; sanitize() defaults to level 1.
       return { ...envelope, version: 5 }
+    case 5:
+      // v5 → v6: quest board added; boot refills missing slots.
+      return { ...envelope, version: 6 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -178,6 +182,27 @@ function sanitize(raw: unknown): GameState {
 
   // combo is session-only by design: loading always starts chainless
   state.combo = { count: 0, remaining: 0 }
+
+  state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
+  const quests: GameState['quests'] = []
+  if (Array.isArray(r.quests)) {
+    for (const raw of r.quests.slice(0, questSlots(state.level))) {
+      if (typeof raw !== 'object' || raw === null) continue
+      const q = raw as Record<string, unknown>
+      const plant = typeof q.plantId === 'string' ? plantById(q.plantId) : undefined
+      if (!plant) continue
+      const amount = Math.floor(clampNumber(q.amount, 0, 1))
+      quests.push({
+        id: Math.floor(clampNumber(q.id, ++state.questCounter, 1)),
+        plantId: plant.id,
+        amount,
+        reward: Math.floor(clampNumber(q.reward, amount * plant.sellValue, 0)),
+        xp: Math.floor(clampNumber(q.xp, amount, 0)),
+        skipCooldown: clampNumber(q.skipCooldown, 0, 0, CONFIG.questSkipCooldownSeconds),
+      })
+    }
+  }
+  state.quests = quests
 
   if (typeof r.stats === 'object' && r.stats !== null) {
     const stats = r.stats as Record<string, unknown>

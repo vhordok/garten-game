@@ -26,6 +26,13 @@ export function tick(state: GameState, dtSeconds: number): boolean {
     if (state.combo.remaining === 0) state.combo.count = 0
     changed = true
   }
+  // quest skip cooldowns drain in real time too
+  for (const quest of state.quests) {
+    if (quest.skipCooldown > 0) {
+      quest.skipCooldown = Math.max(quest.skipCooldown - dtSeconds, 0)
+      changed = true
+    }
+  }
   return changed
 }
 

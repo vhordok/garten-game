@@ -362,6 +362,26 @@ const marktstand: SpriteGrid = [
   '................',
 ]
 
+/** Delivery note / quest board icon, 16×16. */
+const scroll: SpriteGrid = [
+  '................',
+  '................',
+  '....wwwwwwww....',
+  '....wHHHHHHw....',
+  '....wHnnnnHw....',
+  '....wHHHHHHw....',
+  '....wHnnnHHw....',
+  '....wHHHHHHw....',
+  '....wHnnnnHw....',
+  '....wHHHHHHw....',
+  '....wHnnHHHw....',
+  '....wHHHHHHw....',
+  '....wwwwwwww....',
+  '................',
+  '................',
+  '................',
+]
+
 /** Crescent moon, 16×16. */
 const moon: SpriteGrid = [
   '......wwww......',
@@ -437,6 +457,7 @@ export const SPRITES: Record<string, SpriteGrid> = {
   giesskanne,
   duenger,
   marktstand,
+  scroll,
   coin,
   lock,
   gear,
