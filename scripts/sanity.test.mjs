@@ -318,6 +318,18 @@ test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', ()
   })
 })
 
+test('plant data: unlock order matches rising profit per second', () => {
+  let lastUnlock = -1
+  let lastProfit = 0
+  for (const plant of PLANTS) {
+    assert.ok(plant.unlockAtTotalEarned > lastUnlock || plant.unlockAtTotalEarned === 0, `${plant.id}: unlocks must ascend`)
+    const profit = (plant.yield * plant.sellValue - plant.seedCost) / plant.growTime
+    assert.ok(profit > lastProfit, `${plant.id}: profit/s must beat the previous plant (${profit.toFixed(3)} vs ${lastProfit.toFixed(3)})`)
+    lastUnlock = plant.unlockAtTotalEarned
+    lastProfit = profit
+  }
+})
+
 test('offline progress runs through the same tick', () => {
   const s = fresh()
   s.money = 100
