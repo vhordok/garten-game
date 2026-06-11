@@ -141,7 +141,7 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 | Phase | Inhalt | Status |
 |---|---|---|
 | **1** | Beet-Grid (Start 4, kaufbar bis 16), 3 Kräuter, manuell pflanzen/ernten/verkaufen, Save/Load + Export/Import, Offline-Wachstum, Zahlenformat | ✅ umgesetzt |
-| 2 | Gemüse-Kategorie, Unlock-UI, Bewässerungs-Upgrades | offen |
+| **2** | Gemüse-Kategorie, Unlock-UI, Bewässerungs-Upgrades | ✅ via §9.8 (Gemüse, aktives Gießen; Sprinkler/Kompost aus R4) |
 | 3 | Helfer (Auto-Ernte, Auto-Aussaat, Auto-Verkauf) inkl. Offline-Simulation | offen |
 | 4 | Prestige: Parzellen + Kompost | offen |
 | 5 | Beerensträucher (Wiederernte), Obstbäume, Bäume (passives Einkommen) | offen |
@@ -280,6 +280,35 @@ Offline-Wachstum läuft weiter durch denselben `tick()`.
 Der Core bleibt headless testbar: `npm test` fährt die Sanity-Suite
 (`scripts/sanity.test.mjs`) über Tick, Aktionen, Migrationen und alle
 fünf Mechaniken — vor jedem Commit zusammen mit `npm run check` ausführen.
+
+### 9.8 Erweiterung „Gemüse, Gießen & Glück"
+
+Nach R5 nachgelegt — Ziel: mehr Aktivität zwischen den Ernten und ein
+Glücks-Kick im Stil von Rubbellosen.
+
+1. **Gemüse-Kategorie** (damit ist §8 Phase 2 umgesetzt): Karotte
+   (Unlock 2.5K), Tomate (12K), Kürbis (60K) — Werte in
+   `data/plants.ts`; Profit/s steigt streng monoton über die gesamte
+   Sortenreihe (testgesichert). Kürbis = ein Koloss pro Beet, auf
+   Crits ausgelegt.
+2. **Aktives Gießen:** wachsende Beete sind klickbar; jeder Guss
+   überspringt 15 % der Wachszeit, 3 Ladungen pro Aussaat
+   (Tropfen-Pips am Beet, Splash-FX). Bewusst als Aktion statt im
+   Tick — Offline-Verhalten bleibt unverändert.
+3. **Rubbellose:** 4 % Drop-Chance pro geerntetem Beet (Cap 5,
+   HUD-Knopf wackelt). Rubbel-Overlay mit 9 Feldern, drei gleiche
+   Symbole zeigen den Gewinn; der Preis ist beim Ziehen bereits
+   verbucht (Abbruch verliert nichts). Gewichtete Preistabelle in
+   `data/scratch.ts`, skaliert am Erntewert der besten
+   freigeschalteten Sorte (Gold ×2/×6/×18, XP-Paket, Turbo-Dünger ×6,
+   Jackpot ×80). Lotteriegewinne zählen **nicht** zu `totalEarned` —
+   das Unlock-Pacing bleibt verkaufsgetrieben.
+4. **Turbo-Dünger:** Los-Gewinn; jede Ladung verdoppelt genau eine
+   Ernte (HUD-Chip zeigt den Vorrat). Das passive Ertrags-Upgrade
+   heißt zur Abgrenzung jetzt „Kompost" (id unverändert).
+
+Save-Format: v7 (`waterLeft` je Beet, Bestands-Crops erhalten volle
+Ladungen) und v8 (`scratchTickets`, `fertilizerCharges`).
 
 Der ursprüngliche Phasenplan (§8) läuft danach ab Phase 2 weiter;
 der Upgrade-Shop aus R4 ersetzt die Bewässerungs-Upgrades aus Phase 2.
