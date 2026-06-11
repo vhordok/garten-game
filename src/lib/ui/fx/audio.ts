@@ -1,6 +1,8 @@
-// Placeholder sound hooks (GAME_DESIGN.md §9.5): tiny WebAudio synth blips
-// behind a stable playSound() API — real samples can replace the presets
-// later without touching call sites. Preference persists outside the save.
+// Procedural sound design on WebAudio: every effect is synthesized in code
+// (no audio assets, GAME_DESIGN.md §9.5) behind the stable playSound() API.
+// A master compressor keeps overlapping bursts civilized, per-id throttles
+// stop spam (16 plots ripening at once = one pling), and slight random
+// detune keeps repeated sounds organic. Preference persists outside the save.
 
 export type SoundId =
   | 'sow'
@@ -14,11 +16,29 @@ export type SoundId =
   | 'legendary'
   | 'levelup'
   | 'water'
+  | 'ripe'
+  | 'ticket'
+  | 'scratch'
+  | 'open'
+  | 'close'
+  | 'welcome'
 
 const PREF_KEY = 'garten-imperium-sound'
 
+/** minimum ms between two plays of the same id */
+const THROTTLE: Partial<Record<SoundId, number>> = {
+  ripe: 350,
+  click: 35,
+  scratch: 35,
+  harvest: 25,
+  water: 50,
+}
+
 let enabled = readPref()
 let ctx: AudioContext | null = null
+let master: GainNode | null = null
+let noiseBuf: AudioBuffer | null = null
+const lastPlayed = new Map<SoundId, number>()
 
 function readPref(): boolean {
   try {
@@ -41,89 +61,190 @@ export function setSoundEnabled(value: boolean): void {
   }
 }
 
-function audioContext(): AudioContext | null {
-  if (ctx) return ctx
-  try {
-    ctx = new AudioContext()
-  } catch {
-    ctx = null
+function audio(): { ctx: AudioContext; master: GainNode } | null {
+  if (!ctx) {
+    try {
+      ctx = new AudioContext()
+    } catch {
+      return null
+    }
+    const compressor = ctx.createDynamicsCompressor()
+    compressor.threshold.value = -18
+    compressor.knee.value = 24
+    compressor.ratio.value = 6
+    master = ctx.createGain()
+    master.gain.value = 0.6
+    master.connect(compressor)
+    compressor.connect(ctx.destination)
   }
-  return ctx
+  // browsers start contexts suspended until a user gesture
+  if (ctx.state === 'suspended') void ctx.resume().catch(() => {})
+  return master ? { ctx, master } : null
 }
 
-/** One synth blip: frequency glides from→to over the duration. */
-function blip(
-  from: number,
-  to: number,
-  durationMs: number,
-  type: OscillatorType = 'square',
-  volume = 0.12,
-  delayMs = 0
-): void {
-  const ac = audioContext()
-  if (!ac) return
-  const t0 = ac.currentTime + delayMs / 1000
-  const t1 = t0 + durationMs / 1000
-  const osc = ac.createOscillator()
-  const gain = ac.createGain()
-  osc.type = type
-  osc.frequency.setValueAtTime(from, t0)
-  osc.frequency.exponentialRampToValueAtTime(Math.max(to, 1), t1)
-  gain.gain.setValueAtTime(volume, t0)
+function noiseBuffer(ac: AudioContext): AudioBuffer {
+  if (!noiseBuf) {
+    noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate)
+    const data = noiseBuf.getChannelData(0)
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
+  }
+  return noiseBuf
+}
+
+interface ToneOpts {
+  from: number
+  to?: number
+  /** start delay in ms */
+  at?: number
+  dur: number
+  type?: OscillatorType
+  vol?: number
+}
+
+/** One enveloped oscillator gliding from→to. */
+function tone(o: ToneOpts, pitch = 1): void {
+  const a = audio()
+  if (!a) return
+  const t0 = a.ctx.currentTime + (o.at ?? 0) / 1000
+  const t1 = t0 + o.dur / 1000
+  const drift = 1 + (Math.random() - 0.5) * 0.03
+  const osc = a.ctx.createOscillator()
+  const gain = a.ctx.createGain()
+  osc.type = o.type ?? 'square'
+  osc.frequency.setValueAtTime(Math.max(o.from * pitch * drift, 1), t0)
+  osc.frequency.exponentialRampToValueAtTime(Math.max((o.to ?? o.from) * pitch * drift, 1), t1)
+  gain.gain.setValueAtTime(o.vol ?? 0.08, t0)
   gain.gain.exponentialRampToValueAtTime(0.001, t1)
-  osc.connect(gain).connect(ac.destination)
+  osc.connect(gain)
+  gain.connect(a.master)
   osc.start(t0)
   osc.stop(t1)
 }
 
-/** Fire-and-forget sound effect. Call from user-gesture handlers. */
-export function playSound(id: SoundId): void {
+interface NoiseOpts {
+  at?: number
+  dur: number
+  vol?: number
+  /** band/lowpass center frequency */
+  freq?: number
+  q?: number
+  type?: BiquadFilterType
+}
+
+/** Filtered white-noise burst (splashes, rustles, foil scratches). */
+function noise(o: NoiseOpts): void {
+  const a = audio()
+  if (!a) return
+  const t0 = a.ctx.currentTime + (o.at ?? 0) / 1000
+  const t1 = t0 + o.dur / 1000
+  const src = a.ctx.createBufferSource()
+  src.buffer = noiseBuffer(a.ctx)
+  const filter = a.ctx.createBiquadFilter()
+  filter.type = o.type ?? 'bandpass'
+  filter.frequency.value = o.freq ?? 2000
+  filter.Q.value = o.q ?? 0.9
+  const gain = a.ctx.createGain()
+  gain.gain.setValueAtTime(o.vol ?? 0.1, t0)
+  gain.gain.exponentialRampToValueAtTime(0.001, t1)
+  src.connect(filter)
+  filter.connect(gain)
+  gain.connect(a.master)
+  src.start(t0, Math.random() * 0.4)
+  src.stop(t1)
+}
+
+/**
+ * Fire-and-forget sound effect. `pitch` scales all frequencies — harvest
+ * calls pass a rising factor with the combo chain.
+ */
+export function playSound(id: SoundId, pitch = 1): void {
   if (!enabled) return
+  const minGap = THROTTLE[id]
+  if (minGap) {
+    const now = performance.now()
+    if (now - (lastPlayed.get(id) ?? -1e9) < minGap) return
+    lastPlayed.set(id, now)
+  }
+
   switch (id) {
-    case 'sow':
-      blip(240, 170, 90, 'square', 0.08)
-      break
-    case 'harvest':
-      blip(520, 660, 70, 'square', 0.1)
-      blip(700, 920, 80, 'square', 0.08, 60)
-      break
-    case 'sell':
-      blip(880, 1320, 90, 'triangle', 0.14)
-      blip(1100, 1760, 110, 'triangle', 0.1, 70)
-      break
-    case 'buy':
-      blip(300, 420, 120, 'square', 0.1)
-      blip(420, 560, 110, 'square', 0.09, 100)
-      break
     case 'click':
-      blip(720, 680, 35, 'square', 0.05)
+      tone({ from: 800, to: 740, dur: 30, vol: 0.045 })
       break
-    case 'error':
-      blip(140, 90, 130, 'sawtooth', 0.08)
+    case 'open':
+      tone({ from: 330, to: 540, dur: 80, type: 'triangle', vol: 0.07 })
+      tone({ from: 1080, dur: 35, at: 60, type: 'triangle', vol: 0.035 })
       break
-    case 'unlock':
-      blip(523, 523, 80, 'square', 0.1)
-      blip(659, 659, 80, 'square', 0.1, 90)
-      blip(784, 784, 130, 'square', 0.11, 180)
+    case 'close':
+      tone({ from: 540, to: 310, dur: 90, type: 'triangle', vol: 0.06 })
       break
-    case 'perfect':
-      blip(660, 880, 70, 'square', 0.11)
-      blip(1100, 1480, 110, 'triangle', 0.12, 60)
-      break
-    case 'legendary':
-      blip(440, 440, 70, 'square', 0.12)
-      blip(660, 660, 70, 'square', 0.12, 80)
-      blip(880, 1760, 220, 'triangle', 0.14, 160)
-      break
-    case 'levelup':
-      blip(392, 392, 90, 'square', 0.11)
-      blip(523, 523, 90, 'square', 0.11, 100)
-      blip(659, 659, 90, 'square', 0.11, 200)
-      blip(784, 1046, 260, 'triangle', 0.13, 300)
+    case 'sow':
+      noise({ dur: 90, freq: 750, type: 'lowpass', vol: 0.16 })
+      tone({ from: 210, to: 150, dur: 80, vol: 0.05 })
       break
     case 'water':
-      blip(440, 280, 70, 'sine', 0.12)
-      blip(330, 200, 90, 'sine', 0.09, 55)
+      noise({ dur: 130, freq: 1700, q: 0.7, vol: 0.16 })
+      tone({ from: 520, to: 260, dur: 90, type: 'sine', vol: 0.08 })
+      tone({ from: 880, to: 1420, dur: 45, at: 85, type: 'sine', vol: 0.05 })
+      break
+    case 'ripe':
+      tone({ from: 659, dur: 100, type: 'triangle', vol: 0.06 })
+      tone({ from: 988, dur: 130, at: 80, type: 'triangle', vol: 0.045 })
+      break
+    case 'harvest':
+      tone({ from: 420, to: 580, dur: 55, vol: 0.09 }, pitch)
+      tone({ from: 960, to: 1260, dur: 70, at: 45, type: 'triangle', vol: 0.07 }, pitch)
+      break
+    case 'sell':
+      tone({ from: 740, dur: 60, type: 'triangle', vol: 0.11 })
+      tone({ from: 1108, dur: 70, at: 70, type: 'triangle', vol: 0.1 })
+      noise({ dur: 35, at: 70, freq: 5200, q: 2, vol: 0.04 })
+      tone({ from: 1480, dur: 80, at: 145, type: 'triangle', vol: 0.05 })
+      break
+    case 'buy':
+      tone({ from: 230, to: 320, dur: 90, vol: 0.1 })
+      tone({ from: 480, dur: 80, at: 95, vol: 0.08 })
+      break
+    case 'error':
+      tone({ from: 130, to: 85, dur: 160, type: 'sawtooth', vol: 0.07 })
+      tone({ from: 62, dur: 110, vol: 0.04 })
+      break
+    case 'unlock':
+      tone({ from: 523, dur: 75, vol: 0.08 })
+      tone({ from: 659, dur: 75, at: 85, vol: 0.08 })
+      tone({ from: 784, dur: 90, at: 170, vol: 0.09 })
+      tone({ from: 1046, dur: 160, at: 260, type: 'triangle', vol: 0.08 })
+      break
+    case 'perfect':
+      tone({ from: 700, to: 1400, dur: 130, type: 'triangle', vol: 0.1 })
+      tone({ from: 1760, dur: 70, at: 110, type: 'triangle', vol: 0.07 })
+      noise({ dur: 60, at: 100, freq: 6500, q: 2.5, vol: 0.03 })
+      break
+    case 'legendary':
+      tone({ from: 220, to: 880, dur: 260, type: 'sawtooth', vol: 0.06 })
+      tone({ from: 440, dur: 190, at: 250, vol: 0.11 })
+      tone({ from: 660, dur: 190, at: 250, vol: 0.09 })
+      tone({ from: 1760, to: 2350, dur: 220, at: 270, type: 'triangle', vol: 0.06 })
+      break
+    case 'levelup':
+      tone({ from: 392, dur: 90, vol: 0.1 })
+      tone({ from: 523, dur: 90, at: 110, vol: 0.1 })
+      tone({ from: 659, dur: 90, at: 220, vol: 0.1 })
+      tone({ from: 784, to: 1046, dur: 320, at: 330, type: 'triangle', vol: 0.12 })
+      noise({ dur: 220, at: 330, freq: 7000, q: 1.2, vol: 0.025 })
+      break
+    case 'ticket':
+      tone({ from: 1046, dur: 60, type: 'triangle', vol: 0.08 })
+      tone({ from: 1318, dur: 60, at: 65, type: 'triangle', vol: 0.08 })
+      tone({ from: 1568, dur: 70, at: 130, type: 'triangle', vol: 0.08 })
+      tone({ from: 2093, dur: 110, at: 200, type: 'triangle', vol: 0.06 })
+      break
+    case 'scratch':
+      noise({ dur: 50, freq: 2600, q: 0.8, vol: 0.1 })
+      break
+    case 'welcome':
+      tone({ from: 392, dur: 130, type: 'triangle', vol: 0.07 })
+      tone({ from: 494, dur: 130, at: 140, type: 'triangle', vol: 0.07 })
+      tone({ from: 587, dur: 200, at: 280, type: 'triangle', vol: 0.08 })
       break
   }
 }

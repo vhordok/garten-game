@@ -56,6 +56,7 @@
           ? ` — ${offline.ripened} ${offline.ripened === 1 ? 'Pflanze ist' : 'Pflanzen sind'} reif geworden!`
           : '.'
       pushToast(`Willkommen zurück! Du warst ${formatDuration(offline.awaySeconds)} weg${grown}`, '🌅', 9000)
+      playSound('welcome')
     }
   })
 

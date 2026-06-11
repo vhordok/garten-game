@@ -22,6 +22,7 @@
   }
 
   function handleHarvestAll(e: MouseEvent) {
+    const comboPitch = 1 + Math.min($gameStore.combo.count, 20) * 0.035
     const { units, crit, levelUps, tickets } = harvestAllReady()
     if (units > 0) {
       const [cx, cy] = eventCenter(e)
@@ -34,6 +35,7 @@
           '🎟️',
           7000
         )
+        playSound('ticket')
       }
       if (crit === 'legendary') {
         legendaryBurst(cx, cy)
@@ -45,7 +47,7 @@
         screenShake(0.6)
       } else {
         coinBurst(cx, cy, Math.min(10 + units * 2, 40))
-        playSound('harvest')
+        playSound('harvest', comboPitch)
         screenShake(0.5)
       }
     }

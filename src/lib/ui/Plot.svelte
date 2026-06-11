@@ -1,6 +1,7 @@
 <script lang="ts">
   import { plantById } from '../data/plants'
   import { harvestPlot, sowPlot, waterPlot, type CritTier } from '../game/actions'
+  import { gameStore } from '../game/state'
   import type { PlotState } from '../game/types'
   import { formatDuration } from '../util/format'
   import { playSound } from './fx/audio'
@@ -38,6 +39,14 @@
   const selectedDef = $derived(plantById(selectedId))
   const canSow = $derived(!def && selectedDef !== undefined && money >= selectedDef.seedCost)
 
+  // soft pling when a crop turns harvestable (baseline run stays silent,
+  // the audio layer throttles batches into a single pling)
+  let wasReady: boolean | null = null
+  $effect(() => {
+    if (wasReady !== null && ready && !wasReady) playSound('ripe')
+    wasReady = ready
+  })
+
   interface Floater {
     id: number
     text: string
@@ -55,7 +64,7 @@
     }, 1100)
   }
 
-  function harvestFx(cx: number, cy: number, units: number, crit: CritTier) {
+  function harvestFx(cx: number, cy: number, units: number, crit: CritTier, comboPitch: number) {
     if (crit === 'legendary') {
       spawnFloater(`+${units} ✦LEGENDÄR✦`, 'legendary')
       legendaryBurst(cx, cy)
@@ -68,7 +77,7 @@
     } else {
       spawnFloater(`+${units}`, 'gain')
       coinBurst(cx, cy, 10 + units * 2)
-      playSound('harvest')
+      playSound('harvest', comboPitch)
     }
   }
 
@@ -77,11 +86,16 @@
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
     if (def && ready) {
+      // read the chain BEFORE harvesting: every link nudges the pitch up
+      const comboPitch = 1 + Math.min($gameStore.combo.count, 20) * 0.035
       const { units, crit, levelUps, tickets } = harvestPlot(index)
       if (units > 0) {
-        harvestFx(cx, cy, units, crit)
+        harvestFx(cx, cy, units, crit, comboPitch)
         celebrateLevelUps(levelUps, cx, cy)
-        if (tickets > 0) pushToast('Ein Rubbellos lag in der Ernte — oben im HUD rubbeln!', '🎟️', 7000)
+        if (tickets > 0) {
+          pushToast('Ein Rubbellos lag in der Ernte — oben im HUD rubbeln!', '🎟️', 7000)
+          playSound('ticket')
+        }
       }
     } else if (def && !ready) {
       if (waterPlot(index)) {
