@@ -1,6 +1,11 @@
 import { plantById } from '../data/plants'
 import { growthMultiplier } from './modifiers'
-import type { GameState, PlotState } from './types'
+import type { GameState, PlantDef, PlotState } from './types'
+
+/** Duration of the plot's current cycle (regrow cycles are shorter). */
+export function cycleTime(plot: PlotState, def: PlantDef): number {
+  return plot.regrowing && def.regrowTime ? def.regrowTime : def.growTime
+}
 
 /**
  * Advance the simulation by dtSeconds. Single source of truth for time-based
@@ -15,8 +20,9 @@ export function tick(state: GameState, dtSeconds: number): boolean {
     if (!plot.plantId) continue
     const def = plantById(plot.plantId)
     if (!def) continue
-    if (plot.progress < def.growTime) {
-      plot.progress = Math.min(plot.progress + grownSeconds, def.growTime)
+    const target = cycleTime(plot, def)
+    if (plot.progress < target) {
+      plot.progress = Math.min(plot.progress + grownSeconds, target)
       changed = true
     }
   }
@@ -40,5 +46,5 @@ export function tick(state: GameState, dtSeconds: number): boolean {
 export function plotReady(plot: PlotState): boolean {
   if (!plot.plantId) return false
   const def = plantById(plot.plantId)
-  return def !== undefined && plot.progress >= def.growTime
+  return def !== undefined && plot.progress >= cycleTime(plot, def)
 }

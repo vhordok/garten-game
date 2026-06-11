@@ -20,6 +20,8 @@ export interface PlantDef {
   seedCost: number
   /** seconds from sowing until harvestable */
   growTime: number
+  /** if set, the plant stays after harvest and re-ripens in this many seconds */
+  regrowTime?: number
   /** harvested units per harvest */
   yield: number
   /** money per harvested unit when sold */
@@ -48,10 +50,12 @@ export interface UpgradeDef {
 export interface PlotState {
   /** id of the planted PlantDef, null = empty plot */
   plantId: string | null
-  /** seconds grown so far (capped at the plant's growTime) */
+  /** seconds grown so far (capped at the current cycle's grow time) */
   progress: number
-  /** active-watering charges left for the current crop */
+  /** active-watering charges left for the current cycle */
   waterLeft: number
+  /** true once a regrow plant was harvested at least once (shorter cycles) */
+  regrowing: boolean
 }
 
 export interface GameStats {

@@ -9,7 +9,7 @@ import { UPGRADES, upgradeById } from '../data/upgrades'
 import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
 import { generateQuest, refillQuests } from './quests'
 import { emptyPlot, getState, notify } from './state'
-import { plotReady } from './tick'
+import { cycleTime, plotReady } from './tick'
 import type { GameState, PlantDef, UpgradeDef } from './types'
 
 export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
@@ -35,7 +35,21 @@ export function sowPlot(index: number): boolean {
   plot.plantId = def.id
   plot.progress = 0
   plot.waterLeft = CONFIG.waterChargesPerCrop
+  plot.regrowing = false
   s.stats.planted += 1
+  notify()
+  return true
+}
+
+/** Rip out a plant (no refund) — frees the plot for something better. */
+export function clearPlot(index: number): boolean {
+  const s = getState()
+  const plot = s.plots[index]
+  if (!plot || plot.plantId === null) return false
+  plot.plantId = null
+  plot.progress = 0
+  plot.waterLeft = 0
+  plot.regrowing = false
   notify()
   return true
 }
@@ -49,8 +63,10 @@ export function waterPlot(index: number): boolean {
   const plot = s.plots[index]
   if (!plot || !plot.plantId || plot.waterLeft <= 0) return false
   const def = plantById(plot.plantId)
-  if (!def || plot.progress >= def.growTime) return false
-  plot.progress = Math.min(plot.progress + def.growTime * CONFIG.waterProgressBoost, def.growTime)
+  if (!def) return false
+  const target = cycleTime(plot, def)
+  if (plot.progress >= target) return false
+  plot.progress = Math.min(plot.progress + target * CONFIG.waterProgressBoost, target)
   plot.waterLeft -= 1
   notify()
   return true
@@ -119,9 +135,17 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
-  plot.plantId = null
-  plot.progress = 0
-  plot.waterLeft = 0
+  if (def.regrowTime) {
+    // berries & trees stay and re-ripen in a shorter cycle, fresh water charges
+    plot.progress = 0
+    plot.regrowing = true
+    plot.waterLeft = CONFIG.waterChargesPerCrop
+  } else {
+    plot.plantId = null
+    plot.progress = 0
+    plot.waterLeft = 0
+    plot.regrowing = false
+  }
   let tickets = 0
   if (Math.random() < CONFIG.scratchDropChance && s.scratchTickets < CONFIG.scratchMaxPending) {
     s.scratchTickets += 1

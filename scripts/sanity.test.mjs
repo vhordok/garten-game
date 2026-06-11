@@ -11,12 +11,13 @@ globalThis.localStorage ??= {
   removeItem: () => {},
 }
 import { CONFIG } from '../src/lib/data/config.ts'
-import { PLANTS } from '../src/lib/data/plants.ts'
+import { PLANTS, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
   buyUpgrade,
+  clearPlot,
   drawScratchCard,
   ensureQuests,
   fulfillQuest,
@@ -445,16 +446,63 @@ test('turbo fertilizer: one charge doubles one harvest', () => {
   })
 })
 
-test('plant data: unlock order matches rising profit per second', () => {
+test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
   let lastUnlock = -1
   let lastProfit = 0
   for (const plant of PLANTS) {
     assert.ok(plant.unlockAtTotalEarned > lastUnlock || plant.unlockAtTotalEarned === 0, `${plant.id}: unlocks must ascend`)
-    const profit = (plant.yield * plant.sellValue - plant.seedCost) / plant.growTime
-    assert.ok(profit > lastProfit, `${plant.id}: profit/s must beat the previous plant (${profit.toFixed(3)} vs ${lastProfit.toFixed(3)})`)
+    const profit = steadyProfitPerSecond(plant)
+    assert.ok(
+      profit > lastProfit * 1.5,
+      `${plant.id}: steady profit/s must clearly beat the previous plant (${profit.toFixed(2)} vs ${lastProfit.toFixed(2)})`
+    )
+    const roi = (plant.yield * plant.sellValue) / plant.seedCost
+    if (plant.regrowTime) {
+      assert.ok(roi >= 1 / 3, `${plant.id}: seed must pay back within three harvests (×${roi.toFixed(2)})`)
+      assert.ok(plant.regrowTime < plant.growTime, `${plant.id}: regrow must be faster than first growth`)
+    } else {
+      assert.ok(roi >= 3, `${plant.id}: a seed must at least triple its money (×${roi.toFixed(2)})`)
+    }
     lastUnlock = plant.unlockAtTotalEarned
     lastProfit = profit
   }
+})
+
+test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e15 // unlock everything
+    selectPlant('erdbeere')
+    const berry = PLANTS.find((p) => p.id === 'erdbeere')
+    assert.ok(sowPlot(0))
+    tick(s, berry.growTime)
+    assert.ok(plotReady(s.plots[0]))
+
+    const first = harvestPlot(0)
+    assert.equal(first.units, berry.yield)
+    assert.equal(s.plots[0].plantId, 'erdbeere', 'bush must stay planted')
+    assert.equal(s.plots[0].regrowing, true)
+    assert.equal(s.plots[0].waterLeft, CONFIG.waterChargesPerCrop, 'fresh charges per cycle')
+
+    // not ready after the OLD grow time fraction, but after regrowTime it is
+    tick(s, berry.regrowTime - 1)
+    assert.equal(plotReady(s.plots[0]), false)
+    tick(s, 1)
+    assert.ok(plotReady(s.plots[0]), 'regrow cycle uses the shorter time')
+    assert.equal(harvestPlot(0).units, berry.yield)
+
+    // regrow state survives a save roundtrip
+    const code = exportSave()
+    fresh()
+    importSave(code)
+    assert.equal(getState().plots[0].regrowing, true)
+
+    // rip out the bush
+    assert.ok(clearPlot(0))
+    assert.equal(getState().plots[0].plantId, null)
+    assert.equal(clearPlot(0), false)
+  })
 })
 
 test('offline progress runs through the same tick', () => {

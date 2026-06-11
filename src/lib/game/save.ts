@@ -8,7 +8,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 8
+export const SAVE_VERSION = 9
 
 interface SaveEnvelope {
   version: number
@@ -132,6 +132,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 7:
       // v7 → v8: scratch tickets + fertilizer charges; default 0.
       return { ...envelope, version: 8 }
+    case 8:
+      // v8 → v9: regrow flag per plot (berries/trees); defaults to false.
+      return { ...envelope, version: 9 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -158,13 +161,16 @@ function sanitize(raw: unknown): GameState {
       const plot = p as Record<string, unknown>
       const def = typeof plot.plantId === 'string' ? plantById(plot.plantId) : undefined
       if (!def) return emptyPlot()
+      const regrowing = plot.regrowing === true && typeof def.regrowTime === 'number'
+      const target = regrowing && def.regrowTime ? def.regrowTime : def.growTime
       return {
         plantId: def.id,
-        progress: clampNumber(plot.progress, 0, 0, def.growTime),
+        progress: clampNumber(plot.progress, 0, 0, target),
         // older saves lack the field — be generous and grant full charges
         waterLeft: Math.floor(
           clampNumber(plot.waterLeft, CONFIG.waterChargesPerCrop, 0, CONFIG.waterChargesPerCrop)
         ),
+        regrowing,
       }
     })
     while (plots.length < CONFIG.startPlots) plots.push(emptyPlot())
