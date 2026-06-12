@@ -54,6 +54,8 @@ function note(key, label, t) {
 function bestPlant() {
   let best = PLANTS[0]
   for (const p of PLANTS) {
+    if (p.beautyBonus || p.passiveIncome) continue // not the sim's business
+    if (p.requiresLicense && s.licenses < p.requiresLicense) continue
     if (s.totalEarned < p.unlockAtTotalEarned) continue
     if (p.seedCost > s.money) continue
     best = p
