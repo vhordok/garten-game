@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { LICENSES } from '../data/licenses'
   import { UPGRADES } from '../data/upgrades'
-  import { buyUpgrade, nextUpgradeCost, upgradeLevel } from '../game/actions'
+  import { buyLicense, buyUpgrade, nextUpgradeCost, upgradeLevel } from '../game/actions'
   import { gameStore } from '../game/state'
   import type { UpgradeDef, UpgradeSection } from '../game/types'
   import { formatDuration, formatNumber } from '../util/format'
@@ -68,6 +69,16 @@
     }
   }
 
+  function handleBuyLicense(e: MouseEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    if (buyLicense()) {
+      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 20)
+      playSound('levelup')
+    } else {
+      playSound('error')
+    }
+  }
+
   function handleBuy(e: MouseEvent, upgradeId: string) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     if (buyUpgrade(upgradeId)) {
@@ -118,6 +129,33 @@
       {/each}
     </ul>
   {/each}
+
+  <h3 class="section">Lizenzen — medizinischer Anbau</h3>
+  <ul class="shop-list">
+    {#each LICENSES as lic (lic.level)}
+      {@const owned = $gameStore.licenses >= lic.level}
+      {@const isNext = $gameStore.licenses + 1 === lic.level}
+      {@const met = lic.requirementMet($gameStore)}
+      <li class="row" class:dimmed={!owned && !isNext}>
+        <span class="icon"><PixelIcon name={owned ? 'pokal' : 'lock'} scale={3} /></span>
+        <span class="info">
+          <span class="name">{lic.name}</span>
+          <span class="desc">{lic.description}</span>
+          <span class="effect num">Bedingung: {lic.requirementText} {met ? '✓' : '✗'}</span>
+        </span>
+        {#if owned}
+          <span class="maxed">AKTIV</span>
+        {:else if isNext}
+          <button class="pxbtn gold num buy" disabled={!met || $gameStore.money < lic.cost} onclick={handleBuyLicense}>
+            <PixelIcon name="coin" scale={1} />
+            {formatNumber(lic.cost)}
+          </button>
+        {:else}
+          <span class="maxed">—</span>
+        {/if}
+      </li>
+    {/each}
+  </ul>
 </Overlay>
 
 <style>
@@ -193,6 +231,10 @@
 
   .buy {
     flex: none;
+  }
+
+  .dimmed {
+    opacity: 0.5;
   }
 
   .maxed {

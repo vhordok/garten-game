@@ -13,7 +13,9 @@
     gemuese: 'Gemüse',
     beeren: 'Beeren',
     obst: 'Obst',
+    baeume: 'Bäume',
     zier: 'Zier',
+    cannabis: 'Hanf',
     magie: 'Magie',
   }
 
@@ -27,7 +29,9 @@
 
   function catUnlocked(cat: PlantCategory): boolean {
     const first = PLANTS.find((p) => p.category === cat)
-    return first !== undefined && $gameStore.totalEarned >= first.unlockAtTotalEarned
+    if (!first) return false
+    if (first.requiresLicense && $gameStore.licenses < first.requiresLicense) return false
+    return $gameStore.totalEarned >= first.unlockAtTotalEarned
   }
 
   function catUnlockAt(cat: PlantCategory): number {
@@ -86,7 +90,9 @@
 
   <div class="hotbar pxpanel">
     {#each slots as plant, i (plant.id)}
-      {@const unlocked = $gameStore.totalEarned >= plant.unlockAtTotalEarned}
+      {@const unlocked =
+        $gameStore.totalEarned >= plant.unlockAtTotalEarned &&
+        (!plant.requiresLicense || $gameStore.licenses >= plant.requiresLicense)}
       {@const selected = $gameStore.selectedPlantId === plant.id}
       {@const affordable = $gameStore.money >= plant.seedCost}
       <button
@@ -122,6 +128,8 @@
             <span class="tip-profit num">
               {#if plant.beautyBonus}
                 +{Math.round(plant.beautyBonus * 100)} % Verkaufspreis, solange sie steht
+              {:else if plant.passiveIncome}
+                ≈ {formatNumber(plant.passiveIncome)} Gold/s passiv, sobald ausgewachsen
               {:else}
                 ≈ {formatNumber(steadyProfitPerSecond(plant))} Gold/s
                 {#if plant.regrowTime}
@@ -132,7 +140,9 @@
           {:else}
             <b class="tip-name">???</b>
             <span class="tip-desc">
-              Wird ab {formatNumber(plant.unlockAtTotalEarned)} Gesamteinnahmen freigeschaltet.
+              Wird ab {formatNumber(plant.unlockAtTotalEarned)} Gesamteinnahmen freigeschaltet{plant.requiresLicense
+                ? ` — und braucht Lizenz ${plant.requiresLicense} (Shop)`
+                : ''}.
             </span>
           {/if}
         </span>

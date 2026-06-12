@@ -1,6 +1,7 @@
 // Persistence: localStorage save/load with versioning, export/import as
 // base64 code. Bump SAVE_VERSION + add a migrate() step on format changes.
 
+import { achievementById } from '../data/achievements'
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
 import { questSlots } from '../data/progression'
@@ -9,7 +10,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 12
+export const SAVE_VERSION = 18
 
 interface SaveEnvelope {
   version: number
@@ -147,6 +148,24 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 11:
       // v11 → v12: helper accumulators; sanitize() defaults them to 0.
       return { ...envelope, version: 12 }
+    case 12:
+      // v12 → v13: market-wave clock; defaults to 0.
+      return { ...envelope, version: 13 }
+    case 13:
+      // v13 → v14: daily gift streak; defaults claimable.
+      return { ...envelope, version: 14 }
+    case 14:
+      // v14 → v15: weather events — transient, sanitize() clears them.
+      return { ...envelope, version: 15 }
+    case 15:
+      // v15 → v16: achievements list; defaults empty (re-earned via checks).
+      return { ...envelope, version: 16 }
+    case 16:
+      // v16 → v17: cannabis licenses; default 0.
+      return { ...envelope, version: 17 }
+    case 17:
+      // v17 → v18: records + earnings history; defaults empty.
+      return { ...envelope, version: 18 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -229,6 +248,40 @@ function sanitize(raw: unknown): GameState {
     harvest: clampNumber(acc.harvest, 0, 0, 3600),
     sow: clampNumber(acc.sow, 0, 0, 3600),
     sell: clampNumber(acc.sell, 0, 0, 3600),
+  }
+  state.marketTime = clampNumber(r.marketTime, 0, 0, 1e12)
+  const daily = (typeof r.daily === 'object' && r.daily !== null ? r.daily : {}) as Record<string, unknown>
+  state.daily = {
+    lastClaim: Math.floor(clampNumber(daily.lastClaim, 0, 0, 1e7)),
+    streak: Math.floor(clampNumber(daily.streak, 0, 0, 1e6)),
+  }
+  // weather is a live moment — never restored from a save
+  state.weather = { id: null, remaining: 0 }
+
+  const achievements: string[] = []
+  if (Array.isArray(r.achievements)) {
+    for (const id of r.achievements) {
+      if (typeof id === 'string' && achievementById(id) && !achievements.includes(id)) {
+        achievements.push(id)
+      }
+    }
+  }
+  state.achievements = achievements
+  state.licenses = Math.floor(clampNumber(r.licenses, 0, 0, 3))
+
+  const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
+  state.records = {
+    bestHarvest: Math.floor(clampNumber(rec.bestHarvest, 0)),
+    longestCombo: Math.floor(clampNumber(rec.longestCombo, 0)),
+    biggestWin: Math.floor(clampNumber(rec.biggestWin, 0)),
+  }
+  state.history = Array.isArray(r.history)
+    ? r.history.slice(-48).map((v) => clampNumber(v, 0))
+    : []
+  const hAcc = (typeof r.historyAcc === 'object' && r.historyAcc !== null ? r.historyAcc : {}) as Record<string, unknown>
+  state.historyAcc = {
+    seconds: clampNumber(hAcc.seconds, 0, 0, 1800),
+    earnedStart: clampNumber(hAcc.earnedStart, state.lifetimeEarned, 0),
   }
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))

@@ -1,17 +1,21 @@
 <script lang="ts">
-  import { buyPlot, harvestAllReady, maxPlots, nextPlotCost } from '../game/actions'
+  import { buyPlot, harvestAllReady, maxPlots, nextPlotCost, sowAllEmpty, waterAllGrowing } from '../game/actions'
   import { gameStore } from '../game/state'
   import { plotReady } from '../game/tick'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
   import { celebrateLevelUps } from './fx/celebrate'
-  import { coinBurst, leafBurst, legendaryBurst, perfectBurst } from './fx/particles'
+  import { coinBurst, leafBurst, legendaryBurst, perfectBurst, waterBurst } from './fx/particles'
   import { screenShake } from './fx/shake'
   import PixelIcon from './PixelIcon.svelte'
   import Plot from './Plot.svelte'
   import { pushToast } from './toasts'
 
   const readyCount = $derived($gameStore.plots.filter(plotReady).length)
+  const emptyCount = $derived($gameStore.plots.filter((p) => p.plantId === null).length)
+  const waterableCount = $derived(
+    $gameStore.plots.filter((p) => p.plantId !== null && p.waterLeft > 0 && !plotReady(p)).length
+  )
   const plotCost = $derived(nextPlotCost($gameStore))
   const canBuyMore = $derived($gameStore.plots.length < maxPlots($gameStore))
   // roughly square field, 4–7 columns depending on plot count
@@ -55,6 +59,28 @@
     }
   }
 
+  function handleSowAll(e: MouseEvent) {
+    const count = sowAllEmpty()
+    if (count > 0) {
+      const [cx, cy] = eventCenter(e)
+      leafBurst(cx, cy, Math.min(8 + count * 2, 24))
+      playSound('sow')
+    } else {
+      playSound('error')
+    }
+  }
+
+  function handleWaterAll(e: MouseEvent) {
+    const count = waterAllGrowing()
+    if (count > 0) {
+      const [cx, cy] = eventCenter(e)
+      waterBurst(cx, cy)
+      playSound('water')
+    } else {
+      playSound('error')
+    }
+  }
+
   function handleBuyPlot(e: MouseEvent) {
     const [cx, cy] = eventCenter(e)
     if (buyPlot()) {
@@ -68,6 +94,12 @@
 <section class="garden" aria-label="Dein Garten">
   <div class="garden-head">
     <span class="chip num">Beete {$gameStore.plots.length}/{maxPlots($gameStore)}</span>
+    <button class="pxbtn small" disabled={emptyCount === 0} onclick={handleSowAll} title="Gewählte Sorte auf alle leeren Beete säen">
+      Alle säen{emptyCount > 0 ? ` (${emptyCount})` : ''}
+    </button>
+    <button class="pxbtn small" disabled={waterableCount === 0} onclick={handleWaterAll} title="Eine Gieß-Ladung auf jedes wachsende Beet">
+      Alle gießen{waterableCount > 0 ? ` (${waterableCount})` : ''}
+    </button>
     <button
       class="pxbtn primary"
       class:attention={readyCount > 0}

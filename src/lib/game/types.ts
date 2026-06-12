@@ -26,12 +26,19 @@ export interface PlantDef {
   /** ornamental plants: no harvest — while mature they add this fraction
    * to the global sell price ("Gartenschönheit", GAME_DESIGN §3) */
   beautyBonus?: number
+  /** timber trees: no harvest — while mature they trickle this much gold
+   * per second (sold as wood, so sell multipliers apply) */
+  passiveIncome?: number
   /** harvested units per harvest */
   yield: number
   /** money per harvested unit when sold */
   sellValue: number
   /** available once lifetime earnings (totalEarned) reach this value */
   unlockAtTotalEarned: number
+  /** cannabis: additionally requires this license level (see data/licenses) */
+  requiresLicense?: number
+  /** cannabis care: below this Gießkannen-Stufe the plant grows at half speed */
+  needsWateringLevel?: number
 }
 
 export type UpgradeEffect =
@@ -152,6 +159,22 @@ export interface GameState {
   fertilizerCharges: number
   /** helper automation accumulators (seconds of pending work) */
   helperAcc: { harvest: number; sow: number; sell: number }
+  /** market-wave clock in seconds (advanced by tick, drives sell prices) */
+  marketTime: number
+  /** daily gift: last claimed local day index + consecutive-day streak */
+  daily: { lastClaim: number; streak: number }
+  /** active weather event (transient; ticks drain it, loading clears it) */
+  weather: { id: string | null; remaining: number }
+  /** unlocked achievement ids — each grants +1 % permanent yield */
+  achievements: string[]
+  /** cannabis license level owned (0–3), survives prestige */
+  licenses: number
+  /** personal records (survive prestige) */
+  records: { bestHarvest: number; longestCombo: number; biggestWin: number }
+  /** earnings per 30-min bucket, newest last (ring of 48 ≈ 24 h) */
+  history: number[]
+  /** current history bucket: elapsed seconds + lifetime earnings at start */
+  historyAcc: { seconds: number; earnedStart: number }
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

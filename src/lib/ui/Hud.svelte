@@ -2,8 +2,8 @@
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
   import { xpToNext } from '../data/progression'
-  import { anyUpgradeAffordable, compostGain, inventoryValue, leaseRequirement, questFulfillable, sellAll } from '../game/actions'
-  import { comboMultiplier, comboWindowSeconds } from '../game/modifiers'
+  import { anyUpgradeAffordable, compostGain, dailyClaimable, inventoryValue, leaseRequirement, questFulfillable, sellAll } from '../game/actions'
+  import { comboMultiplier, comboWindowSeconds, marketFactor } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -17,6 +17,8 @@
     onOpenQuests,
     onOpenScratch,
     onOpenPrestige,
+    onOpenDaily,
+    onOpenAchievements,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
@@ -24,10 +26,13 @@
     onOpenQuests: () => void
     onOpenScratch: () => void
     onOpenPrestige: () => void
+    onOpenDaily: () => void
+    onOpenAchievements: () => void
   } = $props()
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
   const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
+  const dailyReady = $derived(dailyClaimable($gameStore))
   const prestigeGain = $derived(compostGain($gameStore))
   const prestigeReady = $derived(prestigeGain >= leaseRequirement($gameStore))
   const showPrestige = $derived(prestigeGain >= 1 || $gameStore.parcels > 1)
@@ -52,6 +57,8 @@
   const comboFraction = $derived(
     Math.min($gameStore.combo.remaining / comboWindowSeconds($gameStore), 1)
   )
+
+  const marketPct = $derived(Math.round((marketFactor($gameStore) - 1) * 100))
 
   const xpNeeded = $derived(xpToNext($gameStore.level))
   const xpFraction = $derived(Math.min($gameStore.xp / xpNeeded, 1))
@@ -78,6 +85,15 @@
       <span class="coin-pulse"><PixelIcon name="coin" scale={2} /></span>
     {/key}
     <span class="amount">{formatNumber(shownMoney.current)}</span>
+  </div>
+
+  <div
+    class="chip num market"
+    class:up={marketPct > 3}
+    class:down={marketPct < -3}
+    title="Marktpreise schwanken — im Hoch verkaufen lohnt! Wirkt auf alle Verkäufe (Aufträge sind Festpreise)."
+  >
+    {marketPct > 0 ? '▲' : marketPct < 0 ? '▼' : '◆'} {marketPct > 0 ? '+' : ''}{marketPct} %
   </div>
 
   {#if $gameStore.fertilizerCharges > 0}
@@ -114,6 +130,11 @@
     </button>
   {/if}
 
+  <button class="pxbtn" onclick={onOpenDaily} title="Tagesbonus — jeden Tag ein Geschenk">
+    <PixelIcon name="geschenk" scale={1} />
+    {#if dailyReady}<span class="dot" aria-hidden="true"></span>{/if}
+  </button>
+
   <button class="pxbtn" onclick={onOpenShop} title="Shop — dauerhafte Upgrades">
     <PixelIcon name="giesskanne" scale={1} />
     {#if upgradeHint}<span class="dot" aria-hidden="true"></span>{/if}
@@ -130,6 +151,10 @@
       {#if prestigeReady}<span class="dot prestige" aria-hidden="true"></span>{/if}
     </button>
   {/if}
+
+  <button class="pxbtn" onclick={onOpenAchievements} title="Erfolge — jeder gibt +1 % Ertrag">
+    <PixelIcon name="pokal" scale={1} />
+  </button>
 
   <button class="pxbtn" onclick={onOpenInventory} title="Lager öffnen">
     <PixelIcon name="basket" scale={2} />
@@ -340,6 +365,21 @@
   .boost {
     padding: 2px 8px;
     color: var(--c-leaf5);
+  }
+
+  .market {
+    padding: 2px 8px;
+    font-size: 0.78rem;
+    color: var(--c-mist);
+  }
+
+  .market.up {
+    color: var(--c-leaf4);
+    text-shadow: 0 0 8px rgba(168, 202, 88, 0.45);
+  }
+
+  .market.down {
+    color: var(--c-red1);
   }
 
   .ticket {

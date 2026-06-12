@@ -3,8 +3,12 @@
   import { PLANTS } from './lib/data/plants'
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
-  import { playSound } from './lib/ui/fx/audio'
+  import { playSound, startAtmosphere } from './lib/ui/fx/audio'
+  import AchievementsPanel from './lib/ui/AchievementsPanel.svelte'
+  import { achievementById } from './lib/data/achievements'
+  import DailyPanel from './lib/ui/DailyPanel.svelte'
   import FxLayer from './lib/ui/fx/FxLayer.svelte'
+  import GoldenFirefly from './lib/ui/GoldenFirefly.svelte'
   import { registerShakeTarget } from './lib/ui/fx/shake'
   import Garden from './lib/ui/Garden.svelte'
   import Hotbar from './lib/ui/Hotbar.svelte'
@@ -17,6 +21,7 @@
   import SettingsPanel from './lib/ui/SettingsPanel.svelte'
   import ShopPanel from './lib/ui/ShopPanel.svelte'
   import Toasts from './lib/ui/Toasts.svelte'
+  import WeatherEvents from './lib/ui/WeatherEvents.svelte'
   import { pushToast } from './lib/ui/toasts'
   import TutorialPanel from './lib/ui/TutorialPanel.svelte'
   import { formatDuration, formatNumber } from './lib/util/format'
@@ -24,7 +29,7 @@
   let { offline }: { offline: OfflineReport | null } = $props()
 
   let openPanel = $state<
-    'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'tutorial' | null
+    'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'tutorial' | null
   >(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
@@ -42,6 +47,8 @@
 
   onMount(() => {
     registerShakeTarget(stageEl)
+    // browsers gate audio behind a gesture — arm atmosphere on the first one
+    window.addEventListener('pointerdown', startAtmosphere, { once: true })
 
     // first run only: short onboarding before anything was ever planted
     let tutorialSeen = true
@@ -62,6 +69,24 @@
       pushToast(`Willkommen zurück! Du warst ${formatDuration(offline.awaySeconds)} weg${summary}`, '🌅', 10000)
       playSound('welcome')
     }
+  })
+
+  // Announce freshly earned achievements (state change drives the toast).
+  let knownAchievements: string[] | null = null
+  $effect(() => {
+    const current = $gameStore.achievements
+    if (knownAchievements !== null) {
+      for (const id of current) {
+        if (!knownAchievements.includes(id)) {
+          const def = achievementById(id)
+          if (def) {
+            pushToast(`Erfolg freigeschaltet: ${def.name}! (+1 % Ertrag)`, '🏆', 8000)
+            playSound('levelup')
+          }
+        }
+      }
+    }
+    knownAchievements = [...current]
   })
 
   // Announce newly unlocked plants (transition detection, not game logic).
@@ -90,12 +115,16 @@
     onOpenQuests={() => (openPanel = 'quests')}
     onOpenScratch={() => (openPanel = 'scratch')}
     onOpenPrestige={() => (openPanel = 'prestige')}
+    onOpenDaily={() => (openPanel = 'daily')}
+    onOpenAchievements={() => (openPanel = 'achievements')}
   />
   <main bind:this={stageEl}>
     <Garden />
   </main>
   <Hotbar />
 </div>
+<GoldenFirefly />
+<WeatherEvents />
 <FxLayer />
 
 {#if openPanel === 'inventory'}
@@ -110,6 +139,10 @@
   <ScratchPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'prestige'}
   <PrestigePanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'daily'}
+  <DailyPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'achievements'}
+  <AchievementsPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'tutorial'}
   <TutorialPanel onClose={closeTutorial} />
 {/if}

@@ -74,6 +74,8 @@ scripts/balance.sim.mjs), permanenter
 Level-Bonus, Shop mit 11 Items in 3 Rubriken inkl. Helfer-
 Automatisierung (läuft offline, gechunkter Catch-up), gestufte
 Aufträge mit Lieferserie, Pick-3-Rubbellose, aktives Gießen, Juice-
-und Sound-Schicht (SAVE_VERSION 12). Verbleibende §8-Phasen (Cannabis +
-Lizenzen, Achievements, passive Holz-Bäume) nur nach Absprache
-beginnen.
+und Sound-Schicht sowie das Zehner-Paket aus §9.11: Marktwelle,
+Tagesbonus-Serie, Glühwurm, Wetter-Events, Holz-Bäume, Achievements,
+Cannabis + Lizenzen, Rekorde/Graph, Massen-Aktionen und generative
+Musik/Ambience (SAVE_VERSION 18, 25 Sorten in 7 Kategorien). Damit ist
+der §8-Phasenplan vollständig umgesetzt.

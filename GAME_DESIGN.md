@@ -391,6 +391,16 @@ Klick — Basilikum-Spam bringt nichts mehr. Kompost kräftiger
 statt Mini-Prestiges. Ertrags-% überall erklärt (Chance auf
 Extra-Einheiten). Ziffern größer/heller (Lesbarkeit).
 
+**Zehner-Paket (alle vom Spieler bestätigt):** Massen-Aktionen
+(»Alle säen/gießen«), Marktwelle ±30 % über ~10 min (Aufträge bleiben
+Festpreise), Tagesbonus mit 7-Tage-Serie, Goldener Glühwurm
+(Golden-Cookie-Moment), Wetter-Events (Regen/Sternschnuppen/Marktboom,
+live-only), passive Holz-Bäume (Eiche 28/s, Mammutbaum 480/s — §3 #5),
+22 Achievements à +1 % Ertrag, Cannabis hinter 3 Lizenzen mit
+Pflege-Malus (§3 #7), Rekorde + 24-h-Einnahmen-Graph, generative
+Chiptune-Musik + Nacht-Ambience. Save v13–v18. 25 Sorten in
+7 Kategorien.
+
 **Zierpflanzen (§3 #6 umgesetzt):** Nachtrose (+5 %, 250K),
 Leuchtlilie (+8 %, 8M), Sternenhecke (+12 %, 400M). Keine Ernte —
 ausgewachsen heben sie den globalen Verkaufspreis, solange sie ein

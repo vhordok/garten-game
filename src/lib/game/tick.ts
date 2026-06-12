@@ -1,3 +1,5 @@
+import { ACHIEVEMENTS } from '../data/achievements'
+import { CONFIG } from '../data/config'
 import { plantById } from '../data/plants'
 import {
   autoHarvestRate,
@@ -6,6 +8,7 @@ import {
   growthMultiplier,
   rollUnits,
   saleValue,
+  sellMultiplier,
   waterCharges,
   yieldMultiplier,
 } from './modifiers'
@@ -32,7 +35,12 @@ export function tick(state: GameState, dtSeconds: number): boolean {
     if (!def) continue
     const target = cycleTime(plot, def)
     if (plot.progress < target) {
-      plot.progress = Math.min(plot.progress + grownSeconds, target)
+      // cannabis care: under-watered plants crawl at half speed
+      const care =
+        def.needsWateringLevel && (state.upgrades['giesskanne'] ?? 0) < def.needsWateringLevel
+          ? 0.5
+          : 1
+      plot.progress = Math.min(plot.progress + grownSeconds * care, target)
       changed = true
     }
   }
@@ -49,7 +57,43 @@ export function tick(state: GameState, dtSeconds: number): boolean {
       changed = true
     }
   }
+  // mature timber trees trickle wood money (sell multipliers apply)
+  for (const plot of state.plots) {
+    if (!plot.plantId) continue
+    const def = plantById(plot.plantId)
+    if (!def?.passiveIncome || plot.progress < def.growTime) continue
+    const gain = def.passiveIncome * dtSeconds * sellMultiplier(state)
+    state.money += gain
+    state.totalEarned += gain
+    state.lifetimeEarned += gain
+    changed = true
+  }
+  // weather events blow over
+  if (state.weather.remaining > 0) {
+    state.weather.remaining = Math.max(state.weather.remaining - dtSeconds, 0)
+    if (state.weather.remaining === 0) state.weather.id = null
+    changed = true
+  }
+  // the market never sleeps
+  state.marketTime = (state.marketTime + dtSeconds) % (CONFIG.marketPeriodSeconds * 1e6)
+  changed = true
   if (processHelpers(state, dtSeconds)) changed = true
+  // earnings history: one bucket per 30 minutes, ring of 48 (≈ 24 h)
+  state.historyAcc.seconds += dtSeconds
+  while (state.historyAcc.seconds >= 1800) {
+    state.historyAcc.seconds -= 1800
+    state.history.push(Math.max(state.lifetimeEarned - state.historyAcc.earnedStart, 0))
+    state.historyAcc.earnedStart = state.lifetimeEarned
+    if (state.history.length > 48) state.history.shift()
+    changed = true
+  }
+  // achievements are cheap predicates — check once per tick, UI announces
+  for (const def of ACHIEVEMENTS) {
+    if (!state.achievements.includes(def.id) && def.check(state)) {
+      state.achievements.push(def.id)
+      changed = true
+    }
+  }
   return changed
 }
 
@@ -136,6 +180,6 @@ function processHelpers(s: GameState, dt: number): boolean {
 export function plotReady(plot: PlotState): boolean {
   if (!plot.plantId) return false
   const def = plantById(plot.plantId)
-  if (!def || def.beautyBonus) return false
+  if (!def || def.beautyBonus || def.passiveIncome) return false
   return plot.progress >= cycleTime(plot, def)
 }

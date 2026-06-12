@@ -15,10 +15,14 @@ import { PLANTS, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
+  buyLicense,
   buyPlot,
   buyUpgrade,
+  catchFirefly,
+  claimDaily,
   clearPlot,
   compostGain,
+  dailyClaimable,
   drawScratchCard,
   ensureQuests,
   fulfillQuest,
@@ -33,7 +37,10 @@ import {
   sellPlant,
   settleScratchCard,
   skipQuest,
+  sowAllEmpty,
   sowPlot,
+  startWeather,
+  waterAllGrowing,
   upgradeLevel,
   waterPlot,
 } from '../src/lib/game/actions.ts'
@@ -44,6 +51,7 @@ import { generateQuest } from '../src/lib/game/quests.ts'
 import {
   beautyMultiplier,
   comboWindowSeconds,
+  marketFactor,
   scratchDropChance,
   growthMultiplier,
   offlineCapHours,
@@ -93,6 +101,7 @@ test('sow → grow → harvest → sell (baseline numbers)', () => {
     assert.equal(crit, 'none')
     assert.equal(units, basil.yield)
     assert.equal(s.inventory[basil.id], units)
+    s.marketTime = 0 // neutral market for the exact-price assertion
     const gain = sellPlant(basil.id)
     assert.equal(gain, units * basil.sellValue)
     assert.equal(s.totalEarned, gain)
@@ -528,13 +537,237 @@ test('turbo fertilizer: one charge doubles one harvest', () => {
   })
 })
 
+test('market wave: neutral at start, sales follow the wave', () => {
+  const s = fresh()
+  assert.ok(Math.abs(marketFactor(s) - 1) < 1e-9, 'fresh game starts neutral')
+  s.inventory['basilikum'] = 100
+  assert.equal(sellPlant('basilikum'), 300, 'neutral market = exact base price')
+
+  // scan several periods (the harmonics repeat slowly): real highs and lows
+  let peak = 1
+  let peakTime = 0
+  let trough = 1
+  for (let sec = 0; sec < CONFIG.marketPeriodSeconds * 10; sec += 5) {
+    s.marketTime = sec
+    const f = marketFactor(s)
+    if (f > peak) {
+      peak = f
+      peakTime = sec
+    }
+    trough = Math.min(trough, f)
+  }
+  assert.ok(peak > 1.2, `peak should pay noticeably more (${peak.toFixed(3)})`)
+  assert.ok(trough < 0.85, `trough should pay noticeably less (${trough.toFixed(3)})`)
+  s.marketTime = peakTime
+  s.inventory['basilikum'] = 100
+  assert.equal(sellPlant('basilikum'), Math.round(300 * peak))
+
+  // tick advances the clock
+  const before = s.marketTime
+  tick(s, 30)
+  assert.ok(Math.abs(s.marketTime - before - 30) < 1e-9)
+})
+
+test('bulk actions: sow all empty, water all growing', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    assert.equal(sowAllEmpty(), CONFIG.startPlots)
+    assert.equal(s.plots.filter((p) => p.plantId !== null).length, CONFIG.startPlots)
+    assert.equal(waterAllGrowing(), CONFIG.startPlots)
+    for (const plot of s.plots) {
+      assert.ok(Math.abs(plot.progress - PLANTS[0].growTime * CONFIG.waterProgressBoost) < 1e-9)
+      assert.equal(plot.waterLeft, CONFIG.waterChargesPerCrop - 1)
+    }
+    assert.equal(sowAllEmpty(), 0, 'nothing empty left')
+    // money limit respected
+    const s2 = fresh()
+    s2.money = 2 // two basil seeds
+    assert.equal(sowAllEmpty(), 2)
+    assert.equal(s2.money, 0)
+  })
+})
+
+test('daily gift: streak grows, resets after a gap, once per day', () => {
+  const s = fresh()
+  const DAY = 86400000
+  const base = Date.UTC(2026, 5, 20, 15) // afternoon avoids tz edge cases
+  assert.ok(dailyClaimable(s, base))
+  const r1 = claimDaily(base)
+  assert.ok(r1 && r1.day === 1 && r1.streak === 1 && r1.gold > 0)
+  assert.equal(claimDaily(base + 3600000), null, 'only once per day')
+
+  const r2 = claimDaily(base + DAY)
+  assert.ok(r2 && r2.day === 2 && r2.streak === 2)
+  assert.ok(r2.fertilizer > 0)
+
+  // a missed day breaks the streak
+  const r3 = claimDaily(base + 3 * DAY)
+  assert.ok(r3 && r3.streak === 1 && r3.day === 1)
+})
+
+test('golden firefly: rewards land in state', () => {
+  const s = fresh()
+  withRngQueue([0.0], () => {
+    const before = s.money
+    const r = catchFirefly()
+    assert.equal(r.kind, 'gold')
+    assert.equal(s.money, before + r.amount)
+  })
+  withRngQueue([0.6], () => {
+    const r = catchFirefly()
+    assert.equal(r.kind, 'ticket')
+    assert.equal(s.scratchTickets, 1)
+  })
+  withRngQueue([0.9], () => {
+    const r = catchFirefly()
+    assert.equal(r.kind, 'fertilizer')
+    assert.equal(s.fertilizerCharges, 3)
+  })
+})
+
+test('weather events: rain waters, stars boost crits, boom boosts sales', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    sowPlot(0)
+    assert.ok(startWeather('regen'))
+    assert.ok(Math.abs(s.plots[0].progress - PLANTS[0].growTime * CONFIG.waterProgressBoost) < 1e-9)
+    assert.equal(startWeather('marktboom'), false, 'one event at a time')
+    tick(s, 999) // blows over
+    assert.equal(s.weather.id, null)
+  })
+
+  // shooting stars: a roll that misses normally becomes a crit
+  const s = fresh()
+  s.money = 100
+  const probe = (CONFIG.critLegendaryChance + CONFIG.critPerfectChance) * 2
+  withRngQueue([probe, 0.5, 0.5], () => {
+    sowPlot(0)
+    tick(s, 99999)
+    s.weather = { id: null, remaining: 0 }
+    assert.equal(harvestPlot(0).crit, 'none')
+  })
+  withRngQueue([probe, 0.5, 0.5], () => {
+    sowPlot(0)
+    tick(s, 99999)
+    s.weather = { id: 'sternschnuppen', remaining: 60 }
+    assert.equal(harvestPlot(0).crit, 'perfect', 'stars triple the odds')
+  })
+
+  // market boom: +50 % on sales
+  const s2 = fresh()
+  s2.weather = { id: 'marktboom', remaining: 120 }
+  s2.inventory['basilikum'] = 100
+  assert.equal(sellPlant('basilikum'), Math.round(300 * 1.5))
+})
+
+test('timber trees: mature trees trickle money through tick', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e15
+    selectPlant('eiche')
+    const oak = PLANTS.find((p) => p.id === 'eiche')
+    assert.ok(sowPlot(0))
+    tick(s, oak.growTime)
+    assert.equal(plotReady(s.plots[0]), false, 'trees are never harvestable')
+    s.marketTime = 0 // neutral market for exactness
+    const before = s.money
+    const earnedBefore = s.totalEarned
+    tick(s, 0.0001) // settle market clock effect ≈ none
+    const start = s.money
+    s.marketTime = 0
+    tick(s, 60)
+    const gained = s.money - start
+    assert.ok(gained > oak.passiveIncome * 60 * 0.9 && gained < oak.passiveIncome * 60 * 1.2,
+      `60s of oak should pay ≈${oak.passiveIncome * 60}, got ${Math.round(gained)}`)
+    assert.ok(s.totalEarned > earnedBefore, 'wood counts as earnings')
+    assert.ok(before <= s.money)
+  })
+})
+
+test('achievements: tick unlocks them, each grants +1 % yield', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    assert.equal(s.achievements.length, 0)
+    s.stats.planted = 50
+    s.lifetimeEarned = 1000
+    tick(s, 0.1)
+    assert.ok(s.achievements.includes('gruener-daumen'))
+    assert.ok(s.achievements.includes('erster-tausender'))
+    const count = s.achievements.length
+    const expected = 1 + 0.01 * count
+    assert.ok(Math.abs(yieldMultiplier(s) - expected) < 1e-9)
+    tick(s, 0.1)
+    assert.equal(s.achievements.length, count, 'no duplicates')
+
+    // survives a save roundtrip
+    const code = exportSave()
+    fresh()
+    importSave(code)
+    assert.equal(getState().achievements.length, count)
+  })
+})
+
+test('cannabis: license-gated, requirements enforced, care malus', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e15
+    s.totalEarned = 1e15
+    const hemp = PLANTS.find((p) => p.id === 'cbdhanf')
+    assert.ok(hemp.requiresLicense === 1)
+    selectPlant('cbdhanf')
+    assert.notEqual(s.selectedPlantId, 'cbdhanf', 'no license, no selection')
+
+    assert.equal(buyLicense(), false, 'requirement (parcels ≥ 2) not met')
+    s.parcels = 2
+    assert.ok(buyLicense())
+    assert.equal(s.licenses, 1)
+    selectPlant('cbdhanf')
+    assert.equal(s.selectedPlantId, 'cbdhanf')
+
+    // care malus: without Gießkanne 5 the plant grows at half speed
+    assert.ok(sowPlot(0))
+    tick(s, hemp.growTime)
+    assert.equal(plotReady(s.plots[0]), false, 'under-watered hemp is slow')
+    tick(s, hemp.growTime)
+    assert.ok(plotReady(s.plots[0]))
+
+    // licenses survive prestige
+    s.lifetimeEarned = 1e15
+    assert.ok(leaseParcel() > 0)
+    assert.equal(s.licenses, 1)
+  })
+})
+
+test('records & history: best harvest, combo, earnings buckets', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    sowPlot(0)
+    tick(s, PLANTS[0].growTime) // exact ripen — no history bucket yet
+    harvestPlot(0)
+    assert.equal(s.history.length, 0)
+    assert.equal(s.records.bestHarvest, PLANTS[0].yield)
+    assert.equal(s.records.longestCombo, 1)
+    s.marketTime = 0
+    sellPlant('basilikum')
+    const earned = s.totalEarned
+    assert.ok(earned > 0)
+    tick(s, 1800)
+    assert.equal(s.history.length, 1)
+    assert.ok(s.history[0] >= earned, 'bucket captures the earnings (incl. tick income)')
+  })
+})
+
 test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
   let lastUnlock = -1
   let lastProfit = 0
   for (const plant of PLANTS) {
     assert.ok(plant.unlockAtTotalEarned > lastUnlock || plant.unlockAtTotalEarned === 0, `${plant.id}: unlocks must ascend`)
-    if (plant.beautyBonus) {
-      assert.ok(plant.yield === 0 && plant.sellValue === 0, `${plant.id}: ornamentals never sell`)
+    if (plant.beautyBonus || plant.passiveIncome) {
+      assert.ok(plant.yield === 0 && plant.sellValue === 0, `${plant.id}: no harvest, no sale value`)
       lastUnlock = plant.unlockAtTotalEarned
       continue
     }
@@ -723,8 +956,9 @@ test('ornamentals: never harvestable, beauty raises sell prices', () => {
     assert.equal(harvestPlot(0).units, 0)
     assert.equal(s.plots[0].plantId, 'nachtrose', 'the rose keeps standing')
 
-    // +5 % on every sale while it stands
+    // +5 % on every sale while it stands (market neutralized for exactness)
     assert.ok(Math.abs(beautyMultiplier(s) - 1.05) < 1e-9)
+    s.marketTime = 0
     s.inventory['basilikum'] = 100
     assert.equal(sellPlant('basilikum'), Math.round(100 * 3 * 1.05))
 

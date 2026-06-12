@@ -3,13 +3,16 @@
 
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
-import { SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
+import { bestHarvestValue, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { questTier } from '../data/questFlavor'
+import { LICENSES } from '../data/licenses'
+import { weatherById } from '../data/weather'
 import {
   comboMultiplier,
   comboWindowSeconds,
   critChanceBonus,
+  critWeatherMult,
   rollUnits,
   saleValue,
   scratchDropChance,
@@ -25,7 +28,19 @@ import { cycleTime, plotReady } from './tick'
 import type { GameState, PlantDef, UpgradeDef } from './types'
 
 export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
+  if (def.requiresLicense && state.licenses < def.requiresLicense) return false
   return state.totalEarned >= def.unlockAtTotalEarned
+}
+
+/** Buy the next cannabis license (money sink with hard requirements). */
+export function buyLicense(): boolean {
+  const s = getState()
+  const next = LICENSES.find((l) => l.level === s.licenses + 1)
+  if (!next || !next.requirementMet(s) || s.money < next.cost) return false
+  s.money -= next.cost
+  s.licenses = next.level
+  notify()
+  return true
 }
 
 export function selectPlant(plantId: string): void {
@@ -51,6 +66,44 @@ export function sowPlot(index: number): boolean {
   s.stats.planted += 1
   notify()
   return true
+}
+
+/** Sow the selected plant on every affordable empty plot (bulk QoL). */
+export function sowAllEmpty(): number {
+  const s = getState()
+  const def = plantById(s.selectedPlantId)
+  if (!def || !isPlantUnlocked(def, s)) return 0
+  let count = 0
+  for (const plot of s.plots) {
+    if (plot.plantId !== null || s.money < def.seedCost) continue
+    s.money -= def.seedCost
+    plot.plantId = def.id
+    plot.progress = 0
+    plot.waterLeft = waterCharges(s)
+    plot.regrowing = false
+    s.stats.planted += 1
+    count += 1
+  }
+  if (count > 0) notify()
+  return count
+}
+
+/** Pour one watering charge on every growing plot that still has one. */
+export function waterAllGrowing(): number {
+  const s = getState()
+  let count = 0
+  for (const plot of s.plots) {
+    if (!plot.plantId || plot.waterLeft <= 0) continue
+    const def = plantById(plot.plantId)
+    if (!def) continue
+    const target = cycleTime(plot, def)
+    if (plot.progress >= target) continue
+    plot.progress = Math.min(plot.progress + target * CONFIG.waterProgressBoost, target)
+    plot.waterLeft -= 1
+    count += 1
+  }
+  if (count > 0) notify()
+  return count
 }
 
 /** Rip out a plant (no refund) — frees the plot for something better. */
@@ -99,8 +152,9 @@ const CRIT_RANK: Record<CritTier, number> = { none: 0, perfect: 1, legendary: 2 
 /** Golden-harvest roll (GAME_DESIGN.md §9.4); Glücksklee raises the odds. */
 function rollCrit(s: GameState): { tier: CritTier; mult: number } {
   const bonus = critChanceBonus(s)
-  const legendary = CONFIG.critLegendaryChance + bonus / 5
-  const perfect = CONFIG.critPerfectChance + bonus
+  const weather = critWeatherMult(s)
+  const legendary = Math.min((CONFIG.critLegendaryChance + bonus / 5) * weather, 0.12)
+  const perfect = Math.min((CONFIG.critPerfectChance + bonus) * weather, 0.6)
   const roll = Math.random()
   if (roll < legendary) return { tier: 'legendary', mult: CONFIG.critLegendaryMult }
   if (roll < legendary + perfect) return { tier: 'perfect', mult: CONFIG.critPerfectMult }
@@ -121,6 +175,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
     s.fertilizerCharges -= 1
   }
   const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult * comboMult * fertilizerMult)
+  if (units > s.records.bestHarvest) s.records.bestHarvest = units
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
@@ -148,6 +203,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
 function bumpCombo(s: GameState): void {
   s.combo.count = s.combo.remaining > 0 ? s.combo.count + 1 : 1
   s.combo.remaining = comboWindowSeconds(s)
+  if (s.combo.count > s.records.longestCombo) s.records.longestCombo = s.combo.count
 }
 
 /** Harvest one ready plot into storage. units = 0 means nothing happened. */
@@ -478,6 +534,7 @@ export function settleScratchCard(card: ScratchCard, picked: string[]): ScratchO
     s.fertilizerCharges += amount
   } else {
     s.money += amount
+    if (amount > s.records.biggestWin) s.records.biggestWin = amount
   }
   notify()
   return { amount, grade, prizeType: prize.type, symbol: matchedSymbol ?? card.symbol, levelUps }
@@ -490,6 +547,118 @@ export function refundScratchTicket(): void {
     s.scratchTickets += 1
     notify()
   }
+}
+
+/** Local day index (DST-safe enough for a daily gift). */
+function localDay(now: number): number {
+  return Math.floor((now - new Date(now).getTimezoneOffset() * 60000) / 86400000)
+}
+
+export interface DailyReward {
+  /** position in the 7-day cycle (1–7) */
+  day: number
+  streak: number
+  gold: number
+  tickets: number
+  fertilizer: number
+}
+
+export function dailyClaimable(state: GameState, now = Date.now()): boolean {
+  return localDay(now) > state.daily.lastClaim
+}
+
+/**
+ * Once per local day: a gift that grows along a 7-day streak (missing a day
+ * resets it). Gold gifts scale with the best unlocked harvest and never
+ * count as earnings.
+ */
+export function claimDaily(now = Date.now()): DailyReward | null {
+  const s = getState()
+  const day = localDay(now)
+  if (day <= s.daily.lastClaim) return null
+  s.daily.streak = day - s.daily.lastClaim === 1 ? s.daily.streak + 1 : 1
+  s.daily.lastClaim = day
+  const pos = ((s.daily.streak - 1) % 7) + 1
+  const hv = bestHarvestValue(s)
+  const reward: DailyReward = { day: pos, streak: s.daily.streak, gold: 0, tickets: 0, fertilizer: 0 }
+  switch (pos) {
+    case 1:
+      reward.gold = 5 * hv
+      break
+    case 2:
+      reward.fertilizer = 3
+      break
+    case 3:
+      reward.gold = 10 * hv
+      break
+    case 4:
+      reward.tickets = 1
+      break
+    case 5:
+      reward.fertilizer = 6
+      break
+    case 6:
+      reward.gold = 20 * hv
+      break
+    case 7:
+      reward.gold = 25 * hv
+      reward.tickets = 2
+      break
+  }
+  s.money += reward.gold
+  s.scratchTickets = Math.min(s.scratchTickets + reward.tickets, CONFIG.scratchMaxPending)
+  s.fertilizerCharges += reward.fertilizer
+  notify()
+  return reward
+}
+
+/**
+ * Start a weather event (UI scheduler, live play only). Rain instantly
+ * waters every growing plot for free; the rest are timed buffs read by
+ * the modifiers.
+ */
+export function startWeather(weatherId: string): boolean {
+  const s = getState()
+  const def = weatherById(weatherId)
+  if (!def || s.weather.id !== null) return false
+  s.weather = { id: def.id, remaining: def.durationSeconds }
+  if (def.id === 'regen') {
+    for (const plot of s.plots) {
+      if (!plot.plantId) continue
+      const plant = plantById(plot.plantId)
+      if (!plant) continue
+      const target = cycleTime(plot, plant)
+      if (plot.progress < target) {
+        plot.progress = Math.min(plot.progress + target * CONFIG.waterProgressBoost, target)
+      }
+    }
+  }
+  notify()
+  return true
+}
+
+export interface FireflyReward {
+  kind: 'gold' | 'ticket' | 'fertilizer'
+  amount: number
+}
+
+/** The golden firefly was caught — a small random thank-you (gift, not earnings). */
+export function catchFirefly(): FireflyReward {
+  const s = getState()
+  const roll = Math.random()
+  let reward: FireflyReward
+  if (roll < 0.5) {
+    reward = { kind: 'gold', amount: 6 * bestHarvestValue(s) }
+    s.money += reward.amount
+  } else if (roll < 0.8 && s.scratchTickets < CONFIG.scratchMaxPending) {
+    reward = { kind: 'ticket', amount: 1 }
+    s.scratchTickets += 1
+  } else {
+    reward = { kind: 'fertilizer', amount: 3 }
+    s.fertilizerCharges += 3
+  }
+  notify()
+  return reward
 }
 
 /**

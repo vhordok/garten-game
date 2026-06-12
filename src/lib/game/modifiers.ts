@@ -39,7 +39,8 @@ export function yieldMultiplier(state: GameState): number {
   return (
     multiplierFor(state, 'yield') *
     (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
-    (1 + levelBonus)
+    (1 + levelBonus) *
+    (1 + 0.01 * state.achievements.length)
   )
 }
 
@@ -54,9 +55,20 @@ export function beautyMultiplier(state: GameState): number {
   return 1 + bonus
 }
 
-/** Sale price factor (upgrades × garden beauty). */
+/**
+ * Market wave: prices breathe ±~30 % over ~10 minutes (two overlaid sines,
+ * so highs/lows stay a little unpredictable). Hoard and sell high!
+ */
+export function marketFactor(state: GameState): number {
+  const phase = (state.marketTime / CONFIG.marketPeriodSeconds) * Math.PI * 2
+  // both sines start at 0 → fresh games begin neutral, no long-run bias
+  return 1 + 0.24 * Math.sin(phase) + 0.08 * Math.sin(phase * 2.33)
+}
+
+/** Sale price factor (upgrades × garden beauty × market wave × weather). */
 export function sellMultiplier(state: GameState): number {
-  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state)
+  const boom = state.weather.id === 'marktboom' ? 1.5 : 1
+  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state) * marketFactor(state) * boom
 }
 
 /** Summed perLevel × level over all owned upgrades with the given effect. */
@@ -83,6 +95,11 @@ export function comboWindowSeconds(state: GameState): number {
 /** Additive bonus on the perfect-crit chance (legendary gets a fifth of it). */
 export function critChanceBonus(state: GameState): number {
   return effectBonus(state, 'critChance')
+}
+
+/** Shooting-star nights triple every crit chance. */
+export function critWeatherMult(state: GameState): number {
+  return state.weather.id === 'sternschnuppen' ? 3 : 1
 }
 
 /**

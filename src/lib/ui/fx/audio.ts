@@ -24,6 +24,8 @@ export type SoundId =
   | 'welcome'
 
 const PREF_KEY = 'garten-imperium-sound'
+const MUSIC_KEY = 'garten-imperium-music'
+const AMBIENCE_KEY = 'garten-imperium-ambience'
 
 /** minimum ms between two plays of the same id */
 const THROTTLE: Partial<Record<SoundId, number>> = {
@@ -35,6 +37,9 @@ const THROTTLE: Partial<Record<SoundId, number>> = {
 }
 
 let enabled = readPref()
+let musicEnabled = readToggle(MUSIC_KEY)
+let ambienceEnabled = readToggle(AMBIENCE_KEY)
+let atmosphereStarted = false
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
 let noiseBuf: AudioBuffer | null = null
@@ -45,6 +50,22 @@ function readPref(): boolean {
     return localStorage.getItem(PREF_KEY) !== 'off'
   } catch {
     return true
+  }
+}
+
+function readToggle(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== 'off'
+  } catch {
+    return true
+  }
+}
+
+function writeToggle(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, value ? 'on' : 'off')
+  } catch {
+    /* ignore */
   }
 }
 
@@ -247,4 +268,136 @@ export function playSound(id: SoundId, pitch = 1): void {
       tone({ from: 587, dur: 200, at: 280, type: 'triangle', vol: 0.08 })
       break
   }
+}
+
+
+// --- Atmosphere: generative night music + ambience (no audio assets) -----
+
+let windGain: GainNode | null = null
+let windSource: AudioBufferSourceNode | null = null
+let cricketTimer: ReturnType<typeof setTimeout> | null = null
+let musicTimer: ReturnType<typeof setTimeout> | null = null
+
+export function musicOn(): boolean {
+  return musicEnabled
+}
+
+export function ambienceOn(): boolean {
+  return ambienceEnabled
+}
+
+export function setMusicEnabled(value: boolean): void {
+  musicEnabled = value
+  writeToggle(MUSIC_KEY, value)
+  if (value) startMusic()
+  else stopMusic()
+}
+
+export function setAmbienceEnabled(value: boolean): void {
+  ambienceEnabled = value
+  writeToggle(AMBIENCE_KEY, value)
+  if (value) startAmbience()
+  else stopAmbience()
+}
+
+/** Call once after the first user gesture — browsers gate audio until then. */
+export function startAtmosphere(): void {
+  if (atmosphereStarted) return
+  atmosphereStarted = true
+  if (ambienceEnabled) startAmbience()
+  if (musicEnabled) startMusic()
+}
+
+function startAmbience(): void {
+  const a = audio()
+  if (!a || windSource) return
+  // soft night wind: looped noise through a deep lowpass, slowly breathing
+  windSource = a.ctx.createBufferSource()
+  windSource.buffer = noiseBuffer(a.ctx)
+  windSource.loop = true
+  const filter = a.ctx.createBiquadFilter()
+  filter.type = 'lowpass'
+  filter.frequency.value = 280
+  windGain = a.ctx.createGain()
+  windGain.gain.value = 0.014
+  const lfo = a.ctx.createOscillator()
+  lfo.frequency.value = 0.06
+  const lfoGain = a.ctx.createGain()
+  lfoGain.gain.value = 0.007
+  lfo.connect(lfoGain)
+  lfoGain.connect(windGain.gain)
+  windSource.connect(filter)
+  filter.connect(windGain)
+  windGain.connect(a.master)
+  windSource.start()
+  lfo.start()
+  scheduleCricket()
+}
+
+function scheduleCricket(): void {
+  if (!ambienceEnabled) return
+  cricketTimer = setTimeout(() => {
+    if (ambienceEnabled && enabledContextRunning()) {
+      const chirps = 2 + Math.floor(Math.random() * 3)
+      const base = 3800 + Math.random() * 900
+      for (let i = 0; i < chirps; i++) {
+        tone({ from: base, to: base * 0.97, at: i * 70, dur: 28, type: 'sine', vol: 0.012 })
+      }
+    }
+    scheduleCricket()
+  }, 1500 + Math.random() * 4500)
+}
+
+function stopAmbience(): void {
+  if (cricketTimer) clearTimeout(cricketTimer)
+  cricketTimer = null
+  try {
+    windSource?.stop()
+  } catch {
+    /* already stopped */
+  }
+  windSource = null
+  windGain = null
+}
+
+function enabledContextRunning(): boolean {
+  return ctx !== null && ctx.state === 'running'
+}
+
+// A-minor pentatonic, two octaves — every walk sounds gentle
+const SCALE = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33]
+let melodyIndex = 3
+let musicBeat = 0
+
+function startMusic(): void {
+  if (musicTimer) return
+  scheduleMusicStep()
+}
+
+function scheduleMusicStep(): void {
+  if (!musicEnabled) return
+  musicTimer = setTimeout(() => {
+    if (musicEnabled && enabledContextRunning()) {
+      // melody: small random walk over the pentatonic scale
+      const step = Math.floor(Math.random() * 5) - 2
+      melodyIndex = Math.min(Math.max(melodyIndex + step, 0), SCALE.length - 1)
+      if (Math.random() > 0.22) {
+        tone({ from: SCALE[melodyIndex], dur: 700, type: 'triangle', vol: 0.028 })
+      }
+      // soft bass root every fourth beat
+      if (musicBeat % 4 === 0) {
+        tone({ from: 110, dur: 1500, type: 'sine', vol: 0.03 })
+      } else if (musicBeat % 4 === 2 && Math.random() > 0.5) {
+        tone({ from: 164.81, dur: 1200, type: 'sine', vol: 0.022 })
+      }
+      musicBeat += 1
+    }
+    musicTimer = null
+    scheduleMusicStep()
+  }, 1100 + Math.random() * 350)
+}
+
+function stopMusic(): void {
+  if (musicTimer) clearTimeout(musicTimer)
+  musicTimer = null
 }
