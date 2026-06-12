@@ -14,10 +14,16 @@ body {
 }
 
 :root {
-  /* integer pixel scales: world sprites ×5 (×4 on small screens), UI chrome ×2 */
-  --cell: 80px;
+  /* integer pixel scales: world sprites ×6/×5/×4 by viewport, UI chrome ×2 */
+  --cell: 96px;
   --ui: 2;
   font-size: 16px;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --cell: 80px;
+  }
 }
 
 @media (max-width: 640px) {

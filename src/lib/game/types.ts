@@ -20,6 +20,8 @@ export interface PlantDef {
   seedCost: number
   /** seconds from sowing until harvestable */
   growTime: number
+  /** if set, the plant stays after harvest and re-ripens in this many seconds */
+  regrowTime?: number
   /** harvested units per harvest */
   yield: number
   /** money per harvested unit when sold */
@@ -48,10 +50,12 @@ export interface UpgradeDef {
 export interface PlotState {
   /** id of the planted PlantDef, null = empty plot */
   plantId: string | null
-  /** seconds grown so far (capped at the plant's growTime) */
+  /** seconds grown so far (capped at the current cycle's grow time) */
   progress: number
-  /** active-watering charges left for the current crop */
+  /** active-watering charges left for the current cycle */
   waterLeft: number
+  /** true once a regrow plant was harvested at least once (shorter cycles) */
+  regrowing: boolean
 }
 
 export interface GameStats {
@@ -83,18 +87,28 @@ export interface QuestState {
   plantId: string
   /** units to deliver from storage */
   amount: number
-  /** money payout on delivery */
+  /** base money payout (delivery streak adds on top) */
   reward: number
   /** bonus XP on delivery */
   xp: number
+  /** order tier: gold pays best and drops a scratch ticket */
+  tier: string
+  /** who placed the order (flavor) */
+  client: string
   /** seconds until this slot may be rerolled (drained by tick) */
   skipCooldown: number
 }
 
 export interface GameState {
   money: number
-  /** lifetime money earned from selling — drives unlocks, later prestige */
+  /** money earned from selling THIS round — drives unlocks and compost */
   totalEarned: number
+  /** money earned across all rounds (stats, never resets) */
+  lifetimeEarned: number
+  /** leased parcels (starts at 1); raises the plot cap */
+  parcels: number
+  /** prestige currency: permanent yield/growth bonuses */
+  compost: number
   /** gardener level (starts at 1); gates quest slots and future QoL */
   level: number
   /** progress within the current level (resets each level-up) */
@@ -111,6 +125,8 @@ export interface GameState {
   quests: QuestState[]
   /** running id source for quests */
   questCounter: number
+  /** consecutive deliveries without skipping — boosts quest payouts */
+  questStreak: number
   /** unscratched lucky tickets dropped by harvests */
   scratchTickets: number
   /** turbo-fertilizer charges: next harvests yield ×2, one charge each */

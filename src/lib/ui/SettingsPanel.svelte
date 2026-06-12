@@ -70,6 +70,9 @@
       <span>Geerntet: <b>{formatNumber($gameStore.stats.harvested)}</b></span>
       <span>Verkauft: <b>{formatNumber($gameStore.stats.sold)}</b></span>
       <span>Goldene Ernten: <b>{formatNumber($gameStore.stats.crits)}</b></span>
+      <span>Parzelle: <b>{formatNumber($gameStore.parcels)}</b></span>
+      <span>Kompost: <b>{formatNumber($gameStore.compost)}</b></span>
+      <span>Insgesamt verdient: <b>{formatNumber($gameStore.lifetimeEarned)}</b></span>
     </div>
   </section>
 

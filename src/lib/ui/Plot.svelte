@@ -1,7 +1,8 @@
 <script lang="ts">
   import { plantById } from '../data/plants'
-  import { harvestPlot, sowPlot, waterPlot, type CritTier } from '../game/actions'
+  import { clearPlot, harvestPlot, sowPlot, waterPlot, type CritTier } from '../game/actions'
   import { gameStore } from '../game/state'
+  import { cycleTime } from '../game/tick'
   import type { PlotState } from '../game/types'
   import { formatDuration } from '../util/format'
   import { playSound } from './fx/audio'
@@ -19,18 +20,22 @@
   }: { plot: PlotState; index: number; selectedId: string; money: number } = $props()
 
   const def = $derived(plot.plantId !== null ? plantById(plot.plantId) : undefined)
-  const ready = $derived(def !== undefined && plot.progress >= def.growTime)
-  const fraction = $derived(def ? Math.min(plot.progress / def.growTime, 1) : 0)
-  const remaining = $derived(def ? Math.max(def.growTime - plot.progress, 0) : 0)
+  const target = $derived(def ? cycleTime(plot, def) : 0)
+  const ready = $derived(def !== undefined && plot.progress >= target)
+  const fraction = $derived(def ? Math.min(plot.progress / target, 1) : 0)
+  const remaining = $derived(def ? Math.max(target - plot.progress, 0) : 0)
 
-  // four visible growth stages: shared seedling, then per-plant sprites 1–3
+  // four visible growth stages: shared seedling, then per-plant sprites 1–3.
+  // Regrowing berries/trees never shrink back below stage 1.
   const stageSprite = $derived(
     def === undefined
       ? null
       : ready
         ? `${def.id}-3`
         : fraction < 1 / 3
-          ? 'seedling'
+          ? plot.regrowing
+            ? `${def.id}-1`
+            : 'seedling'
           : fraction < 2 / 3
             ? `${def.id}-1`
             : `${def.id}-2`
@@ -85,6 +90,13 @@
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
+    if (def && e.shiftKey) {
+      if (clearPlot(index)) {
+        leafBurst(cx, cy, 8)
+        playSound('close')
+      }
+      return
+    }
     if (def && ready) {
       // read the chain BEFORE harvesting: every link nudges the pitch up
       const comboPitch = 1 + Math.min($gameStore.combo.count, 20) * 0.035
@@ -117,10 +129,11 @@
 
   const title = $derived(
     def && ready
-      ? `${def.name} ernten`
+      ? `${def.name} ernten${def.regrowTime ? ' — wächst danach von selbst nach' : ''}`
       : def
         ? `${def.name} — reif in ${formatDuration(remaining)}` +
-          (plot.waterLeft > 0 ? ` · Klick = gießen (${plot.waterLeft}× übrig)` : '')
+          (plot.waterLeft > 0 ? ` · Klick = gießen (${plot.waterLeft}× übrig)` : '') +
+          ' · Shift-Klick: roden'
         : canSow && selectedDef
           ? `${selectedDef.name} säen (${selectedDef.seedCost})`
           : 'Leeres Beet'

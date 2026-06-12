@@ -65,10 +65,10 @@ FX-Aufrufe gehören in die UI-Schicht (`ui/fx/`), niemals in den Core.
 
 ## Stand
 
-Phasen 1–2 (GAME_DESIGN.md §8), das komplette Redesign
-„Mitternachts-Pixelgarten" (§9, R1–R5) und die Erweiterung „Gemüse,
-Gießen & Glück" (§9.8) sind umgesetzt: Pixel-Art-Nachtszene mit Game-HUD
-und Hotbar, Juice-Schicht, Upgrade-Shop, goldene Ernten, Combo-Ketten,
-Gärtner-Level, Auftrags-Board, Gemüse-Sorten, aktives Gießen und
-Rubbellose mit Turbo-Dünger (SAVE_VERSION 8). Weitere Phasen aus §8 nur
-nach Absprache beginnen.
+Phasen 1–2 und 4 (GAME_DESIGN.md §8), das Redesign „Mitternachts-
+Pixelgarten" (§9, R1–R5) und die Erweiterungen §9.8 + §9.9 sind
+umgesetzt: 13 Sorten in 4 Kategorien (Beeren/Bäume mit Wiederernte),
+Prestige mit Parzellen & Kompost, permanenter Level-Bonus, gestufte
+Aufträge mit Lieferserie, Pick-3-Rubbellose, aktives Gießen, Juice- und
+Sound-Schicht (SAVE_VERSION 11). Weitere Phasen aus §8 (v. a. Helfer/
+Automatisierung, Phase 3) nur nach Absprache beginnen.

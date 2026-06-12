@@ -11,28 +11,35 @@ globalThis.localStorage ??= {
   removeItem: () => {},
 }
 import { CONFIG } from '../src/lib/data/config.ts'
-import { PLANTS } from '../src/lib/data/plants.ts'
+import { PLANTS, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
   buyUpgrade,
+  clearPlot,
+  compostGain,
   drawScratchCard,
   ensureQuests,
   fulfillQuest,
   harvestAllReady,
   harvestPlot,
+  leaseParcel,
+  maxPlots,
   nextPlotCost,
   nextUpgradeCost,
+  refundScratchTicket,
   selectPlant,
   sellPlant,
+  settleScratchCard,
   skipQuest,
   sowPlot,
   upgradeLevel,
   waterPlot,
 } from '../src/lib/game/actions.ts'
+import { questTier } from '../src/lib/data/questFlavor.ts'
 import { bestHarvestValue } from '../src/lib/data/scratch.ts'
-import { growthMultiplier } from '../src/lib/game/modifiers.ts'
+import { growthMultiplier, yieldMultiplier } from '../src/lib/game/modifiers.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
@@ -275,12 +282,13 @@ test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', ()
     const quest = s.quests[0]
     const plant = PLANTS.find((p) => p.id === quest.plantId)
     assert.ok(plant, 'quest plant must exist')
-    assert.equal(quest.reward, Math.round(quest.amount * plant.sellValue * CONFIG.questRewardFactor))
+    assert.equal(quest.reward, Math.round(quest.amount * plant.sellValue * questTier(quest.tier).rewardFactor))
+    assert.ok(quest.client.length > 0, 'every order has a client')
 
     // not enough in storage → refused, nothing changes
     assert.equal(fulfillQuest(quest.id), null)
 
-    // stock up and deliver
+    // stock up and deliver (streak 0 → payout = base reward, then streak 1)
     s.inventory[quest.plantId] = quest.amount + 2
     const moneyBefore = s.money
     const earnedBefore = s.totalEarned
@@ -288,13 +296,35 @@ test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', ()
     assert.ok(result)
     assert.equal(s.money, moneyBefore + quest.reward)
     assert.equal(s.totalEarned, earnedBefore + quest.reward)
+    assert.equal(s.questStreak, 1)
     assert.equal(s.inventory[quest.plantId], 2)
     assert.equal(s.quests.length, 1, 'slot is refilled')
     assert.notEqual(s.quests[0].id, quest.id, 'a fresh order replaces the delivered one')
 
-    // skip arms the cooldown; a second skip is refused until tick drains it
+    // a gold order pays the streak bonus and drops a ticket
+    s.quests[0] = {
+      id: 9999,
+      plantId: 'basilikum',
+      amount: 2,
+      reward: 100,
+      xp: 2,
+      tier: 'gold',
+      client: 'Testhof',
+      skipCooldown: 0,
+    }
+    s.inventory['basilikum'] = 2
+    const ticketsBefore = s.scratchTickets
+    const goldResult = fulfillQuest(9999)
+    assert.ok(goldResult)
+    assert.equal(goldResult.reward, Math.round(100 * (1 + CONFIG.questStreakPerDelivery)))
+    assert.equal(goldResult.bonusTicket, true)
+    assert.equal(s.scratchTickets, ticketsBefore + 1)
+    assert.equal(s.questStreak, 2)
+
+    // skip arms the cooldown, breaks the streak; refused until tick drains it
     const skipped = s.quests[0]
     assert.ok(skipQuest(skipped.id))
+    assert.equal(s.questStreak, 0, 'skipping breaks the delivery streak')
     const fresh1 = s.quests[0]
     assert.equal(fresh1.skipCooldown, CONFIG.questSkipCooldownSeconds)
     assert.equal(skipQuest(fresh1.id), false)
@@ -393,7 +423,7 @@ test('scratch tickets: drop on lucky harvests, capped pending', () => {
   })
 })
 
-test('scratch cards: weighted prizes, board layout, no totalEarned', () => {
+test('scratch cards 2.0: draw pays nothing, settle grades the picks', () => {
   const s = fresh()
   s.scratchTickets = 3
   const hv = bestHarvestValue(s)
@@ -405,30 +435,42 @@ test('scratch cards: weighted prizes, board layout, no totalEarned', () => {
     assert.ok(card)
     assert.equal(card.prizeType, 'money-small')
     assert.equal(card.amount, 2 * hv)
-    assert.equal(s.money, moneyBefore + 2 * hv)
-    assert.equal(s.totalEarned, 0, 'lottery winnings are not sales')
+    assert.equal(s.money, moneyBefore, 'drawing must not pay out yet')
     assert.equal(s.scratchTickets, 2)
     assert.equal(card.symbols.length, 9)
     assert.equal(card.symbols.filter((sym) => sym === card.symbol).length, 3)
+
+    // full hit pays everything, partial 40 %, miss a consolation (min 1)
+    assert.equal(settleScratchCard(card, 3).amount, card.amount)
+    assert.equal(settleScratchCard(card, 2).amount, Math.max(Math.round(card.amount * CONFIG.scratchPartialFactor), 1))
+    assert.equal(settleScratchCard(card, 0).amount, Math.max(Math.round(card.amount * CONFIG.scratchConsolationFactor), 1))
+    assert.equal(s.totalEarned, 0, 'lottery winnings are not sales')
   })
 
-  // 0.97 lands in the jackpot bracket
+  // 0.97 lands in the jackpot bracket; fertilizer settle grants charges
   withRngQueue([0.97], () => {
-    const moneyBefore = s.money
     const card = drawScratchCard()
     assert.equal(card.prizeType, 'jackpot')
+    const moneyBefore = s.money
+    assert.equal(settleScratchCard(card, 3).amount, 80 * hv)
     assert.equal(s.money, moneyBefore + 80 * hv)
   })
-
-  // 0.90 lands on fertilizer charges
   withRngQueue([0.9], () => {
     const card = drawScratchCard()
     assert.equal(card.prizeType, 'fertilizer')
-    assert.equal(s.fertilizerCharges, card.amount)
-    assert.ok(card.amount > 0)
+    const before = s.fertilizerCharges
+    const won = settleScratchCard(card, 3)
+    assert.equal(s.fertilizerCharges, before + won.amount)
   })
 
   assert.equal(drawScratchCard(), null, 'no ticket, no card')
+
+  // an abandoned card refunds the ticket (capped)
+  refundScratchTicket()
+  assert.equal(s.scratchTickets, 1)
+  s.scratchTickets = CONFIG.scratchMaxPending
+  refundScratchTicket()
+  assert.equal(s.scratchTickets, CONFIG.scratchMaxPending)
 })
 
 test('turbo fertilizer: one charge doubles one harvest', () => {
@@ -445,16 +487,97 @@ test('turbo fertilizer: one charge doubles one harvest', () => {
   })
 })
 
-test('plant data: unlock order matches rising profit per second', () => {
+test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
   let lastUnlock = -1
   let lastProfit = 0
   for (const plant of PLANTS) {
     assert.ok(plant.unlockAtTotalEarned > lastUnlock || plant.unlockAtTotalEarned === 0, `${plant.id}: unlocks must ascend`)
-    const profit = (plant.yield * plant.sellValue - plant.seedCost) / plant.growTime
-    assert.ok(profit > lastProfit, `${plant.id}: profit/s must beat the previous plant (${profit.toFixed(3)} vs ${lastProfit.toFixed(3)})`)
+    const profit = steadyProfitPerSecond(plant)
+    assert.ok(
+      profit > lastProfit * 1.5,
+      `${plant.id}: steady profit/s must clearly beat the previous plant (${profit.toFixed(2)} vs ${lastProfit.toFixed(2)})`
+    )
+    const roi = (plant.yield * plant.sellValue) / plant.seedCost
+    if (plant.regrowTime) {
+      assert.ok(roi >= 1 / 3, `${plant.id}: seed must pay back within three harvests (×${roi.toFixed(2)})`)
+      assert.ok(plant.regrowTime < plant.growTime, `${plant.id}: regrow must be faster than first growth`)
+    } else {
+      assert.ok(roi >= 3, `${plant.id}: a seed must at least triple its money (×${roi.toFixed(2)})`)
+    }
     lastUnlock = plant.unlockAtTotalEarned
     lastProfit = profit
   }
+})
+
+test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e15 // unlock everything
+    selectPlant('erdbeere')
+    const berry = PLANTS.find((p) => p.id === 'erdbeere')
+    assert.ok(sowPlot(0))
+    tick(s, berry.growTime)
+    assert.ok(plotReady(s.plots[0]))
+
+    const first = harvestPlot(0)
+    assert.equal(first.units, berry.yield)
+    assert.equal(s.plots[0].plantId, 'erdbeere', 'bush must stay planted')
+    assert.equal(s.plots[0].regrowing, true)
+    assert.equal(s.plots[0].waterLeft, CONFIG.waterChargesPerCrop, 'fresh charges per cycle')
+
+    // not ready after the OLD grow time fraction, but after regrowTime it is
+    tick(s, berry.regrowTime - 1)
+    assert.equal(plotReady(s.plots[0]), false)
+    tick(s, 1)
+    assert.ok(plotReady(s.plots[0]), 'regrow cycle uses the shorter time')
+    assert.equal(harvestPlot(0).units, berry.yield)
+
+    // regrow state survives a save roundtrip
+    const code = exportSave()
+    fresh()
+    importSave(code)
+    assert.equal(getState().plots[0].regrowing, true)
+
+    // rip out the bush
+    assert.ok(clearPlot(0))
+    assert.equal(getState().plots[0].plantId, null)
+    assert.equal(clearPlot(0), false)
+  })
+})
+
+test('prestige: compost payout, round reset, permanent perks stay', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    assert.equal(compostGain(s), 0)
+    assert.equal(leaseParcel(), 0, 'no prestige below the threshold')
+
+    s.totalEarned = 4 * CONFIG.prestigeBase // → floor(sqrt(4)) = 2 compost
+    s.lifetimeEarned = 4 * CONFIG.prestigeBase
+    s.money = 5e6
+    s.level = 7
+    s.upgrades['giesskanne'] = 5
+    s.inventory['basilikum'] = 99
+    assert.equal(compostGain(s), 2)
+
+    assert.equal(leaseParcel(), 2)
+    assert.equal(s.parcels, 2)
+    assert.equal(s.compost, 2)
+    assert.equal(s.money, CONFIG.startMoney)
+    assert.equal(s.totalEarned, 0)
+    assert.equal(s.lifetimeEarned, 4 * CONFIG.prestigeBase, 'lifetime stats survive')
+    assert.equal(s.plots.length, CONFIG.startPlots)
+    assert.deepEqual(s.upgrades, {})
+    assert.deepEqual(s.inventory, {})
+    assert.equal(s.level, 7, 'gardener level is permanent')
+    assert.equal(s.quests.length >= 1, true, 'fresh quest board')
+    assert.equal(maxPlots(s), CONFIG.maxPlots + CONFIG.parcelExtraPlots)
+
+    // compost beats the lost upgrades? not necessarily — but it must apply:
+    const expectedYield =
+      (1 + CONFIG.compostYieldPerPoint * 2) * (1 + CONFIG.levelYieldPerLevel * 6)
+    assert.ok(Math.abs(yieldMultiplier(s) - expectedYield) < 1e-9)
+  })
 })
 
 test('offline progress runs through the same tick', () => {

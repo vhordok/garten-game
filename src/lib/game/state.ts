@@ -3,13 +3,16 @@ import { PLANTS } from '../data/plants'
 import type { GameState, PlotState } from './types'
 
 export function emptyPlot(): PlotState {
-  return { plantId: null, progress: 0, waterLeft: 0 }
+  return { plantId: null, progress: 0, waterLeft: 0, regrowing: false }
 }
 
 export function createDefaultState(now = Date.now()): GameState {
   return {
     money: CONFIG.startMoney,
     totalEarned: 0,
+    lifetimeEarned: 0,
+    parcels: 1,
+    compost: 0,
     level: 1,
     xp: 0,
     plots: Array.from({ length: CONFIG.startPlots }, emptyPlot),
@@ -18,6 +21,7 @@ export function createDefaultState(now = Date.now()): GameState {
     upgrades: {},
     quests: [],
     questCounter: 0,
+    questStreak: 0,
     scratchTickets: 0,
     fertilizerCharges: 0,
     combo: { count: 0, remaining: 0 },

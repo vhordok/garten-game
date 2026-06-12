@@ -4,10 +4,28 @@
 import { CONFIG } from '../data/config'
 import { PLANTS } from '../data/plants'
 import { questSlots } from '../data/progression'
+import { QUEST_CLIENTS, QUEST_TIERS } from '../data/questFlavor'
 import type { GameState, QuestState } from './types'
+
+function rollTier(): (typeof QUEST_TIERS)[number] {
+  const total = QUEST_TIERS.reduce((sum, t) => sum + t.weight, 0)
+  let roll = Math.random() * total
+  for (const tier of QUEST_TIERS) {
+    roll -= tier.weight
+    if (roll < 0) return tier
+  }
+  return QUEST_TIERS[0]
+}
+
+/** Current payout bonus from the delivery streak. */
+export function questStreakBonus(s: GameState): number {
+  return Math.min(s.questStreak * CONFIG.questStreakPerDelivery, CONFIG.questStreakMaxBonus)
+}
 
 /** Random delivery order over the currently unlocked plants. */
 export function generateQuest(s: GameState): QuestState {
+  const tier = rollTier()
+  const client = QUEST_CLIENTS[Math.floor(Math.random() * QUEST_CLIENTS.length)]
   const unlocked = PLANTS.filter((p) => s.totalEarned >= p.unlockAtTotalEarned)
   const plant = unlocked[Math.floor(Math.random() * unlocked.length)]
   // aim for a handful of harvests so orders stay snappy
@@ -18,8 +36,10 @@ export function generateQuest(s: GameState): QuestState {
     id: s.questCounter,
     plantId: plant.id,
     amount,
-    reward: Math.round(amount * plant.sellValue * CONFIG.questRewardFactor),
+    reward: Math.round(amount * plant.sellValue * tier.rewardFactor),
     xp: amount,
+    tier: tier.id,
+    client,
     skipCooldown: 0,
   }
 }

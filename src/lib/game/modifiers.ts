@@ -16,14 +16,18 @@ function multiplierFor(state: GameState, effect: UpgradeEffect): number {
   return mult
 }
 
-/** Growth speed factor applied to tick deltas. */
+/** Growth speed factor applied to tick deltas (upgrades × compost). */
 export function growthMultiplier(state: GameState): number {
-  return multiplierFor(state, 'growth')
+  return multiplierFor(state, 'growth') * (1 + CONFIG.compostGrowthPerPoint * state.compost)
 }
 
-/** Harvested-units factor (fractions resolved probabilistically). */
+/** Harvested-units factor: upgrades × compost × permanent level bonus. */
 export function yieldMultiplier(state: GameState): number {
-  return multiplierFor(state, 'yield')
+  return (
+    multiplierFor(state, 'yield') *
+    (1 + CONFIG.compostYieldPerPoint * state.compost) *
+    (1 + CONFIG.levelYieldPerLevel * Math.max(state.level - 1, 0))
+  )
 }
 
 /** Sale price factor. */

@@ -6,10 +6,11 @@ import { PLANTS, plantById } from '../data/plants'
 import { levelUpReward, xpToNext } from '../data/progression'
 import { SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
+import { questTier } from '../data/questFlavor'
 import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
-import { generateQuest, refillQuests } from './quests'
+import { generateQuest, questStreakBonus, refillQuests } from './quests'
 import { emptyPlot, getState, notify } from './state'
-import { plotReady } from './tick'
+import { cycleTime, plotReady } from './tick'
 import type { GameState, PlantDef, UpgradeDef } from './types'
 
 export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
@@ -35,7 +36,21 @@ export function sowPlot(index: number): boolean {
   plot.plantId = def.id
   plot.progress = 0
   plot.waterLeft = CONFIG.waterChargesPerCrop
+  plot.regrowing = false
   s.stats.planted += 1
+  notify()
+  return true
+}
+
+/** Rip out a plant (no refund) — frees the plot for something better. */
+export function clearPlot(index: number): boolean {
+  const s = getState()
+  const plot = s.plots[index]
+  if (!plot || plot.plantId === null) return false
+  plot.plantId = null
+  plot.progress = 0
+  plot.waterLeft = 0
+  plot.regrowing = false
   notify()
   return true
 }
@@ -49,8 +64,10 @@ export function waterPlot(index: number): boolean {
   const plot = s.plots[index]
   if (!plot || !plot.plantId || plot.waterLeft <= 0) return false
   const def = plantById(plot.plantId)
-  if (!def || plot.progress >= def.growTime) return false
-  plot.progress = Math.min(plot.progress + def.growTime * CONFIG.waterProgressBoost, def.growTime)
+  if (!def) return false
+  const target = cycleTime(plot, def)
+  if (plot.progress >= target) return false
+  plot.progress = Math.min(plot.progress + target * CONFIG.waterProgressBoost, target)
   plot.waterLeft -= 1
   notify()
   return true
@@ -119,9 +136,17 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
-  plot.plantId = null
-  plot.progress = 0
-  plot.waterLeft = 0
+  if (def.regrowTime) {
+    // berries & trees stay and re-ripen in a shorter cycle, fresh water charges
+    plot.progress = 0
+    plot.regrowing = true
+    plot.waterLeft = CONFIG.waterChargesPerCrop
+  } else {
+    plot.plantId = null
+    plot.progress = 0
+    plot.waterLeft = 0
+    plot.regrowing = false
+  }
   let tickets = 0
   if (Math.random() < CONFIG.scratchDropChance && s.scratchTickets < CONFIG.scratchMaxPending) {
     s.scratchTickets += 1
@@ -181,6 +206,7 @@ function sellInternal(s: GameState, plantId: string): number {
   delete s.inventory[plantId]
   s.money += gain
   s.totalEarned += gain
+  s.lifetimeEarned += gain
   s.stats.sold += count
   return gain
 }
@@ -207,9 +233,44 @@ export function nextPlotCost(state: GameState): number {
   return Math.floor(CONFIG.plotBaseCost * Math.pow(CONFIG.plotCostFactor, bought))
 }
 
+/** Current plot cap — every leased parcel extends it. */
+export function maxPlots(state: GameState): number {
+  return CONFIG.maxPlots + (state.parcels - 1) * CONFIG.parcelExtraPlots
+}
+
+/** Compost earned by leasing a new parcel right now (GAME_DESIGN.md §6). */
+export function compostGain(state: GameState): number {
+  return Math.floor(Math.sqrt(state.totalEarned / CONFIG.prestigeBase))
+}
+
+/**
+ * Prestige: lease a new parcel. Resets the round (money, plots, storage,
+ * upgrades, quests, round earnings) and pays out compost. Level/XP, stats,
+ * tickets and fertilizer persist — the gardener stays experienced.
+ */
+export function leaseParcel(): number {
+  const s = getState()
+  const gain = compostGain(s)
+  if (gain < 1) return 0
+  s.compost += gain
+  s.parcels += 1
+  s.money = CONFIG.startMoney
+  s.totalEarned = 0
+  s.plots = Array.from({ length: CONFIG.startPlots }, emptyPlot)
+  s.inventory = {}
+  s.upgrades = {}
+  s.quests = []
+  s.questStreak = 0
+  s.combo = { count: 0, remaining: 0 }
+  s.selectedPlantId = PLANTS[0].id
+  refillQuests(s)
+  notify()
+  return gain
+}
+
 export function buyPlot(): boolean {
   const s = getState()
-  if (s.plots.length >= CONFIG.maxPlots) return false
+  if (s.plots.length >= maxPlots(s)) return false
   const cost = nextPlotCost(s)
   if (s.money < cost) return false
   s.money -= cost
@@ -266,9 +327,14 @@ export function ensureQuests(): void {
 }
 
 export interface QuestReward {
+  /** actual payout including the streak bonus */
   reward: number
   xp: number
   levelUps: LevelUp[]
+  /** gold orders drop a scratch ticket */
+  bonusTicket: boolean
+  /** streak length after this delivery */
+  streak: number
 }
 
 /** True if storage holds enough produce to deliver the quest. */
@@ -292,13 +358,22 @@ export function fulfillQuest(questId: number): QuestReward | null {
   const left = have - quest.amount
   if (left > 0) s.inventory[quest.plantId] = left
   else delete s.inventory[quest.plantId]
-  s.money += quest.reward
-  s.totalEarned += quest.reward
+  // streak bonus applies to this delivery, then the streak grows
+  const payout = Math.round(quest.reward * (1 + questStreakBonus(s)))
+  s.money += payout
+  s.totalEarned += payout
+  s.lifetimeEarned += payout
   s.stats.sold += quest.amount
+  s.questStreak += 1
+  let bonusTicket = false
+  if (questTier(quest.tier).bonusTicket && s.scratchTickets < CONFIG.scratchMaxPending) {
+    s.scratchTickets += 1
+    bonusTicket = true
+  }
   const levelUps = grantXp(s, quest.xp)
   s.quests[index] = generateQuest(s)
   notify()
-  return { reward: quest.reward, xp: quest.xp, levelUps }
+  return { reward: payout, xp: quest.xp, levelUps, bonusTicket, streak: s.questStreak }
 }
 
 export interface ScratchCard {
@@ -307,14 +382,22 @@ export interface ScratchCard {
   prizeType: ScratchPrizeType
   /** prize symbol (the matching one) */
   symbol: string
-  /** money, xp or fertilizer charges depending on type */
+  /** FULL prize value — the settle step scales it by matches */
   amount: number
+}
+
+export interface ScratchOutcome {
+  /** what was actually paid out */
+  amount: number
+  /** 'voll' | 'teil' | 'trost' for UI flavor */
+  grade: 'voll' | 'teil' | 'trost'
   levelUps: LevelUp[]
 }
 
 /**
- * Consume one ticket and draw a card. The prize is applied immediately —
- * the UI only plays the reveal theater. Returns null without a ticket.
+ * Consume one ticket and draw a hidden card: the board holds exactly one
+ * triple (the prize) plus three decoy pairs. NOTHING is paid out yet —
+ * the player picks 3 cells, then settleScratchCard() applies the result.
  */
 export function drawScratchCard(): ScratchCard | null {
   const s = getState()
@@ -334,16 +417,6 @@ export function drawScratchCard(): ScratchCard | null {
   }
   const amount = scratchPrizeAmount(prize, s)
 
-  let levelUps: LevelUp[] = []
-  if (prize.type === 'xp') {
-    levelUps = grantXp(s, amount)
-  } else if (prize.type === 'fertilizer') {
-    s.fertilizerCharges += amount
-  } else {
-    // lottery winnings are not sales: money yes, totalEarned no
-    s.money += amount
-  }
-
   // board: three matching symbols, six decoys as three pairs (never a triple)
   const decoyPool = SCRATCH_PRIZES.filter((p) => p.symbol !== prize.symbol)
   const cells = [prize.symbol, prize.symbol, prize.symbol]
@@ -359,10 +432,45 @@ export function drawScratchCard(): ScratchCard | null {
   }
 
   notify()
-  return { symbols: cells, prizeType: prize.type, symbol: prize.symbol, amount, levelUps }
+  return { symbols: cells, prizeType: prize.type, symbol: prize.symbol, amount }
 }
 
-/** Reroll a quest; the fresh order arrives with the skip cooldown armed. */
+/**
+ * Apply a scratched card: `matched` = how many of the three picked cells
+ * showed the prize symbol. 3 → full prize, 2 → partial, else consolation.
+ * Lottery winnings never count as earnings.
+ */
+export function settleScratchCard(card: ScratchCard, matched: number): ScratchOutcome {
+  const s = getState()
+  const grade: ScratchOutcome['grade'] = matched >= 3 ? 'voll' : matched === 2 ? 'teil' : 'trost'
+  const factor =
+    grade === 'voll' ? 1 : grade === 'teil' ? CONFIG.scratchPartialFactor : CONFIG.scratchConsolationFactor
+  const amount = Math.max(Math.round(card.amount * factor), 1)
+  let levelUps: LevelUp[] = []
+  if (card.prizeType === 'xp') {
+    levelUps = grantXp(s, amount)
+  } else if (card.prizeType === 'fertilizer') {
+    s.fertilizerCharges += amount
+  } else {
+    s.money += amount
+  }
+  notify()
+  return { amount, grade, levelUps }
+}
+
+/** Give a drawn but unscratched ticket back (panel closed early). */
+export function refundScratchTicket(): void {
+  const s = getState()
+  if (s.scratchTickets < CONFIG.scratchMaxPending) {
+    s.scratchTickets += 1
+    notify()
+  }
+}
+
+/**
+ * Reroll a quest; the fresh order arrives with the skip cooldown armed and
+ * the delivery streak breaks.
+ */
 export function skipQuest(questId: number): boolean {
   const s = getState()
   const index = s.quests.findIndex((q) => q.id === questId)
@@ -371,6 +479,7 @@ export function skipQuest(questId: number): boolean {
   const fresh = generateQuest(s)
   fresh.skipCooldown = CONFIG.questSkipCooldownSeconds
   s.quests[index] = fresh
+  s.questStreak = 0
   notify()
   return true
 }

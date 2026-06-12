@@ -1,8 +1,15 @@
 import type { PlantDef } from '../game/types'
 
 // All plant content/balance lives here — game logic only references ids.
-// Balance rule of thumb (GAME_DESIGN.md §3): slower plants earn more profit
-// per second, faster plants cost more clicks per minute.
+//
+// Balance rules (GAME_DESIGN.md §9.9):
+// - steady-state profit/s roughly DOUBLES with every plant down the list
+//   (regrow plants count yield/regrowTime, others (gain−seed)/growTime),
+// - one-shot plants: a seed at least TRIPLES its money per harvest,
+// - regrow plants (berries/trees): the one-time seed pays for itself
+//   within at most three harvests — afterwards everything is profit,
+// - unlock thresholds step ×4–6 so there is always a next goal.
+// `npm test` enforces all of this.
 export const PLANTS: PlantDef[] = [
   {
     id: 'basilikum',
@@ -17,6 +24,18 @@ export const PLANTS: PlantDef[] = [
     unlockAtTotalEarned: 0,
   },
   {
+    id: 'schnittlauch',
+    name: 'Schnittlauch',
+    emoji: '🥬',
+    category: 'kraeuter',
+    description: 'Feine Halme, schneller Schnitt — der erste Schritt nach oben.',
+    seedCost: 3,
+    growTime: 15,
+    yield: 1,
+    sellValue: 11,
+    unlockAtTotalEarned: 50,
+  },
+  {
     id: 'minze',
     name: 'Minze',
     emoji: '🍃',
@@ -25,20 +44,20 @@ export const PLANTS: PlantDef[] = [
     seedCost: 8,
     growTime: 30,
     yield: 2,
-    sellValue: 9,
-    unlockAtTotalEarned: 75,
+    sellValue: 19,
+    unlockAtTotalEarned: 250,
   },
   {
     id: 'lavendel',
     name: 'Lavendel',
     emoji: '🪻',
     category: 'kraeuter',
-    description: 'Edel und langsam — der beste Verdienst pro Beet.',
-    seedCost: 40,
-    growTime: 120,
+    description: 'Edel und langsam — das beste Kraut im Beet.',
+    seedCost: 35,
+    growTime: 75,
     yield: 3,
-    sellValue: 35,
-    unlockAtTotalEarned: 400,
+    sellValue: 62,
+    unlockAtTotalEarned: 1200,
   },
   {
     id: 'karotte',
@@ -47,10 +66,10 @@ export const PLANTS: PlantDef[] = [
     category: 'gemuese',
     description: 'Das erste Gemüse: knackig, zuverlässig, gutes Geld.',
     seedCost: 150,
-    growTime: 240,
+    growTime: 180,
     yield: 2,
-    sellValue: 160,
-    unlockAtTotalEarned: 2500,
+    sellValue: 450,
+    unlockAtTotalEarned: 6000,
   },
   {
     id: 'tomate',
@@ -58,11 +77,11 @@ export const PLANTS: PlantDef[] = [
     emoji: '🍅',
     category: 'gemuese',
     description: 'Braucht Geduld am Strauch, zahlt dafür kräftig aus.',
-    seedCost: 600,
-    growTime: 480,
+    seedCost: 550,
+    growTime: 360,
     yield: 3,
-    sellValue: 350,
-    unlockAtTotalEarned: 12000,
+    sellValue: 1200,
+    unlockAtTotalEarned: 30000,
   },
   {
     id: 'kuerbis',
@@ -70,11 +89,89 @@ export const PLANTS: PlantDef[] = [
     emoji: '🎃',
     category: 'gemuese',
     description: 'Ein einziger Koloss pro Beet — Crits machen ihn legendär.',
-    seedCost: 2500,
-    growTime: 900,
+    seedCost: 2400,
+    growTime: 720,
     yield: 1,
-    sellValue: 3600,
-    unlockAtTotalEarned: 60000,
+    sellValue: 14500,
+    unlockAtTotalEarned: 120000,
+  },
+  {
+    id: 'erdbeere',
+    name: 'Erdbeere',
+    emoji: '🍓',
+    category: 'beeren',
+    description: 'Einmal pflanzen, immer wieder ernten — der Strauch bleibt stehen.',
+    seedCost: 10000,
+    growTime: 1200,
+    regrowTime: 480,
+    yield: 4,
+    sellValue: 3800,
+    unlockAtTotalEarned: 500000,
+  },
+  {
+    id: 'blaubeere',
+    name: 'Blaubeere',
+    emoji: '🫐',
+    category: 'beeren',
+    description: 'Trägt geduldig Nacht für Nacht — perfekt für lange Pausen.',
+    seedCost: 45000,
+    growTime: 2400,
+    regrowTime: 900,
+    yield: 6,
+    sellValue: 9600,
+    unlockAtTotalEarned: 2.5e6,
+  },
+  {
+    id: 'himbeere',
+    name: 'Himbeere',
+    emoji: '🍇',
+    category: 'beeren',
+    description: 'Wuchernde Ruten mit dicken Trauben — die Krone der Sträucher.',
+    seedCost: 160000,
+    growTime: 3600,
+    regrowTime: 1500,
+    yield: 8,
+    sellValue: 24000,
+    unlockAtTotalEarned: 10e6,
+  },
+  {
+    id: 'apfelbaum',
+    name: 'Apfelbaum',
+    emoji: '🍎',
+    category: 'obst',
+    description: 'Ein echter Baum: lange Anlaufzeit, dann trägt er für immer.',
+    seedCost: 1.5e6,
+    growTime: 7200,
+    regrowTime: 2700,
+    yield: 12,
+    sellValue: 58000,
+    unlockAtTotalEarned: 50e6,
+  },
+  {
+    id: 'kirschbaum',
+    name: 'Kirschbaum',
+    emoji: '🍒',
+    category: 'obst',
+    description: 'Blüht rosa, zahlt rubinrot — Geduld wird fürstlich belohnt.',
+    seedCost: 8e6,
+    growTime: 14400,
+    regrowTime: 5400,
+    yield: 18,
+    sellValue: 154000,
+    unlockAtTotalEarned: 250e6,
+  },
+  {
+    id: 'drachenfrucht',
+    name: 'Drachenfrucht',
+    emoji: '🌵',
+    category: 'obst',
+    description: 'Exotischer Endgegner: über Nacht reif, Erträge wie ein Drachenhort.',
+    seedCost: 30e6,
+    growTime: 28800,
+    regrowTime: 10800,
+    yield: 22,
+    sellValue: 500000,
+    unlockAtTotalEarned: 1e9,
   },
 ]
 
@@ -82,4 +179,10 @@ const byId = new Map(PLANTS.map((p) => [p.id, p]))
 
 export function plantById(id: string): PlantDef | undefined {
   return byId.get(id)
+}
+
+/** Money per second once the plant is in steady production. */
+export function steadyProfitPerSecond(def: PlantDef): number {
+  const gain = def.yield * def.sellValue
+  return def.regrowTime ? gain / def.regrowTime : (gain - def.seedCost) / def.growTime
 }

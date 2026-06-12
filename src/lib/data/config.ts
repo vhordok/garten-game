@@ -19,16 +19,30 @@ export const CONFIG = {
   /** scratch tickets: drop chance per harvested plot, pending cap */
   scratchDropChance: 0.04,
   scratchMaxPending: 5,
+  /** pick 3 of 9: payout share for 2 matches / no match (of full prize) */
+  scratchPartialFactor: 0.4,
+  scratchConsolationFactor: 0.1,
   /** turbo fertilizer: yield factor while charges last (one per harvest) */
   fertilizerChargeMult: 2,
-  /** quests (GAME_DESIGN.md §9.4): reward over market value, skip cooldown */
-  questRewardFactor: 1.5,
+  /** quests (GAME_DESIGN.md §9.4): tier factors live in data/questFlavor.ts */
   questSkipCooldownSeconds: 60,
+  /** payout bonus per consecutive delivery, and its cap */
+  questStreakPerDelivery: 0.02,
+  questStreakMaxBonus: 0.3,
   /** golden harvests (GAME_DESIGN.md §9.4): roll per harvested plot */
   critPerfectChance: 0.08,
   critPerfectMult: 3,
   critLegendaryChance: 0.01,
   critLegendaryMult: 10,
+  /** prestige (GAME_DESIGN.md §6): compost = floor(sqrt(roundEarned / base)) */
+  prestigeBase: 1e6,
+  /** additional plot cap per leased parcel */
+  parcelExtraPlots: 4,
+  /** permanent bonuses per compost point */
+  compostYieldPerPoint: 0.05,
+  compostGrowthPerPoint: 0.02,
+  /** permanent yield bonus per gardener level above 1 */
+  levelYieldPerLevel: 0.01,
   /** offline simulation cap; later extendable through upgrades (GAME_DESIGN.md §5) */
   offlineCapHours: 8,
   /** ignore gaps shorter than this when applying offline progress */

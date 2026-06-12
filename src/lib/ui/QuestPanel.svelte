@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { CONFIG } from '../data/config'
   import { plantById } from '../data/plants'
   import { questSlots } from '../data/progression'
+  import { questTier } from '../data/questFlavor'
   import { fulfillQuest, questFulfillable, skipQuest } from '../game/actions'
+  import { questStreakBonus } from '../game/quests'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -10,10 +13,12 @@
   import Overlay from './Overlay.svelte'
   import PixelIcon from './PixelIcon.svelte'
   import { spriteUrl } from './pixel/render'
+  import { pushToast } from './toasts'
 
   let { onClose }: { onClose: () => void } = $props()
 
   const slots = $derived(questSlots($gameStore.level))
+  const streakBonus = $derived(questStreakBonus($gameStore))
 
   function handleDeliver(e: MouseEvent, questId: number) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -24,6 +29,10 @@
       coinBurst(cx, cy, 18)
       playSound('sell')
       celebrateLevelUps(result.levelUps, cx, cy)
+      if (result.bonusTicket) {
+        pushToast('Gold-Auftrag! Ein Rubbellos liegt als Dankeschön bei.', '🎟️', 7000)
+        playSound('ticket')
+      }
     } else {
       playSound('error')
     }
@@ -37,22 +46,32 @@
 
 <Overlay title="Aufträge" {onClose}>
   <p class="hint">Liefere aus dem Lager und kassiere mehr als den Marktpreis — plus Bonus-XP.</p>
+  <div class="streak chip num" title="Jede Lieferung ohne Neu-Würfeln erhöht den Bonus (max. +{Math.round(CONFIG.questStreakMaxBonus * 100)} %)">
+    Lieferserie: <b>{formatNumber($gameStore.questStreak)}</b>
+    {#if streakBonus > 0}· +{Math.round(streakBonus * 100)} % auf alle Lieferungen{/if}
+  </div>
   <ul class="quest-list">
     {#each $gameStore.quests as quest (quest.id)}
       {@const plant = plantById(quest.plantId)}
       {@const have = $gameStore.inventory[quest.plantId] ?? 0}
       {@const fulfillable = questFulfillable($gameStore, quest.id)}
+      {@const tier = questTier(quest.tier)}
       {#if plant}
         <li class="row">
           <img class="px" src={spriteUrl(`${plant.id}-3`)} width="48" height="48" alt="" />
           <span class="info">
+            <span class="client">
+              <span class="tier {quest.tier}">{tier.label}</span>
+              {quest.client}
+            </span>
             <span class="name">Liefere {quest.amount}× {plant.name}</span>
             <span class="progress num" class:done={fulfillable}>
               {formatNumber(Math.min(have, quest.amount))}/{formatNumber(quest.amount)} im Lager
             </span>
             <span class="reward num">
-              <PixelIcon name="coin" scale={1} /> +{formatNumber(quest.reward)}
+              <PixelIcon name="coin" scale={1} /> +{formatNumber(Math.round(quest.reward * (1 + streakBonus)))}
               <span class="xp">+{formatNumber(quest.xp)} XP</span>
+              {#if tier.bonusTicket}<span class="ticket">+ Los</span>{/if}
             </span>
           </span>
           <span class="buttons">
@@ -110,6 +129,49 @@
     gap: 2px;
     min-width: 0;
     flex: 1;
+  }
+
+  .streak {
+    margin: 10px 0 0;
+    padding: 2px 8px;
+    font-size: 0.74rem;
+    color: var(--c-mist);
+  }
+
+  .streak b {
+    color: var(--c-ember);
+  }
+
+  .client {
+    font-size: 0.72rem;
+    color: var(--c-mist);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tier {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 5px;
+    color: var(--c-night0);
+    background: var(--c-gold0);
+  }
+
+  .tier.silber {
+    background: var(--c-silver);
+  }
+
+  .tier.gold {
+    background: var(--c-gold2);
+    box-shadow: 0 0 8px rgba(232, 193, 112, 0.6);
+  }
+
+  .ticket {
+    color: var(--c-gold2);
+    margin-left: 6px;
   }
 
   .name {
