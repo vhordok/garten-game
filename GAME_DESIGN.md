@@ -317,5 +317,35 @@ Glücks-Kick im Stil von Rubbellosen.
 Save-Format: v7 (`waterLeft` je Beet, Bestands-Crops erhalten volle
 Ladungen) und v8 (`scratchTickets`, `fertilizerCharges`).
 
+### 9.9 Endless-Update „Parzellen, Bäume & Pick-3"
+
+Antwort auf das Feedback „zu schnell durchgespielt, Balance unlogisch,
+Level/Aufträge/Lose zu beliebig":
+
+1. **Balance-Regeln (testgesichert in `npm test`):** Steady-State-Gewinn/s
+   verdoppelt sich grob mit jeder Sorte (0.25 → ~1000); Einmal-Pflanzen
+   verdreifachen den Samenpreis pro Ernte mindestens; Wiederernte-Pflanzen
+   amortisieren sich in ≤ 3 Ernten. Gewinn/s steht im Hotbar-Tooltip.
+2. **13 Sorten in 4 Kategorien** (Hotbar mit Tabs, Tab-Taste wechselt):
+   Kräuter (4), Gemüse (3), **Beeren** (3) und **Obstbäume** (3).
+   Beeren/Bäume haben `regrowTime`: einmal pflanzen, kürzere Folgezyklen
+   für immer (frische Gieß-Ladungen pro Zyklus, Shift-Klick rodet).
+   Baum-Zyklen von 45 min bis 3 h tragen das Offline-Spiel über Tage.
+3. **Prestige „Neue Parzelle"** (§6 umgesetzt): ab 1M Runden-Einnahmen
+   Kompost = floor(√(verdient/1e6)); Reset von Geld/Beeten/Lager/
+   Upgrades/Aufträgen, +4 Beete Maximum pro Parzelle, Kompost gibt
+   permanent +5 % Ertrag und +2 % Tempo pro Punkt.
+4. **Level ist permanent:** +1 % Ertrag pro Level über 1, übersteht
+   Prestige — XP hat damit einen klaren, dauerhaften Zweck.
+5. **Aufträge 2.0:** Bronze/Silber/Gold (×1.3/×1.6/×2.0, Gold legt ein
+   Los bei), benannte Auftraggeber, Lieferserie +2 %/Lieferung (Cap
+   +30 %), Skips brechen die Serie.
+6. **Rubbellose 2.0:** verdecktes 3×3-Brett mit garantiert genau einem
+   Drilling; der Spieler rubbelt 3 Felder — 3 Treffer voller Gewinn,
+   2 Treffer 40 %, sonst Trostpreis. Abbruch erstattet das Los.
+
+Save-Format: v9 (regrowing), v10 (parcels/compost/lifetimeEarned),
+v11 (Auftrags-Stufen/Auftraggeber/questStreak).
+
 Der ursprüngliche Phasenplan (§8) läuft danach ab Phase 2 weiter;
 der Upgrade-Shop aus R4 ersetzt die Bewässerungs-Upgrades aus Phase 2.
