@@ -169,6 +169,12 @@ export interface GameState {
   achievements: string[]
   /** cannabis license level owned (0–3), survives prestige */
   licenses: number
+  /** personal records (survive prestige) */
+  records: { bestHarvest: number; longestCombo: number; biggestWin: number }
+  /** earnings per 30-min bucket, newest last (ring of 48 ≈ 24 h) */
+  history: number[]
+  /** current history bucket: elapsed seconds + lifetime earnings at start */
+  historyAcc: { seconds: number; earnedStart: number }
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

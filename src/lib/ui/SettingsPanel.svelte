@@ -2,7 +2,7 @@
   import { applyOfflineProgress } from '../game/offline'
   import { exportSave, importSave, resetSave, save } from '../game/save'
   import { gameStore } from '../game/state'
-  import { formatNumber } from '../util/format'
+  import { formatDuration, formatNumber } from '../util/format'
   import { playSound, setSoundEnabled, soundEnabled } from './fx/audio'
   import Overlay from './Overlay.svelte'
   import { pushToast } from './toasts'
@@ -73,7 +73,31 @@
       <span>Parzelle: <b>{formatNumber($gameStore.parcels)}</b></span>
       <span>Kompost: <b>{formatNumber($gameStore.compost)}</b></span>
       <span>Insgesamt verdient: <b>{formatNumber($gameStore.lifetimeEarned)}</b></span>
+      <span>Spielzeit: <b>{formatDuration((Date.now() - $gameStore.createdAt) / 1000)}</b></span>
     </div>
+  </section>
+
+  <section>
+    <h3>Rekorde</h3>
+    <div class="stats-row num">
+      <span>Größte Ernte: <b>{formatNumber($gameStore.records.bestHarvest)}</b></span>
+      <span>Längste Kette: <b>×{formatNumber($gameStore.records.longestCombo)}</b></span>
+      <span>Größter Los-Gewinn: <b>{formatNumber($gameStore.records.biggestWin)}</b></span>
+    </div>
+  </section>
+
+  <section>
+    <h3>Einnahmen der letzten 24 h (je 30 min)</h3>
+    {#if $gameStore.history.length === 0}
+      <p class="hint">Noch keine vollen 30 Minuten gespielt — der Graph füllt sich von selbst.</p>
+    {:else}
+      {@const peak = Math.max(...$gameStore.history, 1)}
+      <div class="chart num" title={`Spitze: ${formatNumber(peak)} pro 30 min`}>
+        {#each $gameStore.history as bucket, i (i)}
+          <span class="bar" style:height={`${Math.max((bucket / peak) * 100, 2)}%`}></span>
+        {/each}
+      </div>
+    {/if}
   </section>
 
   <section>
@@ -155,6 +179,22 @@
   textarea:focus {
     outline: none;
     border-color: var(--c-leaf2);
+  }
+
+  .chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 64px;
+    padding: 4px;
+    background: var(--c-night1);
+    box-shadow: inset 0 0 0 2px var(--c-edge);
+  }
+
+  .bar {
+    flex: 1;
+    min-width: 2px;
+    background: linear-gradient(180deg, var(--c-gold2), var(--c-gold0));
   }
 
   .msg {

@@ -741,6 +741,26 @@ test('cannabis: license-gated, requirements enforced, care malus', () => {
   })
 })
 
+test('records & history: best harvest, combo, earnings buckets', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    sowPlot(0)
+    tick(s, PLANTS[0].growTime) // exact ripen — no history bucket yet
+    harvestPlot(0)
+    assert.equal(s.history.length, 0)
+    assert.equal(s.records.bestHarvest, PLANTS[0].yield)
+    assert.equal(s.records.longestCombo, 1)
+    s.marketTime = 0
+    sellPlant('basilikum')
+    const earned = s.totalEarned
+    assert.ok(earned > 0)
+    tick(s, 1800)
+    assert.equal(s.history.length, 1)
+    assert.ok(s.history[0] >= earned, 'bucket captures the earnings (incl. tick income)')
+  })
+})
+
 test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
   let lastUnlock = -1
   let lastProfit = 0

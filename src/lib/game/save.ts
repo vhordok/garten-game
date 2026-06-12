@@ -10,7 +10,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 17
+export const SAVE_VERSION = 18
 
 interface SaveEnvelope {
   version: number
@@ -163,6 +163,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 16:
       // v16 → v17: cannabis licenses; default 0.
       return { ...envelope, version: 17 }
+    case 17:
+      // v17 → v18: records + earnings history; defaults empty.
+      return { ...envelope, version: 18 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -265,6 +268,21 @@ function sanitize(raw: unknown): GameState {
   }
   state.achievements = achievements
   state.licenses = Math.floor(clampNumber(r.licenses, 0, 0, 3))
+
+  const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
+  state.records = {
+    bestHarvest: Math.floor(clampNumber(rec.bestHarvest, 0)),
+    longestCombo: Math.floor(clampNumber(rec.longestCombo, 0)),
+    biggestWin: Math.floor(clampNumber(rec.biggestWin, 0)),
+  }
+  state.history = Array.isArray(r.history)
+    ? r.history.slice(-48).map((v) => clampNumber(v, 0))
+    : []
+  const hAcc = (typeof r.historyAcc === 'object' && r.historyAcc !== null ? r.historyAcc : {}) as Record<string, unknown>
+  state.historyAcc = {
+    seconds: clampNumber(hAcc.seconds, 0, 0, 1800),
+    earnedStart: clampNumber(hAcc.earnedStart, state.lifetimeEarned, 0),
+  }
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
   state.questStreak = Math.floor(clampNumber(r.questStreak, 0, 0, 1e6))

@@ -78,6 +78,15 @@ export function tick(state: GameState, dtSeconds: number): boolean {
   state.marketTime = (state.marketTime + dtSeconds) % (CONFIG.marketPeriodSeconds * 1e6)
   changed = true
   if (processHelpers(state, dtSeconds)) changed = true
+  // earnings history: one bucket per 30 minutes, ring of 48 (≈ 24 h)
+  state.historyAcc.seconds += dtSeconds
+  while (state.historyAcc.seconds >= 1800) {
+    state.historyAcc.seconds -= 1800
+    state.history.push(Math.max(state.lifetimeEarned - state.historyAcc.earnedStart, 0))
+    state.historyAcc.earnedStart = state.lifetimeEarned
+    if (state.history.length > 48) state.history.shift()
+    changed = true
+  }
   // achievements are cheap predicates — check once per tick, UI announces
   for (const def of ACHIEVEMENTS) {
     if (!state.achievements.includes(def.id) && def.check(state)) {

@@ -175,6 +175,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
     s.fertilizerCharges -= 1
   }
   const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult * comboMult * fertilizerMult)
+  if (units > s.records.bestHarvest) s.records.bestHarvest = units
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
@@ -202,6 +203,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
 function bumpCombo(s: GameState): void {
   s.combo.count = s.combo.remaining > 0 ? s.combo.count + 1 : 1
   s.combo.remaining = comboWindowSeconds(s)
+  if (s.combo.count > s.records.longestCombo) s.records.longestCombo = s.combo.count
 }
 
 /** Harvest one ready plot into storage. units = 0 means nothing happened. */
@@ -532,6 +534,7 @@ export function settleScratchCard(card: ScratchCard, picked: string[]): ScratchO
     s.fertilizerCharges += amount
   } else {
     s.money += amount
+    if (amount > s.records.biggestWin) s.records.biggestWin = amount
   }
   notify()
   return { amount, grade, prizeType: prize.type, symbol: matchedSymbol ?? card.symbol, levelUps }
