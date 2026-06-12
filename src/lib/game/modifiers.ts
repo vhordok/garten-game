@@ -39,7 +39,8 @@ export function yieldMultiplier(state: GameState): number {
   return (
     multiplierFor(state, 'yield') *
     (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
-    (1 + levelBonus)
+    (1 + levelBonus) *
+    (1 + 0.01 * state.achievements.length)
   )
 }
 

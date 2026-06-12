@@ -1521,6 +1521,26 @@ const mammutbaum3: SpriteGrid = [
   '................',
 ]
 
+/** Trophy for the achievements panel, 16×16. */
+const pokal: SpriteGrid = [
+  '................',
+  '..oooooooooo....',
+  '..oyOOOOOOyo....',
+  '.o.oOOOOOOo.o...',
+  '.o.oOOOOOOo.o...',
+  '..o.oOOOOo.o....',
+  '....oOOOOo......',
+  '.....oOOo.......',
+  '......oo........',
+  '......oo........',
+  '.....oOOo.......',
+  '....oooooo......',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
 /** Daily gift box, 16×16. */
 const geschenk: SpriteGrid = [
   '................',
@@ -1720,6 +1740,7 @@ export const SPRITES: Record<string, SpriteGrid> = {
   scroll,
   los,
   geschenk,
+  pokal,
   coin,
   lock,
   gear,

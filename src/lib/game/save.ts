@@ -1,6 +1,7 @@
 // Persistence: localStorage save/load with versioning, export/import as
 // base64 code. Bump SAVE_VERSION + add a migrate() step on format changes.
 
+import { achievementById } from '../data/achievements'
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
 import { questSlots } from '../data/progression'
@@ -9,7 +10,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 15
+export const SAVE_VERSION = 16
 
 interface SaveEnvelope {
   version: number
@@ -156,6 +157,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 14:
       // v14 → v15: weather events — transient, sanitize() clears them.
       return { ...envelope, version: 15 }
+    case 15:
+      // v15 → v16: achievements list; defaults empty (re-earned via checks).
+      return { ...envelope, version: 16 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -247,6 +251,16 @@ function sanitize(raw: unknown): GameState {
   }
   // weather is a live moment — never restored from a save
   state.weather = { id: null, remaining: 0 }
+
+  const achievements: string[] = []
+  if (Array.isArray(r.achievements)) {
+    for (const id of r.achievements) {
+      if (typeof id === 'string' && achievementById(id) && !achievements.includes(id)) {
+        achievements.push(id)
+      }
+    }
+  }
+  state.achievements = achievements
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
   state.questStreak = Math.floor(clampNumber(r.questStreak, 0, 0, 1e6))

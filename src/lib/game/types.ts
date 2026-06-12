@@ -161,6 +161,8 @@ export interface GameState {
   daily: { lastClaim: number; streak: number }
   /** active weather event (transient; ticks drain it, loading clears it) */
   weather: { id: string | null; remaining: number }
+  /** unlocked achievement ids — each grants +1 % permanent yield */
+  achievements: string[]
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

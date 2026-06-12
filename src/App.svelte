@@ -4,6 +4,8 @@
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
   import { playSound } from './lib/ui/fx/audio'
+  import AchievementsPanel from './lib/ui/AchievementsPanel.svelte'
+  import { achievementById } from './lib/data/achievements'
   import DailyPanel from './lib/ui/DailyPanel.svelte'
   import FxLayer from './lib/ui/fx/FxLayer.svelte'
   import GoldenFirefly from './lib/ui/GoldenFirefly.svelte'
@@ -27,7 +29,7 @@
   let { offline }: { offline: OfflineReport | null } = $props()
 
   let openPanel = $state<
-    'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'tutorial' | null
+    'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'tutorial' | null
   >(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
@@ -67,6 +69,24 @@
     }
   })
 
+  // Announce freshly earned achievements (state change drives the toast).
+  let knownAchievements: string[] | null = null
+  $effect(() => {
+    const current = $gameStore.achievements
+    if (knownAchievements !== null) {
+      for (const id of current) {
+        if (!knownAchievements.includes(id)) {
+          const def = achievementById(id)
+          if (def) {
+            pushToast(`Erfolg freigeschaltet: ${def.name}! (+1 % Ertrag)`, '🏆', 8000)
+            playSound('levelup')
+          }
+        }
+      }
+    }
+    knownAchievements = [...current]
+  })
+
   // Announce newly unlocked plants (transition detection, not game logic).
   let knownUnlocks: string[] | null = null
   $effect(() => {
@@ -94,6 +114,7 @@
     onOpenScratch={() => (openPanel = 'scratch')}
     onOpenPrestige={() => (openPanel = 'prestige')}
     onOpenDaily={() => (openPanel = 'daily')}
+    onOpenAchievements={() => (openPanel = 'achievements')}
   />
   <main bind:this={stageEl}>
     <Garden />
@@ -118,6 +139,8 @@
   <PrestigePanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'daily'}
   <DailyPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'achievements'}
+  <AchievementsPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'tutorial'}
   <TutorialPanel onClose={closeTutorial} />
 {/if}

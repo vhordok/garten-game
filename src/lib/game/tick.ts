@@ -1,3 +1,4 @@
+import { ACHIEVEMENTS } from '../data/achievements'
 import { CONFIG } from '../data/config'
 import { plantById } from '../data/plants'
 import {
@@ -72,6 +73,13 @@ export function tick(state: GameState, dtSeconds: number): boolean {
   state.marketTime = (state.marketTime + dtSeconds) % (CONFIG.marketPeriodSeconds * 1e6)
   changed = true
   if (processHelpers(state, dtSeconds)) changed = true
+  // achievements are cheap predicates — check once per tick, UI announces
+  for (const def of ACHIEVEMENTS) {
+    if (!state.achievements.includes(def.id) && def.check(state)) {
+      state.achievements.push(def.id)
+      changed = true
+    }
+  }
   return changed
 }
 

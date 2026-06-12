@@ -18,6 +18,7 @@
     onOpenScratch,
     onOpenPrestige,
     onOpenDaily,
+    onOpenAchievements,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
@@ -26,6 +27,7 @@
     onOpenScratch: () => void
     onOpenPrestige: () => void
     onOpenDaily: () => void
+    onOpenAchievements: () => void
   } = $props()
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
@@ -149,6 +151,10 @@
       {#if prestigeReady}<span class="dot prestige" aria-hidden="true"></span>{/if}
     </button>
   {/if}
+
+  <button class="pxbtn" onclick={onOpenAchievements} title="Erfolge — jeder gibt +1 % Ertrag">
+    <PixelIcon name="pokal" scale={1} />
+  </button>
 
   <button class="pxbtn" onclick={onOpenInventory} title="Lager öffnen">
     <PixelIcon name="basket" scale={2} />

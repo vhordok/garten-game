@@ -686,6 +686,29 @@ test('timber trees: mature trees trickle money through tick', () => {
   })
 })
 
+test('achievements: tick unlocks them, each grants +1 % yield', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    assert.equal(s.achievements.length, 0)
+    s.stats.planted = 50
+    s.lifetimeEarned = 1000
+    tick(s, 0.1)
+    assert.ok(s.achievements.includes('gruener-daumen'))
+    assert.ok(s.achievements.includes('erster-tausender'))
+    const count = s.achievements.length
+    const expected = 1 + 0.01 * count
+    assert.ok(Math.abs(yieldMultiplier(s) - expected) < 1e-9)
+    tick(s, 0.1)
+    assert.equal(s.achievements.length, count, 'no duplicates')
+
+    // survives a save roundtrip
+    const code = exportSave()
+    fresh()
+    importSave(code)
+    assert.equal(getState().achievements.length, count)
+  })
+})
+
 test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
   let lastUnlock = -1
   let lastProfit = 0
