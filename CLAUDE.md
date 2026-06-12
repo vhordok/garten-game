@@ -65,10 +65,12 @@ FX-Aufrufe gehören in die UI-Schicht (`ui/fx/`), niemals in den Core.
 
 ## Stand
 
-Phasen 1–2 und 4 (GAME_DESIGN.md §8), das Redesign „Mitternachts-
-Pixelgarten" (§9, R1–R5) und die Erweiterungen §9.8 + §9.9 sind
-umgesetzt: 13 Sorten in 4 Kategorien (Beeren/Bäume mit Wiederernte),
-Prestige mit Parzellen & Kompost, permanenter Level-Bonus, gestufte
-Aufträge mit Lieferserie, Pick-3-Rubbellose, aktives Gießen, Juice- und
-Sound-Schicht (SAVE_VERSION 11). Weitere Phasen aus §8 (v. a. Helfer/
-Automatisierung, Phase 3) nur nach Absprache beginnen.
+Phasen 1–4 (GAME_DESIGN.md §8), das Redesign „Mitternachts-
+Pixelgarten" (§9, R1–R5) und die Erweiterungen §9.8–§9.10 sind
+umgesetzt: 16 Sorten in 5 Kategorien (Beeren/Bäume/Magie mit
+Wiederernte), Prestige mit Parzellen & Kompost, permanenter
+Level-Bonus, Shop mit 11 Items in 3 Rubriken inkl. Helfer-
+Automatisierung (läuft offline, gechunkter Catch-up), gestufte
+Aufträge mit Lieferserie, Pick-3-Rubbellose, aktives Gießen, Juice-
+und Sound-Schicht (SAVE_VERSION 12). Verbleibende §8-Phasen (Zier/
+Cannabis, Achievements) nur nach Absprache beginnen.
