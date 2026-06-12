@@ -64,9 +64,10 @@ export function marketFactor(state: GameState): number {
   return 1 + 0.24 * Math.sin(phase) + 0.08 * Math.sin(phase * 2.33)
 }
 
-/** Sale price factor (upgrades × garden beauty × market wave). */
+/** Sale price factor (upgrades × garden beauty × market wave × weather). */
 export function sellMultiplier(state: GameState): number {
-  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state) * marketFactor(state)
+  const boom = state.weather.id === 'marktboom' ? 1.5 : 1
+  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state) * marketFactor(state) * boom
 }
 
 /** Summed perLevel × level over all owned upgrades with the given effect. */
@@ -93,6 +94,11 @@ export function comboWindowSeconds(state: GameState): number {
 /** Additive bonus on the perfect-crit chance (legendary gets a fifth of it). */
 export function critChanceBonus(state: GameState): number {
   return effectBonus(state, 'critChance')
+}
+
+/** Shooting-star nights triple every crit chance. */
+export function critWeatherMult(state: GameState): number {
+  return state.weather.id === 'sternschnuppen' ? 3 : 1
 }
 
 /**

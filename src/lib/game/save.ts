@@ -9,7 +9,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 14
+export const SAVE_VERSION = 15
 
 interface SaveEnvelope {
   version: number
@@ -153,6 +153,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 13:
       // v13 → v14: daily gift streak; defaults claimable.
       return { ...envelope, version: 14 }
+    case 14:
+      // v14 → v15: weather events — transient, sanitize() clears them.
+      return { ...envelope, version: 15 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -242,6 +245,8 @@ function sanitize(raw: unknown): GameState {
     lastClaim: Math.floor(clampNumber(daily.lastClaim, 0, 0, 1e7)),
     streak: Math.floor(clampNumber(daily.streak, 0, 0, 1e6)),
   }
+  // weather is a live moment — never restored from a save
+  state.weather = { id: null, remaining: 0 }
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
   state.questStreak = Math.floor(clampNumber(r.questStreak, 0, 0, 1e6))

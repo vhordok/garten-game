@@ -50,6 +50,12 @@ export function tick(state: GameState, dtSeconds: number): boolean {
       changed = true
     }
   }
+  // weather events blow over
+  if (state.weather.remaining > 0) {
+    state.weather.remaining = Math.max(state.weather.remaining - dtSeconds, 0)
+    if (state.weather.remaining === 0) state.weather.id = null
+    changed = true
+  }
   // the market never sleeps
   state.marketTime = (state.marketTime + dtSeconds) % (CONFIG.marketPeriodSeconds * 1e6)
   changed = true

@@ -6,10 +6,12 @@ import { PLANTS, plantById } from '../data/plants'
 import { bestHarvestValue, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { questTier } from '../data/questFlavor'
+import { weatherById } from '../data/weather'
 import {
   comboMultiplier,
   comboWindowSeconds,
   critChanceBonus,
+  critWeatherMult,
   rollUnits,
   saleValue,
   scratchDropChance,
@@ -137,8 +139,9 @@ const CRIT_RANK: Record<CritTier, number> = { none: 0, perfect: 1, legendary: 2 
 /** Golden-harvest roll (GAME_DESIGN.md §9.4); Glücksklee raises the odds. */
 function rollCrit(s: GameState): { tier: CritTier; mult: number } {
   const bonus = critChanceBonus(s)
-  const legendary = CONFIG.critLegendaryChance + bonus / 5
-  const perfect = CONFIG.critPerfectChance + bonus
+  const weather = critWeatherMult(s)
+  const legendary = Math.min((CONFIG.critLegendaryChance + bonus / 5) * weather, 0.12)
+  const perfect = Math.min((CONFIG.critPerfectChance + bonus) * weather, 0.6)
   const roll = Math.random()
   if (roll < legendary) return { tier: 'legendary', mult: CONFIG.critLegendaryMult }
   if (roll < legendary + perfect) return { tier: 'perfect', mult: CONFIG.critPerfectMult }
@@ -591,6 +594,31 @@ export function claimDaily(now = Date.now()): DailyReward | null {
   s.fertilizerCharges += reward.fertilizer
   notify()
   return reward
+}
+
+/**
+ * Start a weather event (UI scheduler, live play only). Rain instantly
+ * waters every growing plot for free; the rest are timed buffs read by
+ * the modifiers.
+ */
+export function startWeather(weatherId: string): boolean {
+  const s = getState()
+  const def = weatherById(weatherId)
+  if (!def || s.weather.id !== null) return false
+  s.weather = { id: def.id, remaining: def.durationSeconds }
+  if (def.id === 'regen') {
+    for (const plot of s.plots) {
+      if (!plot.plantId) continue
+      const plant = plantById(plot.plantId)
+      if (!plant) continue
+      const target = cycleTime(plot, plant)
+      if (plot.progress < target) {
+        plot.progress = Math.min(plot.progress + target * CONFIG.waterProgressBoost, target)
+      }
+    }
+  }
+  notify()
+  return true
 }
 
 export interface FireflyReward {

@@ -38,6 +38,7 @@ import {
   skipQuest,
   sowAllEmpty,
   sowPlot,
+  startWeather,
   waterAllGrowing,
   upgradeLevel,
   waterPlot,
@@ -622,6 +623,42 @@ test('golden firefly: rewards land in state', () => {
     assert.equal(r.kind, 'fertilizer')
     assert.equal(s.fertilizerCharges, 3)
   })
+})
+
+test('weather events: rain waters, stars boost crits, boom boosts sales', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    sowPlot(0)
+    assert.ok(startWeather('regen'))
+    assert.ok(Math.abs(s.plots[0].progress - PLANTS[0].growTime * CONFIG.waterProgressBoost) < 1e-9)
+    assert.equal(startWeather('marktboom'), false, 'one event at a time')
+    tick(s, 999) // blows over
+    assert.equal(s.weather.id, null)
+  })
+
+  // shooting stars: a roll that misses normally becomes a crit
+  const s = fresh()
+  s.money = 100
+  const probe = (CONFIG.critLegendaryChance + CONFIG.critPerfectChance) * 2
+  withRngQueue([probe, 0.5, 0.5], () => {
+    sowPlot(0)
+    tick(s, 99999)
+    s.weather = { id: null, remaining: 0 }
+    assert.equal(harvestPlot(0).crit, 'none')
+  })
+  withRngQueue([probe, 0.5, 0.5], () => {
+    sowPlot(0)
+    tick(s, 99999)
+    s.weather = { id: 'sternschnuppen', remaining: 60 }
+    assert.equal(harvestPlot(0).crit, 'perfect', 'stars triple the odds')
+  })
+
+  // market boom: +50 % on sales
+  const s2 = fresh()
+  s2.weather = { id: 'marktboom', remaining: 120 }
+  s2.inventory['basilikum'] = 100
+  assert.equal(sellPlant('basilikum'), Math.round(300 * 1.5))
 })
 
 test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {

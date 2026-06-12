@@ -156,6 +156,8 @@ export interface GameState {
   marketTime: number
   /** daily gift: last claimed local day index + consecutive-day streak */
   daily: { lastClaim: number; streak: number }
+  /** active weather event (transient; ticks drain it, loading clears it) */
+  weather: { id: string | null; remaining: number }
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

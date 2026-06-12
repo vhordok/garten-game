@@ -19,6 +19,7 @@
   import SettingsPanel from './lib/ui/SettingsPanel.svelte'
   import ShopPanel from './lib/ui/ShopPanel.svelte'
   import Toasts from './lib/ui/Toasts.svelte'
+  import WeatherEvents from './lib/ui/WeatherEvents.svelte'
   import { pushToast } from './lib/ui/toasts'
   import TutorialPanel from './lib/ui/TutorialPanel.svelte'
   import { formatDuration, formatNumber } from './lib/util/format'
@@ -100,6 +101,7 @@
   <Hotbar />
 </div>
 <GoldenFirefly />
+<WeatherEvents />
 <FxLayer />
 
 {#if openPanel === 'inventory'}
