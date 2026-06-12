@@ -23,6 +23,9 @@ export interface PlantDef {
   growTime: number
   /** if set, the plant stays after harvest and re-ripens in this many seconds */
   regrowTime?: number
+  /** ornamental plants: no harvest — while mature they add this fraction
+   * to the global sell price ("Gartenschönheit", GAME_DESIGN §3) */
+  beautyBonus?: number
   /** harvested units per harvest */
   yield: number
   /** money per harvested unit when sold */

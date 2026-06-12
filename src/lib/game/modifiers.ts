@@ -3,6 +3,7 @@
 // and offline simulation automatically agree.
 
 import { CONFIG } from '../data/config'
+import { plantById } from '../data/plants'
 import { UPGRADES } from '../data/upgrades'
 import type { GameState, UpgradeEffect } from './types'
 
@@ -42,9 +43,20 @@ export function yieldMultiplier(state: GameState): number {
   )
 }
 
-/** Sale price factor. */
+/** Garden beauty: mature ornamental plots raise the global sell price. */
+export function beautyMultiplier(state: GameState): number {
+  let bonus = 0
+  for (const plot of state.plots) {
+    if (!plot.plantId) continue
+    const def = plantById(plot.plantId)
+    if (def?.beautyBonus && plot.progress >= def.growTime) bonus += def.beautyBonus
+  }
+  return 1 + bonus
+}
+
+/** Sale price factor (upgrades × garden beauty). */
 export function sellMultiplier(state: GameState): number {
-  return multiplierFor(state, 'sellPrice')
+  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state)
 }
 
 /** Summed perLevel × level over all owned upgrades with the given effect. */

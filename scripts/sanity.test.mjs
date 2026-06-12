@@ -39,7 +39,9 @@ import {
 } from '../src/lib/game/actions.ts'
 import { questTier } from '../src/lib/data/questFlavor.ts'
 import { bestHarvestValue } from '../src/lib/data/scratch.ts'
+import { generateQuest } from '../src/lib/game/quests.ts'
 import {
+  beautyMultiplier,
   comboWindowSeconds,
   growthMultiplier,
   offlineCapHours,
@@ -498,6 +500,11 @@ test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
   let lastProfit = 0
   for (const plant of PLANTS) {
     assert.ok(plant.unlockAtTotalEarned > lastUnlock || plant.unlockAtTotalEarned === 0, `${plant.id}: unlocks must ascend`)
+    if (plant.beautyBonus) {
+      assert.ok(plant.yield === 0 && plant.sellValue === 0, `${plant.id}: ornamentals never sell`)
+      lastUnlock = plant.unlockAtTotalEarned
+      continue
+    }
     const profit = steadyProfitPerSecond(plant)
     assert.ok(
       profit > lastProfit * 1.5,
@@ -665,6 +672,41 @@ test('effect upgrades: water charges, combo window, offline cap, crit luck', () 
   withRngQueue([probe, 0.5, 0.5], () => {
     tick(s, 99999)
     assert.equal(harvestPlot(0).crit, 'perfect', 'clover turns the same roll golden')
+  })
+})
+
+test('ornamentals: never harvestable, beauty raises sell prices', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e15
+    selectPlant('nachtrose')
+    assert.ok(sowPlot(0))
+    tick(s, 99999)
+    assert.equal(plotReady(s.plots[0]), false, 'ornamentals never become harvestable')
+    assert.equal(harvestPlot(0).units, 0)
+    assert.equal(s.plots[0].plantId, 'nachtrose', 'the rose keeps standing')
+
+    // +5 % on every sale while it stands
+    assert.ok(Math.abs(beautyMultiplier(s) - 1.05) < 1e-9)
+    s.inventory['basilikum'] = 100
+    assert.equal(sellPlant('basilikum'), Math.round(100 * 3 * 1.05))
+
+    // helpers ignore ornamentals
+    s.upgrades['erntehelfer'] = 10
+    tick(s, 60)
+    assert.equal(s.plots[0].plantId, 'nachtrose')
+
+    // quests never order ornamentals
+    for (let i = 0; i < 25; i++) {
+      const q = generateQuest(s)
+      const def = PLANTS.find((p) => p.id === q.plantId)
+      assert.ok(!def.beautyBonus, 'no orders for ornamentals')
+    }
+
+    // rip out works
+    assert.ok(clearPlot(0))
+    assert.ok(Math.abs(beautyMultiplier(s) - 1) < 1e-9)
   })
 })
 

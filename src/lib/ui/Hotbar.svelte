@@ -13,6 +13,7 @@
     gemuese: 'Gemüse',
     beeren: 'Beeren',
     obst: 'Obst',
+    zier: 'Zier',
     magie: 'Magie',
   }
 
@@ -119,9 +120,13 @@
               <span class="gain">→ {formatNumber(plant.yield * plant.sellValue)}</span>
             </span>
             <span class="tip-profit num">
-              ≈ {formatNumber(steadyProfitPerSecond(plant))} Gold/s
-              {#if plant.regrowTime}
-                · wächst alle {formatDuration(plant.regrowTime)} nach
+              {#if plant.beautyBonus}
+                +{Math.round(plant.beautyBonus * 100)} % Verkaufspreis, solange sie steht
+              {:else}
+                ≈ {formatNumber(steadyProfitPerSecond(plant))} Gold/s
+                {#if plant.regrowTime}
+                  · wächst alle {formatDuration(plant.regrowTime)} nach
+                {/if}
               {/if}
             </span>
           {:else}

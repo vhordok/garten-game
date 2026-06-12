@@ -136,5 +136,6 @@ function processHelpers(s: GameState, dt: number): boolean {
 export function plotReady(plot: PlotState): boolean {
   if (!plot.plantId) return false
   const def = plantById(plot.plantId)
-  return def !== undefined && plot.progress >= cycleTime(plot, def)
+  if (!def || def.beautyBonus) return false
+  return plot.progress >= cycleTime(plot, def)
 }
