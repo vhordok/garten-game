@@ -158,9 +158,12 @@ img.px {
 }
 
 .num {
+  /* Pixelify digits are unreadable at HUD sizes (2 vs 8, 9 vs S) — numbers
+   * get a clean sans face; the pixel font stays for titles and labels */
+  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', sans-serif;
   font-variant-numeric: tabular-nums;
-  /* Pixelify digits blur together at small sizes — spacing keeps 2/8 apart */
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 :focus-visible {
