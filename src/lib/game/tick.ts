@@ -87,6 +87,16 @@ export function tick(state: GameState, dtSeconds: number): boolean {
     if (state.history.length > 48) state.history.shift()
     changed = true
   }
+  // softlock guard: broke, nothing planted, nothing in storage → the
+  // neighbours lend the gardener fresh seed money (PHASE 1)
+  if (
+    state.money < CONFIG.startMoney &&
+    state.plots.every((p) => p.plantId === null) &&
+    Object.keys(state.inventory).length === 0
+  ) {
+    state.money = CONFIG.startMoney
+    changed = true
+  }
   // achievements are cheap predicates — check once per tick, UI announces
   for (const def of ACHIEVEMENTS) {
     if (!state.achievements.includes(def.id) && def.check(state)) {

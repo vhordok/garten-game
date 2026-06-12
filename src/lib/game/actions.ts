@@ -107,17 +107,25 @@ export function waterAllGrowing(): number {
   return count
 }
 
-/** Rip out a plant (no refund) — frees the plot for something better. */
-export function clearPlot(index: number): boolean {
+/**
+ * Rip out a plant and refund half its seed cost — clearing must never feel
+ * like a punishment, and the refund doubles as the softlock escape hatch
+ * (a garden full of ornamentals with 0 gold can always free up capital).
+ * Returns the refund, or null if the plot was already empty.
+ */
+export function clearPlot(index: number): number | null {
   const s = getState()
   const plot = s.plots[index]
-  if (!plot || plot.plantId === null) return false
+  if (!plot || plot.plantId === null) return null
+  const def = plantById(plot.plantId)
+  const refund = def ? Math.floor(def.seedCost / 2) : 0
+  s.money += refund
   plot.plantId = null
   plot.progress = 0
   plot.waterLeft = 0
   plot.regrowing = false
   notify()
-  return true
+  return refund
 }
 
 /**

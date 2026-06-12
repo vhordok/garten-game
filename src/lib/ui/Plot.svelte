@@ -17,7 +17,9 @@
     index,
     selectedId,
     money,
-  }: { plot: PlotState; index: number; selectedId: string; money: number } = $props()
+    clearMode = false,
+  }: { plot: PlotState; index: number; selectedId: string; money: number; clearMode?: boolean } =
+    $props()
 
   const def = $derived(plot.plantId !== null ? plantById(plot.plantId) : undefined)
   const target = $derived(def ? cycleTime(plot, def) : 0)
@@ -89,15 +91,31 @@
     }
   }
 
+  function doClear(cx: number, cy: number) {
+    if (!def) return
+    // permanent plants are an investment — ask before ripping them out
+    const permanent = def.regrowTime !== undefined || def.beautyBonus !== undefined || def.passiveIncome !== undefined
+    const refundPreview = Math.floor(def.seedCost / 2)
+    if (
+      permanent &&
+      !window.confirm(`${def.name} wirklich roden? Du bekommst ${formatNumber(refundPreview)} Gold (50 % Saatpreis) zurück.`)
+    ) {
+      return
+    }
+    const refund = clearPlot(index)
+    if (refund !== null) {
+      if (refund > 0) spawnFloater(`+${formatNumber(refund)}`, 'gain')
+      leafBurst(cx, cy, 8)
+      playSound('close')
+    }
+  }
+
   function handleClick(e: MouseEvent) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
-    if (def && e.shiftKey) {
-      if (clearPlot(index)) {
-        leafBurst(cx, cy, 8)
-        playSound('close')
-      }
+    if (def && (clearMode || e.shiftKey)) {
+      doClear(cx, cy)
       return
     }
     if (mature) return
@@ -132,7 +150,9 @@
   }
 
   const title = $derived(
-    mature && def
+    clearMode && def
+      ? `${def.name} roden — ${formatNumber(Math.floor(def.seedCost / 2))} Gold zurück`
+      : mature && def
       ? def.passiveIncome
         ? `${def.name} — liefert ${formatNumber(def.passiveIncome)} Gold/s von selbst · Shift-Klick: roden`
         : `${def.name} — verschönert den Garten: +${Math.round((def.beautyBonus ?? 0) * 100)} % Verkaufspreis · Shift-Klick: roden`
@@ -152,6 +172,7 @@
   class="plot"
   class:ready
   class:mature
+  class:clear-target={clearMode && def}
   class:growing={def && !grown}
   class:can-water={def && !grown && plot.waterLeft > 0}
   class:empty={!def}
@@ -227,6 +248,14 @@
 
   .plot.can-water {
     cursor: pointer;
+  }
+
+  /* Roden-Modus: every planted plot becomes a clear target */
+  .plot.clear-target {
+    cursor: pointer;
+    box-shadow:
+      0 0 0 2px var(--c-red1),
+      0 0 10px rgba(207, 87, 60, 0.45);
   }
 
   /* remaining watering charges */
