@@ -13,6 +13,7 @@
     gemuese: 'Gemüse',
     beeren: 'Beeren',
     obst: 'Obst',
+    zier: 'Zier',
     magie: 'Magie',
   }
 
@@ -119,9 +120,13 @@
               <span class="gain">→ {formatNumber(plant.yield * plant.sellValue)}</span>
             </span>
             <span class="tip-profit num">
-              ≈ {formatNumber(steadyProfitPerSecond(plant))} Gold/s
-              {#if plant.regrowTime}
-                · wächst alle {formatDuration(plant.regrowTime)} nach
+              {#if plant.beautyBonus}
+                +{Math.round(plant.beautyBonus * 100)} % Verkaufspreis, solange sie steht
+              {:else}
+                ≈ {formatNumber(steadyProfitPerSecond(plant))} Gold/s
+                {#if plant.regrowTime}
+                  · wächst alle {formatDuration(plant.regrowTime)} nach
+                {/if}
               {/if}
             </span>
           {:else}
@@ -203,8 +208,8 @@
     position: absolute;
     top: 1px;
     left: 4px;
-    font-size: 0.65rem;
-    color: var(--c-mist);
+    font-size: 0.72rem;
+    color: var(--c-cloud);
   }
 
   .regrow {
@@ -231,7 +236,7 @@
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-size: 0.7rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--c-gold2);
   }

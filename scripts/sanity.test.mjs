@@ -38,9 +38,13 @@ import {
   waterPlot,
 } from '../src/lib/game/actions.ts'
 import { questTier } from '../src/lib/data/questFlavor.ts'
+import { SCRATCH_PRIZES, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
 import { bestHarvestValue } from '../src/lib/data/scratch.ts'
+import { generateQuest } from '../src/lib/game/quests.ts'
 import {
+  beautyMultiplier,
   comboWindowSeconds,
+  scratchDropChance,
   growthMultiplier,
   offlineCapHours,
   waterCharges,
@@ -446,26 +450,46 @@ test('scratch cards 2.0: draw pays nothing, settle grades the picks', () => {
     assert.equal(card.symbols.length, 9)
     assert.equal(card.symbols.filter((sym) => sym === card.symbol).length, 3)
 
-    // full hit pays everything, partial 40 %, miss a consolation (min 1)
-    assert.equal(settleScratchCard(card, 3).amount, card.amount)
-    assert.equal(settleScratchCard(card, 2).amount, Math.max(Math.round(card.amount * CONFIG.scratchPartialFactor), 1))
-    assert.equal(settleScratchCard(card, 0).amount, Math.max(Math.round(card.amount * CONFIG.scratchConsolationFactor), 1))
+    // the hidden triple pays ×scratchFullMult
+    const full = settleScratchCard(card, [card.symbol, card.symbol, card.symbol])
+    assert.equal(full.grade, 'voll')
+    assert.equal(full.amount, card.amount * CONFIG.scratchFullMult)
+
+    // ANY picked pair pays a share of THAT symbol's prize (user feedback!)
+    const decoySym = card.symbols.find((sym) => sym !== card.symbol)
+    const partial = settleScratchCard(card, [decoySym, decoySym, card.symbol])
+    assert.equal(partial.grade, 'teil')
+    const decoyPrize = SCRATCH_PRIZES.find((p) => p.symbol === decoySym)
+    assert.equal(partial.prizeType, decoyPrize.type)
+    assert.equal(
+      partial.amount,
+      Math.max(Math.round(scratchPrizeAmount(decoyPrize, s) * CONFIG.scratchPartialFactor), 1)
+    )
+
+    // three different symbols → consolation
+    const distinct = [...new Set(card.symbols)].slice(0, 3)
+    const miss = settleScratchCard(card, distinct)
+    assert.equal(miss.grade, 'trost')
+    assert.equal(miss.amount, Math.max(Math.round(card.amount * CONFIG.scratchConsolationFactor), 1))
     assert.equal(s.totalEarned, 0, 'lottery winnings are not sales')
   })
 
-  // 0.97 lands in the jackpot bracket; fertilizer settle grants charges
+  // 0.97 lands in the jackpot bracket — full hit = 80×hv×mult, a true jackpot
   withRngQueue([0.97], () => {
     const card = drawScratchCard()
     assert.equal(card.prizeType, 'jackpot')
     const moneyBefore = s.money
-    assert.equal(settleScratchCard(card, 3).amount, 80 * hv)
-    assert.equal(s.money, moneyBefore + 80 * hv)
+    assert.equal(
+      settleScratchCard(card, [card.symbol, card.symbol, card.symbol]).amount,
+      80 * hv * CONFIG.scratchFullMult
+    )
+    assert.equal(s.money, moneyBefore + 80 * hv * CONFIG.scratchFullMult)
   })
   withRngQueue([0.9], () => {
     const card = drawScratchCard()
     assert.equal(card.prizeType, 'fertilizer')
     const before = s.fertilizerCharges
-    const won = settleScratchCard(card, 3)
+    const won = settleScratchCard(card, [card.symbol, card.symbol, card.symbol])
     assert.equal(s.fertilizerCharges, before + won.amount)
   })
 
@@ -477,6 +501,17 @@ test('scratch cards 2.0: draw pays nothing, settle grades the picks', () => {
   s.scratchTickets = CONFIG.scratchMaxPending
   refundScratchTicket()
   assert.equal(s.scratchTickets, CONFIG.scratchMaxPending)
+})
+
+test('ticket drop chance scales with cycle time, not clicks', () => {
+  const s = fresh()
+  const basil = PLANTS.find((p) => p.id === 'basilikum')
+  const pumpkin = PLANTS.find((p) => p.id === 'kuerbis')
+  const cheap = scratchDropChance(s, basil.growTime)
+  const slow = scratchDropChance(s, pumpkin.growTime)
+  assert.ok(cheap < 0.005, `basil spam must barely drop tickets (${cheap})`)
+  assert.ok(slow > 0.2, `slow crops must feel lucky (${slow})`)
+  assert.ok(scratchDropChance(s, 999999) <= CONFIG.scratchDropCap, 'capped')
 })
 
 test('turbo fertilizer: one charge doubles one harvest', () => {
@@ -498,6 +533,11 @@ test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
   let lastProfit = 0
   for (const plant of PLANTS) {
     assert.ok(plant.unlockAtTotalEarned > lastUnlock || plant.unlockAtTotalEarned === 0, `${plant.id}: unlocks must ascend`)
+    if (plant.beautyBonus) {
+      assert.ok(plant.yield === 0 && plant.sellValue === 0, `${plant.id}: ornamentals never sell`)
+      lastUnlock = plant.unlockAtTotalEarned
+      continue
+    }
     const profit = steadyProfitPerSecond(plant)
     assert.ok(
       profit > lastProfit * 1.5,
@@ -580,9 +620,18 @@ test('prestige: compost payout, round reset, permanent perks stay', () => {
     assert.equal(maxPlots(s), CONFIG.maxPlots + CONFIG.parcelExtraPlots)
 
     // compost beats the lost upgrades? not necessarily — but it must apply:
+    const effective = Math.pow(2, CONFIG.compostSoftcapExp)
     const expectedYield =
-      (1 + CONFIG.compostYieldPerPoint * 2) * (1 + CONFIG.levelYieldPerLevel * 6)
+      (1 + CONFIG.compostYieldPerPoint * effective) * (1 + CONFIG.levelYieldPerLevel * 6)
     assert.ok(Math.abs(yieldMultiplier(s) - expectedYield) < 1e-9)
+
+    // lifetime-based: immediately prestiging again earns nothing extra
+    assert.equal(compostGain(s), 0, 'no compost from re-leasing without new earnings')
+    s.lifetimeEarned = 9 * CONFIG.prestigeBase // √9 = 3 total → 1 new point
+    assert.equal(compostGain(s), 1)
+    // parcel 3 demands at least +2 compost at once — no mini prestiges
+    assert.equal(leaseParcel(), 0, 'gain below the parcel requirement is refused')
+    assert.equal(s.parcels, 2)
   })
 })
 
@@ -659,6 +708,41 @@ test('effect upgrades: water charges, combo window, offline cap, crit luck', () 
   withRngQueue([probe, 0.5, 0.5], () => {
     tick(s, 99999)
     assert.equal(harvestPlot(0).crit, 'perfect', 'clover turns the same roll golden')
+  })
+})
+
+test('ornamentals: never harvestable, beauty raises sell prices', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e15
+    selectPlant('nachtrose')
+    assert.ok(sowPlot(0))
+    tick(s, 99999)
+    assert.equal(plotReady(s.plots[0]), false, 'ornamentals never become harvestable')
+    assert.equal(harvestPlot(0).units, 0)
+    assert.equal(s.plots[0].plantId, 'nachtrose', 'the rose keeps standing')
+
+    // +5 % on every sale while it stands
+    assert.ok(Math.abs(beautyMultiplier(s) - 1.05) < 1e-9)
+    s.inventory['basilikum'] = 100
+    assert.equal(sellPlant('basilikum'), Math.round(100 * 3 * 1.05))
+
+    // helpers ignore ornamentals
+    s.upgrades['erntehelfer'] = 10
+    tick(s, 60)
+    assert.equal(s.plots[0].plantId, 'nachtrose')
+
+    // quests never order ornamentals
+    for (let i = 0; i < 25; i++) {
+      const q = generateQuest(s)
+      const def = PLANTS.find((p) => p.id === q.plantId)
+      assert.ok(!def.beautyBonus, 'no orders for ornamentals')
+    }
+
+    // rip out works
+    assert.ok(clearPlot(0))
+    assert.ok(Math.abs(beautyMultiplier(s) - 1) < 1e-9)
   })
 })
 

@@ -16,10 +16,14 @@ export const CONFIG = {
   comboWindowSeconds: 4,
   comboPerStack: 0.05,
   comboMaxStacks: 20,
-  /** scratch tickets: drop chance per harvested plot, pending cap */
-  scratchDropChance: 0.04,
+  /** scratch tickets: drop rate scales with the crop's cycle time —
+   * slow/expensive plants find tickets, basil spam does not */
+  scratchDropPerMinute: 0.02,
+  scratchDropCap: 0.35,
   scratchMaxPending: 5,
-  /** pick 3 of 9: payout share for 2 matches / no match (of full prize) */
+  /** pick 3 of 9: the full triple (1-in-84) pays ×mult; two equal picked
+   * symbols pay a share of THAT symbol's prize; otherwise consolation */
+  scratchFullMult: 10,
   scratchPartialFactor: 0.4,
   scratchConsolationFactor: 0.1,
   /** turbo fertilizer: yield factor while charges last (one per harvest) */
@@ -38,11 +42,17 @@ export const CONFIG = {
   prestigeBase: 1e6,
   /** additional plot cap per leased parcel */
   parcelExtraPlots: 4,
-  /** permanent bonuses per compost point */
-  compostYieldPerPoint: 0.05,
-  compostGrowthPerPoint: 0.02,
-  /** permanent yield bonus per gardener level above 1 */
+  /** permanent bonuses per EFFECTIVE compost point (see softcap below) —
+   * chunky on purpose: prestige is rare and must feel mighty */
+  compostYieldPerPoint: 0.25,
+  compostGrowthPerPoint: 0.1,
+  /** effective points = compost^exp — soft cap against the prestige spiral
+   * (balance audit: linear bonus × accumulating compost ran away) */
+  compostSoftcapExp: 0.5,
+  /** permanent yield bonus per gardener level above 1, capped — otherwise
+   * level×compost feedback runs away in the late game (balance audit) */
   levelYieldPerLevel: 0.01,
+  levelYieldMaxBonus: 1.0,
   /** offline simulation cap; later extendable through upgrades (GAME_DESIGN.md §5) */
   offlineCapHours: 8,
   /** ignore gaps shorter than this when applying offline progress */

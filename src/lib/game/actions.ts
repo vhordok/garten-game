@@ -112,6 +112,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   if (!plot || !plotReady(plot)) return { units: 0, crit: 'none', levelUps: [], tickets: 0 }
   const def = plantById(plot.plantId!)
   if (!def) return { units: 0, crit: 'none', levelUps: [], tickets: 0 }
+  const cycleSeconds = cycleTime(plot, def)
   const crit = rollCrit(s)
   // one turbo-fertilizer charge boosts exactly one harvest
   let fertilizerMult = 1
@@ -135,7 +136,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
     plot.regrowing = false
   }
   let tickets = 0
-  if (Math.random() < scratchDropChance(s) && s.scratchTickets < CONFIG.scratchMaxPending) {
+  if (Math.random() < scratchDropChance(s, cycleSeconds) && s.scratchTickets < CONFIG.scratchMaxPending) {
     s.scratchTickets += 1
     tickets = 1
   }
@@ -175,7 +176,7 @@ export function harvestAllReady(): HarvestResult {
     const result = harvestInternal(s, i, comboMult)
     units += result.units
     tickets += result.tickets
-    levelUps.push(...result.levelUps)
+    for (const up of result.levelUps) levelUps.push(up)
     if (CRIT_RANK[result.crit] > CRIT_RANK[best]) best = result.crit
   }
   if (units > 0) {
@@ -225,9 +226,14 @@ export function maxPlots(state: GameState): number {
   return CONFIG.maxPlots + (state.parcels - 1) * CONFIG.parcelExtraPlots
 }
 
-/** Compost earned by leasing a new parcel right now (GAME_DESIGN.md §6). */
+/**
+ * Compost earned by leasing a new parcel right now (GAME_DESIGN.md §6).
+ * Based on LIFETIME earnings minus compost already claimed — farming many
+ * tiny rounds gives nothing extra (balance audit).
+ */
 export function compostGain(state: GameState): number {
-  return Math.floor(Math.sqrt(state.totalEarned / CONFIG.prestigeBase))
+  const fromLifetime = Math.floor(Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase))
+  return Math.max(fromLifetime - state.compost, 0)
 }
 
 /**
@@ -235,10 +241,15 @@ export function compostGain(state: GameState): number {
  * upgrades, quests, round earnings) and pays out compost. Level/XP, stats,
  * tickets and fertilizer persist — the gardener stays experienced.
  */
+/** Compost required before the next parcel may be leased. */
+export function leaseRequirement(state: GameState): number {
+  return state.parcels
+}
+
 export function leaseParcel(): number {
   const s = getState()
   const gain = compostGain(s)
-  if (gain < 1) return 0
+  if (gain < leaseRequirement(s)) return 0
   s.compost += gain
   s.parcels += 1
   s.money = CONFIG.startMoney
@@ -378,6 +389,10 @@ export interface ScratchOutcome {
   amount: number
   /** 'voll' | 'teil' | 'trost' for UI flavor */
   grade: 'voll' | 'teil' | 'trost'
+  /** prize the payout belongs to (a partial hit may match a decoy pair) */
+  prizeType: ScratchPrizeType
+  /** the symbol that matched (UI highlighting) */
+  symbol: string
   levelUps: LevelUp[]
 }
 
@@ -423,26 +438,49 @@ export function drawScratchCard(): ScratchCard | null {
 }
 
 /**
- * Apply a scratched card: `matched` = how many of the three picked cells
- * showed the prize symbol. 3 → full prize, 2 → partial, else consolation.
- * Lottery winnings never count as earnings.
+ * Apply a scratched card based on the three PICKED symbols: a triple (only
+ * the hidden prize can triple) pays the full prize ×scratchFullMult; ANY
+ * two equal symbols pay a share of THAT symbol's prize; otherwise a
+ * consolation. Lottery winnings never count as earnings.
  */
-export function settleScratchCard(card: ScratchCard, matched: number): ScratchOutcome {
+export function settleScratchCard(card: ScratchCard, picked: string[]): ScratchOutcome {
   const s = getState()
-  const grade: ScratchOutcome['grade'] = matched >= 3 ? 'voll' : matched === 2 ? 'teil' : 'trost'
-  const factor =
-    grade === 'voll' ? 1 : grade === 'teil' ? CONFIG.scratchPartialFactor : CONFIG.scratchConsolationFactor
-  const amount = Math.max(Math.round(card.amount * factor), 1)
+  const counts = new Map<string, number>()
+  for (const sym of picked) counts.set(sym, (counts.get(sym) ?? 0) + 1)
+  let matchedSymbol: string | null = null
+  let matchedCount = 1
+  for (const [sym, count] of counts) {
+    if (count > matchedCount) {
+      matchedCount = count
+      matchedSymbol = sym
+    }
+  }
+
+  let grade: ScratchOutcome['grade']
+  let prize = SCRATCH_PRIZES.find((p) => p.symbol === card.symbol) ?? SCRATCH_PRIZES[0]
+  let amount: number
+  if (matchedCount >= 3) {
+    grade = 'voll'
+    amount = Math.max(Math.round(card.amount * CONFIG.scratchFullMult), 1)
+  } else if (matchedCount === 2 && matchedSymbol) {
+    grade = 'teil'
+    prize = SCRATCH_PRIZES.find((p) => p.symbol === matchedSymbol) ?? prize
+    amount = Math.max(Math.round(scratchPrizeAmount(prize, s) * CONFIG.scratchPartialFactor), 1)
+  } else {
+    grade = 'trost'
+    amount = Math.max(Math.round(card.amount * CONFIG.scratchConsolationFactor), 1)
+  }
+
   let levelUps: LevelUp[] = []
-  if (card.prizeType === 'xp') {
+  if (prize.type === 'xp') {
     levelUps = grantXp(s, amount)
-  } else if (card.prizeType === 'fertilizer') {
+  } else if (prize.type === 'fertilizer') {
     s.fertilizerCharges += amount
   } else {
     s.money += amount
   }
   notify()
-  return { amount, grade, levelUps }
+  return { amount, grade, prizeType: prize.type, symbol: matchedSymbol ?? card.symbol, levelUps }
 }
 
 /** Give a drawn but unscratched ticket back (panel closed early). */

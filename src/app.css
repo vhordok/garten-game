@@ -159,6 +159,8 @@ img.px {
 
 .num {
   font-variant-numeric: tabular-nums;
+  /* Pixelify digits blur together at small sizes — spacing keeps 2/8 apart */
+  letter-spacing: 0.06em;
 }
 
 :focus-visible {

@@ -21,7 +21,10 @@
 
   const def = $derived(plot.plantId !== null ? plantById(plot.plantId) : undefined)
   const target = $derived(def ? cycleTime(plot, def) : 0)
-  const ready = $derived(def !== undefined && plot.progress >= target)
+  const grown = $derived(def !== undefined && plot.progress >= target)
+  // ornamentals never become harvestable — they just stand and shine
+  const mature = $derived(grown && def?.beautyBonus !== undefined)
+  const ready = $derived(grown && def?.beautyBonus === undefined)
   const fraction = $derived(def ? Math.min(plot.progress / target, 1) : 0)
   const remaining = $derived(def ? Math.max(target - plot.progress, 0) : 0)
 
@@ -30,7 +33,7 @@
   const stageSprite = $derived(
     def === undefined
       ? null
-      : ready
+      : grown
         ? `${def.id}-3`
         : fraction < 1 / 3
           ? plot.regrowing
@@ -97,6 +100,7 @@
       }
       return
     }
+    if (mature) return
     if (def && ready) {
       // read the chain BEFORE harvesting: every link nudges the pitch up
       const comboPitch = 1 + Math.min($gameStore.combo.count, 20) * 0.035
@@ -109,7 +113,7 @@
           playSound('ticket')
         }
       }
-    } else if (def && !ready) {
+    } else if (def && !grown) {
       if (waterPlot(index)) {
         spawnFloater('Wachstum!', 'water')
         waterBurst(cx, cy)
@@ -128,23 +132,26 @@
   }
 
   const title = $derived(
-    def && ready
-      ? `${def.name} ernten${def.regrowTime ? ' — wächst danach von selbst nach' : ''}`
-      : def
-        ? `${def.name} — reif in ${formatDuration(remaining)}` +
-          (plot.waterLeft > 0 ? ` · Klick = gießen (${plot.waterLeft}× übrig)` : '') +
-          ' · Shift-Klick: roden'
-        : canSow && selectedDef
-          ? `${selectedDef.name} säen (${selectedDef.seedCost})`
-          : 'Leeres Beet'
+    mature && def
+      ? `${def.name} — verschönert den Garten: +${Math.round((def.beautyBonus ?? 0) * 100)} % Verkaufspreis · Shift-Klick: roden`
+      : def && ready
+        ? `${def.name} ernten${def.regrowTime ? ' — wächst danach von selbst nach' : ''}`
+        : def
+          ? `${def.name} — reif in ${formatDuration(remaining)}` +
+            (plot.waterLeft > 0 ? ` · Klick = gießen (${plot.waterLeft}× übrig)` : '') +
+            ' · Shift-Klick: roden'
+          : canSow && selectedDef
+            ? `${selectedDef.name} säen (${selectedDef.seedCost})`
+            : 'Leeres Beet'
   )
 </script>
 
 <button
   class="plot"
   class:ready
-  class:growing={def && !ready}
-  class:can-water={def && !ready && plot.waterLeft > 0}
+  class:mature
+  class:growing={def && !grown}
+  class:can-water={def && !grown && plot.waterLeft > 0}
   class:empty={!def}
   class:can-sow={canSow}
   onclick={handleClick}
@@ -153,9 +160,18 @@
 >
   {#if stageSprite}
     {#key stageSprite}
-      <img class="px plant" class:ripe={ready} src={spriteUrl(stageSprite)} alt="" draggable="false" />
+      <img
+        class="px plant"
+        class:ripe={ready}
+        class:beauty={mature}
+        src={spriteUrl(stageSprite)}
+        alt=""
+        draggable="false"
+      />
     {/key}
-    {#if ready}
+    {#if mature && def}
+      <span class="beauty-tag num">+{Math.round((def.beautyBonus ?? 0) * 100)} %</span>
+    {:else if ready}
       <span class="ready-tag">Ernten!</span>
     {:else}
       <span class="timer chip num">{formatDuration(remaining)}</span>
@@ -245,6 +261,27 @@
       bob 1s steps(2) 0.2s infinite;
   }
 
+  .plant.beauty {
+    filter: drop-shadow(0 0 8px rgba(223, 132, 165, 0.7));
+  }
+
+  .plot.mature {
+    cursor: default;
+  }
+
+  .beauty-tag {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: var(--c-night0);
+    background: var(--c-plum3);
+    padding: 1px 5px;
+    box-shadow: 0 0 8px rgba(223, 132, 165, 0.6);
+  }
+
   @keyframes pop {
     0% {
       transform: scale(0.55);
@@ -271,8 +308,9 @@
     position: absolute;
     top: 4px;
     right: 4px;
-    font-size: 0.62rem;
-    color: var(--c-cloud);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--c-white);
     padding: 0 4px;
   }
 

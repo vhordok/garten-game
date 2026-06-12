@@ -3,6 +3,7 @@
 // and offline simulation automatically agree.
 
 import { CONFIG } from '../data/config'
+import { plantById } from '../data/plants'
 import { UPGRADES } from '../data/upgrades'
 import type { GameState, UpgradeEffect } from './types'
 
@@ -19,23 +20,43 @@ function multiplierFor(state: GameState, effect: UpgradeEffect): number {
   return mult
 }
 
+/** Soft-capped compost points actually applied to the bonuses. */
+export function effectiveCompost(state: GameState): number {
+  return Math.pow(Math.max(state.compost, 0), CONFIG.compostSoftcapExp)
+}
+
 /** Growth speed factor applied to tick deltas (upgrades × compost). */
 export function growthMultiplier(state: GameState): number {
-  return multiplierFor(state, 'growth') * (1 + CONFIG.compostGrowthPerPoint * state.compost)
+  return multiplierFor(state, 'growth') * (1 + CONFIG.compostGrowthPerPoint * effectiveCompost(state))
 }
 
 /** Harvested-units factor: upgrades × compost × permanent level bonus. */
 export function yieldMultiplier(state: GameState): number {
+  const levelBonus = Math.min(
+    CONFIG.levelYieldPerLevel * Math.max(state.level - 1, 0),
+    CONFIG.levelYieldMaxBonus
+  )
   return (
     multiplierFor(state, 'yield') *
-    (1 + CONFIG.compostYieldPerPoint * state.compost) *
-    (1 + CONFIG.levelYieldPerLevel * Math.max(state.level - 1, 0))
+    (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
+    (1 + levelBonus)
   )
 }
 
-/** Sale price factor. */
+/** Garden beauty: mature ornamental plots raise the global sell price. */
+export function beautyMultiplier(state: GameState): number {
+  let bonus = 0
+  for (const plot of state.plots) {
+    if (!plot.plantId) continue
+    const def = plantById(plot.plantId)
+    if (def?.beautyBonus && plot.progress >= def.growTime) bonus += def.beautyBonus
+  }
+  return 1 + bonus
+}
+
+/** Sale price factor (upgrades × garden beauty). */
 export function sellMultiplier(state: GameState): number {
-  return multiplierFor(state, 'sellPrice')
+  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state)
 }
 
 /** Summed perLevel × level over all owned upgrades with the given effect. */
@@ -64,9 +85,14 @@ export function critChanceBonus(state: GameState): number {
   return effectBonus(state, 'critChance')
 }
 
-/** Chance per harvested plot to find a scratch ticket. */
-export function scratchDropChance(state: GameState): number {
-  return CONFIG.scratchDropChance + effectBonus(state, 'scratchLuck')
+/**
+ * Chance to find a scratch ticket when harvesting a crop with the given
+ * cycle time — proportional to time invested, so quick herbs barely drop
+ * and slow trees feel lucky.
+ */
+export function scratchDropChance(state: GameState, cycleSeconds: number): number {
+  const perMinute = CONFIG.scratchDropPerMinute + effectBonus(state, 'scratchLuck')
+  return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }
 
 /** Offline simulation cap in hours. */

@@ -18,7 +18,10 @@ export function grantXp(s: GameState, amount: number): LevelUp[] {
   if (amount <= 0) return []
   s.xp += amount
   const ups: LevelUp[] = []
-  while (s.xp >= xpToNext(s.level)) {
+  // hard cap per grant: surplus XP stays banked and resolves with the next
+  // grant — keeps a single action from freezing the game if balance ever
+  // drifts (found by the balance simulator)
+  while (s.xp >= xpToNext(s.level) && ups.length < 50) {
     s.xp -= xpToNext(s.level)
     s.level += 1
     const reward = levelUpReward(s.level)

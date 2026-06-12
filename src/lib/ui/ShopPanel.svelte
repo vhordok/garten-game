@@ -80,7 +80,10 @@
 </script>
 
 <Overlay title="Shop" {onClose}>
-  <p class="hint">Dauerhafte Upgrades für diese Parzelle — jede Stufe wirkt sofort.</p>
+  <p class="hint">
+    Dauerhafte Upgrades für diese Parzelle — jede Stufe wirkt sofort. Ertrags-% sind eine Chance auf
+    Extra-Einheiten: +30 % = im Schnitt 1,3 Einheiten statt 1 pro Ernte.
+  </p>
   {#each SECTIONS as section (section.id)}
     <h3 class="section">{section.label}</h3>
     <ul class="shop-list">

@@ -119,7 +119,7 @@
   }
 
   .garden-head .chip {
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--c-mist);
