@@ -11,6 +11,9 @@
   import Plot from './Plot.svelte'
   import { pushToast } from './toasts'
 
+  // PHASE 1: tap-to-clear mode — the touch-friendly way to free plots
+  let clearMode = $state(false)
+
   const readyCount = $derived($gameStore.plots.filter(plotReady).length)
   const emptyCount = $derived($gameStore.plots.filter((p) => p.plantId === null).length)
   const waterableCount = $derived(
@@ -101,6 +104,17 @@
       Alle gießen{waterableCount > 0 ? ` (${waterableCount})` : ''}
     </button>
     <button
+      class="pxbtn small"
+      class:danger={clearMode}
+      onclick={() => {
+        clearMode = !clearMode
+        playSound('click')
+      }}
+      title="Roden-Modus: Beet antippen, um die Pflanze zu entfernen — 50 % Saatpreis zurück"
+    >
+      Roden{clearMode ? ': AN' : ''}
+    </button>
+    <button
       class="pxbtn primary"
       class:attention={readyCount > 0}
       disabled={readyCount === 0}
@@ -113,7 +127,7 @@
 
   <div class="grid" style:grid-template-columns={`repeat(${cols}, var(--cell))`}>
     {#each $gameStore.plots as plot, index (index)}
-      <Plot {plot} {index} selectedId={$gameStore.selectedPlantId} money={$gameStore.money} />
+      <Plot {plot} {index} selectedId={$gameStore.selectedPlantId} money={$gameStore.money} {clearMode} />
     {/each}
     {#if canBuyMore}
       <button

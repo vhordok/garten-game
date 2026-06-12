@@ -409,3 +409,17 @@ Marktkarren). Aufträge/Lose klammern Zier aus; Helfer ignorieren sie.
 
 Der ursprüngliche Phasenplan (§8) läuft danach ab Phase 2 weiter;
 der Upgrade-Shop aus R4 ersetzt die Bewässerungs-Upgrades aus Phase 2.
+
+### 9.12 Feinschliff-Phasen (Spieler-Feedback 2.0)
+
+Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
+
+- **Phase 0 — Los-Limit:** Rubbellos-Vorrat hängt am Gärtner-Level
+  (`max(5, Level)` via `maxScratchTickets()`), damit das Limit mitwächst.
+- **Phase 1 — Softlock-Schutz & Feldkontrolle:** Roden ist touch-tauglich
+  (Roden-Modus-Button im Garten-Kopf, Shift-Klick bleibt als Shortcut)
+  und erstattet **50 % des Saatpreises**; bei dauerhaften Pflanzen
+  (Wiederernte/Zier/Holz) fragt die UI nach. Zusätzlich Notgroschen-
+  Garantie im Tick: wer mit < Startkapital, leeren Beeten und leerem
+  Lager dasteht, bekommt das Startkapital zurück — ein Festfahren ist
+  damit unmöglich.

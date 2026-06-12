@@ -866,7 +866,45 @@ test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () =
     // rip out the bush
     assert.ok(clearPlot(0))
     assert.equal(getState().plots[0].plantId, null)
-    assert.equal(clearPlot(0), false)
+    assert.equal(clearPlot(0), null)
+  })
+})
+
+test('PHASE 1: clearing refunds half the seed, softlock guard rescues', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e9
+    s.totalEarned = 1e15 // unlock everything
+    selectPlant('nachtrose')
+    const rose = PLANTS.find((p) => p.id === 'nachtrose')
+    assert.ok(sowPlot(0))
+    const before = s.money
+    const refund = clearPlot(0)
+    assert.equal(refund, Math.floor(rose.seedCost / 2))
+    assert.equal(s.money, before + refund)
+    assert.equal(s.plots[0].plantId, null)
+    assert.equal(clearPlot(0), null) // empty plot → nothing to clear
+
+    // softlock guard: broke + empty garden + empty storage → seed money returns
+    const t = fresh()
+    t.money = 0
+    tick(t, 0.1)
+    assert.equal(t.money, CONFIG.startMoney)
+
+    // ...but never while something is still planted or stored
+    assert.ok(sowPlot(0)) // basil, seedCost 1
+    t.money = 0
+    tick(t, 0.1)
+    assert.equal(t.money, 0)
+
+    t.plots[0].plantId = null
+    t.inventory['basilikum'] = 1
+    tick(t, 0.1)
+    assert.equal(t.money, 0)
+
+    delete t.inventory['basilikum']
+    tick(t, 0.1)
+    assert.equal(t.money, CONFIG.startMoney)
   })
 })
 
