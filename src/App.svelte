@@ -19,7 +19,7 @@
   import Toasts from './lib/ui/Toasts.svelte'
   import { pushToast } from './lib/ui/toasts'
   import TutorialPanel from './lib/ui/TutorialPanel.svelte'
-  import { formatDuration } from './lib/util/format'
+  import { formatDuration, formatNumber } from './lib/util/format'
 
   let { offline }: { offline: OfflineReport | null } = $props()
 
@@ -52,11 +52,14 @@
     }
     if (!tutorialSeen && $gameStore.stats.planted === 0) openPanel = 'tutorial'
     if (offline && offline.awaySeconds >= 60) {
-      const grown =
-        offline.ripened > 0
-          ? ` — ${offline.ripened} ${offline.ripened === 1 ? 'Pflanze ist' : 'Pflanzen sind'} reif geworden!`
-          : '.'
-      pushToast(`Willkommen zurück! Du warst ${formatDuration(offline.awaySeconds)} weg${grown}`, '🌅', 9000)
+      const parts: string[] = []
+      if (offline.ripened > 0) {
+        parts.push(`${offline.ripened} ${offline.ripened === 1 ? 'Pflanze ist' : 'Pflanzen sind'} reif geworden`)
+      }
+      if (offline.autoHarvested > 0) parts.push(`Helfer ernteten ${formatNumber(offline.autoHarvested)}×`)
+      if (offline.autoEarned > 0) parts.push(`+${formatNumber(offline.autoEarned)} Gold verdient`)
+      const summary = parts.length > 0 ? ` — ${parts.join(', ')}!` : '.'
+      pushToast(`Willkommen zurück! Du warst ${formatDuration(offline.awaySeconds)} weg${summary}`, '🌅', 10000)
       playSound('welcome')
     }
   })

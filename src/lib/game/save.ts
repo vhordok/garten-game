@@ -9,7 +9,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 11
+export const SAVE_VERSION = 12
 
 interface SaveEnvelope {
   version: number
@@ -144,6 +144,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v10 → v11: quest tiers/clients + delivery streak; old quests get
       // bronze tier and a fresh client via sanitize().
       return { ...envelope, version: 11 }
+    case 11:
+      // v11 → v12: helper accumulators; sanitize() defaults them to 0.
+      return { ...envelope, version: 12 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -217,6 +220,16 @@ function sanitize(raw: unknown): GameState {
 
   state.scratchTickets = Math.floor(clampNumber(r.scratchTickets, 0, 0, CONFIG.scratchMaxPending))
   state.fertilizerCharges = Math.floor(clampNumber(r.fertilizerCharges, 0, 0, 999))
+
+  const acc = (typeof r.helperAcc === 'object' && r.helperAcc !== null ? r.helperAcc : {}) as Record<
+    string,
+    unknown
+  >
+  state.helperAcc = {
+    harvest: clampNumber(acc.harvest, 0, 0, 3600),
+    sow: clampNumber(acc.sow, 0, 0, 3600),
+    sell: clampNumber(acc.sell, 0, 0, 3600),
+  }
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
   state.questStreak = Math.floor(clampNumber(r.questStreak, 0, 0, 1e6))

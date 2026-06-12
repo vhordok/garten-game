@@ -142,9 +142,9 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 |---|---|---|
 | **1** | Beet-Grid (Start 4, kaufbar bis 16), 3 Kräuter, manuell pflanzen/ernten/verkaufen, Save/Load + Export/Import, Offline-Wachstum, Zahlenformat | ✅ umgesetzt |
 | **2** | Gemüse-Kategorie, Unlock-UI, Bewässerungs-Upgrades | ✅ via §9.8 (Gemüse, aktives Gießen; Sprinkler/Kompost aus R4) |
-| 3 | Helfer (Auto-Ernte, Auto-Aussaat, Auto-Verkauf) inkl. Offline-Simulation | offen |
-| 4 | Prestige: Parzellen + Kompost | offen |
-| 5 | Beerensträucher (Wiederernte), Obstbäume, Bäume (passives Einkommen) | offen |
+| **3** | Helfer (Auto-Ernte, Auto-Aussaat, Auto-Verkauf) inkl. Offline-Simulation | ✅ via §9.10 |
+| **4** | Prestige: Parzellen + Kompost | ✅ via §9.9 |
+| **5** | Beerensträucher (Wiederernte), Obstbäume | ✅ via §9.9 (passive Holz-Bäume offen) |
 | 6 | Hecken/Zier (Schönheits-Multiplikator), Cannabis + Lizenzen | offen |
 | 7 | Achievements, Statistiken, Sound, Feinschliff & Balancing | offen |
 
@@ -346,6 +346,27 @@ Level/Aufträge/Lose zu beliebig":
 
 Save-Format: v9 (regrowing), v10 (parcels/compost/lifetimeEarned),
 v11 (Auftrags-Stufen/Auftraggeber/questStreak).
+
+### 9.10 Mega-Ausbau „Shop 2.0, Helfer & Magie"
+
+1. **Shop in drei Rubriken** (`data/upgrades.ts`, 11 Items): Boosts
+   (Tempo/Ertrag/Preis, Wasserfass: +1 Gieß-Ladung, Sternenuhr: +0.5 s
+   Combo-Fenster), Glück (Glücksklee: Crit-Chance, Glückslos:
+   Los-Chance, Nachteule: Offline-Cap 8→24 h) und **Helfer**.
+2. **Helfer = Phase 3 (§4):** Erntehelfer (+0.4 Beete/s je Stufe),
+   Sä-Gnom (sät die gewählte Sorte nach) und Marktkarren (verkauft das
+   Lager, je Stufe öfter). Laufen vollständig in `tick()` → identisch
+   live und offline; bewusst ohne Crits/Combo/Lose, damit aktives
+   Spielen die Juice-Momente behält.
+3. **Offline gechunkt:** Catch-up läuft in 60-s-Schritten durch
+   denselben Tick — Wiederernte-Zyklen und Helfer produzieren über
+   Nacht; der Willkommens-Toast beziffert Helfer-Ernte und Gold.
+4. **Magie-Kategorie** (nach dem ersten Prestige, Unlocks 5B/25B/150B):
+   Mondblume, Kristallbeere (Wiederernte), Weltenbaum (24-h-Erstwuchs)
+   — die Gewinn/s-Kurve verdoppelt konsistent weiter bis ~8K/s.
+
+Save-Format: v12 (`helperAcc`). XP-Vergabe liegt in `game/xp.ts`
+(geteilt von Aktionen und Helfern).
 
 Der ursprüngliche Phasenplan (§8) läuft danach ab Phase 2 weiter;
 der Upgrade-Shop aus R4 ersetzt die Bewässerungs-Upgrades aus Phase 2.

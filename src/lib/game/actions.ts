@@ -3,12 +3,23 @@
 
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
-import { levelUpReward, xpToNext } from '../data/progression'
 import { SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { questTier } from '../data/questFlavor'
-import { comboMultiplier, rollUnits, sellMultiplier, yieldMultiplier } from './modifiers'
+import {
+  comboMultiplier,
+  comboWindowSeconds,
+  critChanceBonus,
+  rollUnits,
+  saleValue,
+  scratchDropChance,
+  waterCharges,
+  yieldMultiplier,
+} from './modifiers'
 import { generateQuest, questStreakBonus, refillQuests } from './quests'
+import { grantXp, type LevelUp } from './xp'
+
+export type { LevelUp } from './xp'
 import { emptyPlot, getState, notify } from './state'
 import { cycleTime, plotReady } from './tick'
 import type { GameState, PlantDef, UpgradeDef } from './types'
@@ -35,7 +46,7 @@ export function sowPlot(index: number): boolean {
   s.money -= def.seedCost
   plot.plantId = def.id
   plot.progress = 0
-  plot.waterLeft = CONFIG.waterChargesPerCrop
+  plot.waterLeft = waterCharges(s)
   plot.regrowing = false
   s.stats.planted += 1
   notify()
@@ -75,11 +86,6 @@ export function waterPlot(index: number): boolean {
 
 export type CritTier = 'none' | 'perfect' | 'legendary'
 
-export interface LevelUp {
-  level: number
-  reward: number
-}
-
 export interface HarvestResult {
   units: number
   crit: CritTier
@@ -88,35 +94,16 @@ export interface HarvestResult {
   tickets: number
 }
 
-/**
- * Add XP and resolve any level-ups (XP overflow carries into the next
- * level, the money reward is paid out immediately).
- */
-function grantXp(s: GameState, amount: number): LevelUp[] {
-  if (amount <= 0) return []
-  s.xp += amount
-  const ups: LevelUp[] = []
-  while (s.xp >= xpToNext(s.level)) {
-    s.xp -= xpToNext(s.level)
-    s.level += 1
-    const reward = levelUpReward(s.level)
-    s.money += reward
-    ups.push({ level: s.level, reward })
-  }
-  // higher levels may unlock additional quest slots
-  if (ups.length > 0) refillQuests(s)
-  return ups
-}
-
 const CRIT_RANK: Record<CritTier, number> = { none: 0, perfect: 1, legendary: 2 }
 
-/** Golden-harvest roll (GAME_DESIGN.md §9.4). */
-function rollCrit(): { tier: CritTier; mult: number } {
+/** Golden-harvest roll (GAME_DESIGN.md §9.4); Glücksklee raises the odds. */
+function rollCrit(s: GameState): { tier: CritTier; mult: number } {
+  const bonus = critChanceBonus(s)
+  const legendary = CONFIG.critLegendaryChance + bonus / 5
+  const perfect = CONFIG.critPerfectChance + bonus
   const roll = Math.random()
-  if (roll < CONFIG.critLegendaryChance) return { tier: 'legendary', mult: CONFIG.critLegendaryMult }
-  if (roll < CONFIG.critLegendaryChance + CONFIG.critPerfectChance) {
-    return { tier: 'perfect', mult: CONFIG.critPerfectMult }
-  }
+  if (roll < legendary) return { tier: 'legendary', mult: CONFIG.critLegendaryMult }
+  if (roll < legendary + perfect) return { tier: 'perfect', mult: CONFIG.critPerfectMult }
   return { tier: 'none', mult: 1 }
 }
 
@@ -125,7 +112,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   if (!plot || !plotReady(plot)) return { units: 0, crit: 'none', levelUps: [], tickets: 0 }
   const def = plantById(plot.plantId!)
   if (!def) return { units: 0, crit: 'none', levelUps: [], tickets: 0 }
-  const crit = rollCrit()
+  const crit = rollCrit(s)
   // one turbo-fertilizer charge boosts exactly one harvest
   let fertilizerMult = 1
   if (s.fertilizerCharges > 0) {
@@ -140,7 +127,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
     // berries & trees stay and re-ripen in a shorter cycle, fresh water charges
     plot.progress = 0
     plot.regrowing = true
-    plot.waterLeft = CONFIG.waterChargesPerCrop
+    plot.waterLeft = waterCharges(s)
   } else {
     plot.plantId = null
     plot.progress = 0
@@ -148,7 +135,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
     plot.regrowing = false
   }
   let tickets = 0
-  if (Math.random() < CONFIG.scratchDropChance && s.scratchTickets < CONFIG.scratchMaxPending) {
+  if (Math.random() < scratchDropChance(s) && s.scratchTickets < CONFIG.scratchMaxPending) {
     s.scratchTickets += 1
     tickets = 1
   }
@@ -159,7 +146,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
 /** Extend the harvest chain by one link (current bonus applied beforehand). */
 function bumpCombo(s: GameState): void {
   s.combo.count = s.combo.remaining > 0 ? s.combo.count + 1 : 1
-  s.combo.remaining = CONFIG.comboWindowSeconds
+  s.combo.remaining = comboWindowSeconds(s)
 }
 
 /** Harvest one ready plot into storage. units = 0 means nothing happened. */
@@ -202,7 +189,7 @@ function sellInternal(s: GameState, plantId: string): number {
   const def = plantById(plantId)
   const count = s.inventory[plantId] ?? 0
   if (!def || count <= 0) return 0
-  const gain = Math.round(count * def.sellValue * sellMultiplier(s))
+  const gain = saleValue(s, def.sellValue, count)
   delete s.inventory[plantId]
   s.money += gain
   s.totalEarned += gain
@@ -284,7 +271,7 @@ export function inventoryValue(state: GameState): number {
   let sum = 0
   for (const [id, count] of Object.entries(state.inventory)) {
     const def = plantById(id)
-    if (def) sum += Math.round(count * def.sellValue * sellMultiplier(state))
+    if (def) sum += saleValue(state, def.sellValue, count)
   }
   return sum
 }

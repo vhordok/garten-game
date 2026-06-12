@@ -1,28 +1,30 @@
 import type { UpgradeDef } from '../game/types'
 
-// Upgrade content/balance (GAME_DESIGN.md §9.4): small capped tiers with a
-// steep per-level curve — the money sink after plot 16. Game logic only
-// references ids and effects.
+// Upgrade content/balance (GAME_DESIGN.md §9.4 + §9.10). Three sections:
+// boosts (multipliers & quality of life), luck and helpers (automation —
+// processed in tick, so they work offline too). Game logic only references
+// ids and effects; perLevel units depend on the effect.
 export const UPGRADES: UpgradeDef[] = [
+  // --- Boosts -----------------------------------------------------------
   {
     id: 'giesskanne',
     name: 'Gießkanne',
     sprite: 'giesskanne',
     description: 'Besser gewässert wächst alles schneller.',
     effect: 'growth',
+    section: 'boost',
     perLevel: 0.1,
     maxLevel: 10,
     baseCost: 150,
     costFactor: 1.9,
   },
   {
-    // id kept for save compatibility; renamed to avoid clashing with the
-    // turbo-fertilizer charges from scratch tickets
     id: 'duenger',
     name: 'Kompost',
     sprite: 'duenger',
     description: 'Nährstoffreicher Boden — dauerhaft größere Ernte.',
     effect: 'yield',
+    section: 'boost',
     perLevel: 0.1,
     maxLevel: 10,
     baseCost: 400,
@@ -34,10 +36,109 @@ export const UPGRADES: UpgradeDef[] = [
     sprite: 'marktstand',
     description: 'Bessere Kontakte, bessere Preise.',
     effect: 'sellPrice',
+    section: 'boost',
     perLevel: 0.1,
     maxLevel: 10,
     baseCost: 1000,
     costFactor: 1.9,
+  },
+  {
+    id: 'wasserfass',
+    name: 'Wasserfass',
+    sprite: 'wasserfass',
+    description: 'Mehr Gieß-Ladungen pro Aussaat.',
+    effect: 'waterCharges',
+    section: 'boost',
+    perLevel: 1,
+    maxLevel: 3,
+    baseCost: 4000,
+    costFactor: 3,
+  },
+  {
+    id: 'sternenuhr',
+    name: 'Sternenuhr',
+    sprite: 'sternenuhr',
+    description: 'Die Ernte-Kette reißt später ab.',
+    effect: 'comboWindow',
+    section: 'boost',
+    perLevel: 0.5,
+    maxLevel: 6,
+    baseCost: 10000,
+    costFactor: 2.2,
+  },
+  // --- Glück ------------------------------------------------------------
+  {
+    id: 'kleeblatt',
+    name: 'Glücksklee',
+    sprite: 'kleeblatt',
+    description: 'Mehr goldene Ernten — Perfekt und Legendär.',
+    effect: 'critChance',
+    section: 'glueck',
+    perLevel: 0.01,
+    maxLevel: 5,
+    baseCost: 50000,
+    costFactor: 2.4,
+  },
+  {
+    id: 'glueckslos',
+    name: 'Glückslos',
+    sprite: 'los',
+    description: 'Rubbellose tauchen öfter in der Ernte auf.',
+    effect: 'scratchLuck',
+    section: 'glueck',
+    perLevel: 0.01,
+    maxLevel: 4,
+    baseCost: 120000,
+    costFactor: 2.4,
+  },
+  {
+    id: 'nachteule',
+    name: 'Nachteule',
+    sprite: 'eule',
+    description: 'Wacht über den Garten: längeres Offline-Wachstum.',
+    effect: 'offlineCap',
+    section: 'glueck',
+    perLevel: 2,
+    maxLevel: 8,
+    baseCost: 30000,
+    costFactor: 2,
+  },
+  // --- Helfer (Automatisierung, läuft durch tick — auch offline) ---------
+  {
+    id: 'erntehelfer',
+    name: 'Erntehelfer',
+    sprite: 'erntehelfer',
+    description: 'Erntet reife Beete von selbst — auch während du weg bist.',
+    effect: 'autoHarvest',
+    section: 'helfer',
+    perLevel: 0.4,
+    maxLevel: 10,
+    baseCost: 75000,
+    costFactor: 2.2,
+  },
+  {
+    id: 'saegnom',
+    name: 'Sä-Gnom',
+    sprite: 'saegnom',
+    description: 'Sät die gewählte Sorte automatisch nach (wenn Geld da ist).',
+    effect: 'autoSow',
+    section: 'helfer',
+    perLevel: 0.4,
+    maxLevel: 10,
+    baseCost: 300000,
+    costFactor: 2.2,
+  },
+  {
+    id: 'marktkarren',
+    name: 'Marktkarren',
+    sprite: 'marktkarren',
+    description: 'Fährt das Lager regelmäßig zum Markt und verkauft alles.',
+    effect: 'autoSell',
+    section: 'helfer',
+    perLevel: 1,
+    maxLevel: 6,
+    baseCost: 1.2e6,
+    costFactor: 2.2,
   },
 ]
 
