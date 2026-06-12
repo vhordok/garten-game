@@ -119,9 +119,10 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 - **Belohnung:** `Kompost = floor(√(lifetimeEarned / 1e6)) − bereits
   besessener Kompost` — Mini-Runden-Farming bringt nichts extra;
   erstes Prestige lohnt ab ~1M Einnahmen.
-- **Effekt:** pro **effektivem** Kompost-Punkt **+5 % Ertrag** und
-  **+2 % Wachstumstempo**; effektive Punkte = `Kompost^0.7` (Softcap
-  gegen die Prestige-Spirale, siehe Balance-Audit §9.11).
+- **Effekt:** pro **effektivem** Kompost-Punkt **+25 % Ertrag** und
+  **+10 % Wachstumstempo**; effektive Punkte = `Kompost^0.5` (Softcap
+  gegen die Prestige-Spirale, siehe Balance-Audit §9.11). Pachten
+  erst, wenn der Gewinn ≥ Parzellenzahl ist — selten und wuchtig.
 - Jede Parzelle erhöht zusätzlich das Beet-Maximum und schaltet Inhalte frei
   (Parzelle 2: Bäume-Slots & Lizenz-I-Voraussetzung, Parzelle 3: …).
 
