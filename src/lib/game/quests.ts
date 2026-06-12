@@ -22,6 +22,18 @@ export function questStreakBonus(s: GameState): number {
   return Math.min(s.questStreak * CONFIG.questStreakPerDelivery, CONFIG.questStreakMaxBonus)
 }
 
+/**
+ * Units of a crop that open delivery orders still need (PHASE 2).
+ * Quick sells and the market cart leave this much in storage.
+ */
+export function questReserved(s: GameState, plantId: string): number {
+  let sum = 0
+  for (const quest of s.quests) {
+    if (quest.plantId === plantId) sum += quest.amount
+  }
+  return sum
+}
+
 /** Random delivery order over the currently unlocked plants. */
 export function generateQuest(s: GameState): QuestState {
   const tier = rollTier()

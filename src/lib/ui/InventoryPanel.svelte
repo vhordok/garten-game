@@ -1,6 +1,8 @@
 <script lang="ts">
   import { PLANTS } from '../data/plants'
-  import { inventoryValue, sellAll, sellPlant } from '../game/actions'
+  import { quickSellAmount, sellableValue, sellAll, sellPlant } from '../game/actions'
+  import { saleValue } from '../game/modifiers'
+  import { questReserved } from '../game/quests'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -11,12 +13,37 @@
 
   let { onClose }: { onClose: () => void } = $props()
 
+  // PHASE 2: quick sells move a fraction of the unreserved stock; an exact
+  // amount in the input overrides the fraction (and the quest reservation).
+  const FRACTIONS = [
+    { value: 0.25, label: '25 %' },
+    { value: 0.5, label: '50 %' },
+    { value: 0.75, label: '75 %' },
+    { value: 1, label: 'Alles' },
+  ]
+  let fraction = $state(1)
+  let exactRaw = $state('')
+  const exact = $derived.by(() => {
+    const n = Math.floor(Number(exactRaw))
+    return Number.isFinite(n) && n > 0 ? n : 0
+  })
+
   const rows = $derived(
-    PLANTS.map((plant) => ({ plant, count: $gameStore.inventory[plant.id] ?? 0 })).filter(
-      (row) => row.count > 0
-    )
+    PLANTS.map((plant) => ({
+      plant,
+      count: $gameStore.inventory[plant.id] ?? 0,
+      reserved: questReserved($gameStore, plant.id),
+    }))
+      .filter((row) => row.count > 0)
+      .map((row) => ({
+        ...row,
+        toSell:
+          exact > 0 ? Math.min(exact, row.count) : quickSellAmount($gameStore, row.plant.id, fraction),
+      }))
   )
-  const totalValue = $derived(inventoryValue($gameStore))
+  const anyReserved = $derived(rows.some((row) => row.reserved > 0))
+  const bulkValue = $derived(sellableValue($gameStore, fraction))
+  const fractionLabel = $derived(FRACTIONS.find((f) => f.value === fraction)?.label ?? 'Alles')
 
   function sellFx(e: MouseEvent, gain: number) {
     if (gain <= 0) return
@@ -30,28 +57,114 @@
   {#if rows.length === 0}
     <p class="hint">Noch nichts geerntet — reife Pflanzen anklicken, dann landen sie hier.</p>
   {:else}
+    <div class="sell-controls">
+      <span class="ctl-label">Menge</span>
+      {#each FRACTIONS as f (f.value)}
+        <button
+          class="pxbtn small num"
+          class:primary={exact === 0 && fraction === f.value}
+          aria-pressed={exact === 0 && fraction === f.value}
+          onclick={() => {
+            fraction = f.value
+            exactRaw = ''
+            playSound('click')
+          }}
+        >
+          {f.label}
+        </button>
+      {/each}
+      <input
+        class="exact num"
+        type="number"
+        min="1"
+        inputmode="numeric"
+        placeholder="genau…"
+        bind:value={exactRaw}
+        aria-label="Genaue Stückzahl verkaufen"
+      />
+    </div>
+    {#if anyReserved}
+      <p class="hint reserve-note">
+        🔒 Für offene Aufträge reservierte Ernte bleibt beim Schnellverkauf liegen — nur eine
+        genaue Stückzahl verkauft auch Reserviertes.
+      </p>
+    {/if}
     <ul class="inv-list">
-      {#each rows as { plant, count } (plant.id)}
+      {#each rows as { plant, count, reserved, toSell } (plant.id)}
         <li>
           <span class="inv-item">
             <img class="px" src={spriteUrl(`${plant.id}-3`)} width="32" height="32" alt="" />
             {plant.name}
             <b class="num">×{formatNumber(count)}</b>
+            {#if reserved > 0}
+              <span class="lock num" title="Für offene Aufträge reserviert">
+                🔒{formatNumber(Math.min(reserved, count))}
+              </span>
+            {/if}
           </span>
-          <button class="pxbtn small num" onclick={(e) => sellFx(e, sellPlant(plant.id))}>
-            Verkaufen +{formatNumber(count * plant.sellValue)}
+          <button
+            class="pxbtn small num"
+            disabled={toSell === 0}
+            onclick={(e) => sellFx(e, sellPlant(plant.id, toSell))}
+            title={toSell === 0
+              ? 'Alles für Aufträge reserviert'
+              : `${formatNumber(toSell)} Stück verkaufen`}
+          >
+            ×{formatNumber(toSell)} +{formatNumber(saleValue($gameStore, plant.sellValue, toSell))}
           </button>
         </li>
       {/each}
     </ul>
-    <button class="pxbtn gold full num" onclick={(e) => sellFx(e, sellAll())}>
+    <button
+      class="pxbtn gold full num"
+      disabled={bulkValue === 0}
+      onclick={(e) => sellFx(e, sellAll(fraction))}
+    >
       <PixelIcon name="coin" scale={2} />
-      Alles verkaufen +{formatNumber(totalValue)}
+      Lager verkaufen ({fractionLabel}) +{formatNumber(bulkValue)}
     </button>
   {/if}
 </Overlay>
 
 <style>
+  .sell-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 10px;
+  }
+
+  .ctl-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--c-mist);
+  }
+
+  .exact {
+    width: 92px;
+    padding: 6px 8px;
+    background: rgba(16, 20, 31, 0.65);
+    border: 2px solid var(--c-mist);
+    color: inherit;
+    font-size: 0.85rem;
+  }
+
+  .exact:focus {
+    outline: none;
+    border-color: var(--c-gold2);
+  }
+
+  .reserve-note {
+    margin: 0 0 10px;
+  }
+
+  .lock {
+    color: var(--c-gold2);
+    font-size: 0.8rem;
+  }
+
   .inv-list {
     list-style: none;
     margin: 4px 0 12px;

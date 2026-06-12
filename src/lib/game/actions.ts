@@ -20,7 +20,7 @@ import {
   waterCharges,
   yieldMultiplier,
 } from './modifiers'
-import { generateQuest, questStreakBonus, refillQuests } from './quests'
+import { generateQuest, questReserved, questStreakBonus, refillQuests } from './quests'
 import { grantXp, type LevelUp } from './xp'
 
 export type { LevelUp } from './xp'
@@ -251,33 +251,65 @@ export function harvestAllReady(): HarvestResult {
   return { units, crit: best, levelUps, tickets }
 }
 
-function sellInternal(s: GameState, plantId: string): number {
+function sellInternal(s: GameState, plantId: string, amount?: number): number {
   const def = plantById(plantId)
   const count = s.inventory[plantId] ?? 0
-  if (!def || count <= 0) return 0
-  const gain = saleValue(s, def.sellValue, count)
-  delete s.inventory[plantId]
+  const toSell = Math.min(Math.floor(amount ?? count), count)
+  if (!def || toSell <= 0) return 0
+  const gain = saleValue(s, def.sellValue, toSell)
+  if (toSell >= count) delete s.inventory[plantId]
+  else s.inventory[plantId] = count - toSell
   s.money += gain
   s.totalEarned += gain
   s.lifetimeEarned += gain
-  s.stats.sold += count
+  s.stats.sold += toSell
   return gain
 }
 
-/** Sell all stored units of one plant. Returns money gained. */
-export function sellPlant(plantId: string): number {
-  const gain = sellInternal(getState(), plantId)
+/**
+ * Sell stored units of one plant — all of them, or exactly `amount` (PHASE 2).
+ * An explicit amount deliberately ignores the quest reservation.
+ * Returns money gained.
+ */
+export function sellPlant(plantId: string, amount?: number): number {
+  const gain = sellInternal(getState(), plantId, amount)
   if (gain > 0) notify()
   return gain
 }
 
-/** Sell the entire storage. Returns money gained. */
-export function sellAll(): number {
+/**
+ * Units a quick sell would move: the given fraction of the stock NOT
+ * reserved by open delivery orders (PHASE 2). At least 1 while surplus
+ * exists, so small fractions never round a sale down to nothing.
+ */
+export function quickSellAmount(state: GameState, plantId: string, fraction: number): number {
+  const free = Math.max(0, (state.inventory[plantId] ?? 0) - questReserved(state, plantId))
+  if (free <= 0) return 0
+  return Math.max(1, Math.floor(free * fraction))
+}
+
+/**
+ * Sell a fraction of the storage surplus — stock that open orders need
+ * stays put (Auftragsschutz). Returns money gained.
+ */
+export function sellAll(fraction = 1): number {
   const s = getState()
   let gain = 0
-  for (const plant of PLANTS) gain += sellInternal(s, plant.id)
+  for (const plant of PLANTS) {
+    gain += sellInternal(s, plant.id, quickSellAmount(s, plant.id, fraction))
+  }
   if (gain > 0) notify()
   return gain
+}
+
+/** Preview of what sellAll(fraction) would pay right now. */
+export function sellableValue(state: GameState, fraction = 1): number {
+  let sum = 0
+  for (const plant of PLANTS) {
+    const amount = quickSellAmount(state, plant.id, fraction)
+    if (amount > 0) sum += saleValue(state, plant.sellValue, amount)
+  }
+  return sum
 }
 
 /** Cost of the next plot — exponential curve, see GAME_DESIGN.md §3. */
@@ -340,16 +372,6 @@ export function buyPlot(): boolean {
   s.plots.push(emptyPlot())
   notify()
   return true
-}
-
-/** Total sell value of everything currently in storage. */
-export function inventoryValue(state: GameState): number {
-  let sum = 0
-  for (const [id, count] of Object.entries(state.inventory)) {
-    const def = plantById(id)
-    if (def) sum += saleValue(state, def.sellValue, count)
-  }
-  return sum
 }
 
 /** Current level of an upgrade (0 = not owned). */

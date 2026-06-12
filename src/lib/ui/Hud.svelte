@@ -2,7 +2,7 @@
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
   import { xpToNext } from '../data/progression'
-  import { anyUpgradeAffordable, compostGain, dailyClaimable, inventoryValue, leaseRequirement, questFulfillable, sellAll } from '../game/actions'
+  import { anyUpgradeAffordable, compostGain, dailyClaimable, leaseRequirement, questFulfillable, sellableValue, sellAll } from '../game/actions'
   import { comboMultiplier, comboWindowSeconds, marketFactor, maxScratchTickets } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -37,7 +37,7 @@
   const prestigeReady = $derived(prestigeGain >= leaseRequirement($gameStore))
   const showPrestige = $derived(prestigeGain >= 1 || $gameStore.parcels > 1)
 
-  const stockValue = $derived(inventoryValue($gameStore))
+  const stockValue = $derived(sellableValue($gameStore))
   const stockCount = $derived(Object.values($gameStore.inventory).reduce((a, b) => a + b, 0))
 
   // money counts up/down instead of jumping
@@ -118,7 +118,11 @@
   <div class="spacer"></div>
 
   {#if stockValue > 0}
-    <button class="pxbtn gold num" onclick={handleSellAll} title="Komplettes Lager verkaufen">
+    <button
+      class="pxbtn gold num"
+      onclick={handleSellAll}
+      title="Lager-Überschuss verkaufen — was offene Aufträge brauchen, bleibt liegen"
+    >
       Verkaufen +{formatNumber(stockValue)}
     </button>
   {/if}
