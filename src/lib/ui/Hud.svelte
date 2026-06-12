@@ -1,10 +1,9 @@
 <script lang="ts">
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
-  import { CONFIG } from '../data/config'
   import { xpToNext } from '../data/progression'
   import { anyUpgradeAffordable, compostGain, inventoryValue, questFulfillable, sellAll } from '../game/actions'
-  import { comboMultiplier } from '../game/modifiers'
+  import { comboMultiplier, comboWindowSeconds } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -50,7 +49,7 @@
   const comboActive = $derived($gameStore.combo.count >= 2)
   const comboMult = $derived(comboMultiplier($gameStore))
   const comboFraction = $derived(
-    Math.min($gameStore.combo.remaining / CONFIG.comboWindowSeconds, 1)
+    Math.min($gameStore.combo.remaining / comboWindowSeconds($gameStore), 1)
   )
 
   const xpNeeded = $derived(xpToNext($gameStore.level))

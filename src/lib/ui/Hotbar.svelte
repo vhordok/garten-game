@@ -13,6 +13,7 @@
     gemuese: 'Gemüse',
     beeren: 'Beeren',
     obst: 'Obst',
+    magie: 'Magie',
   }
 
   const categories = [...new Set(PLANTS.map((p) => p.category))]

@@ -6,6 +6,7 @@ export type PlantCategory =
   | 'gemuese'
   | 'beeren'
   | 'obst'
+  | 'magie'
   | 'baeume'
   | 'zier'
   | 'cannabis'
@@ -30,7 +31,20 @@ export interface PlantDef {
   unlockAtTotalEarned: number
 }
 
-export type UpgradeEffect = 'growth' | 'yield' | 'sellPrice'
+export type UpgradeEffect =
+  | 'growth'
+  | 'yield'
+  | 'sellPrice'
+  | 'waterCharges'
+  | 'comboWindow'
+  | 'critChance'
+  | 'scratchLuck'
+  | 'offlineCap'
+  | 'autoHarvest'
+  | 'autoSow'
+  | 'autoSell'
+
+export type UpgradeSection = 'boost' | 'glueck' | 'helfer'
 
 export interface UpgradeDef {
   id: string
@@ -39,7 +53,9 @@ export interface UpgradeDef {
   sprite: string
   description: string
   effect: UpgradeEffect
-  /** additive bonus per level, e.g. 0.1 = +10 % per level */
+  /** shop grouping */
+  section: UpgradeSection
+  /** bonus per level — unit depends on the effect (factor, seconds, …) */
   perLevel: number
   maxLevel: number
   baseCost: number
@@ -131,6 +147,8 @@ export interface GameState {
   scratchTickets: number
   /** turbo-fertilizer charges: next harvests yield ×2, one charge each */
   fertilizerCharges: number
+  /** helper automation accumulators (seconds of pending work) */
+  helperAcc: { harvest: number; sow: number; sell: number }
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

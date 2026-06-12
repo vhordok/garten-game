@@ -39,7 +39,13 @@ import {
 } from '../src/lib/game/actions.ts'
 import { questTier } from '../src/lib/data/questFlavor.ts'
 import { bestHarvestValue } from '../src/lib/data/scratch.ts'
-import { growthMultiplier, yieldMultiplier } from '../src/lib/game/modifiers.ts'
+import {
+  comboWindowSeconds,
+  growthMultiplier,
+  offlineCapHours,
+  waterCharges,
+  yieldMultiplier,
+} from '../src/lib/game/modifiers.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
@@ -577,6 +583,82 @@ test('prestige: compost payout, round reset, permanent perks stay', () => {
     const expectedYield =
       (1 + CONFIG.compostYieldPerPoint * 2) * (1 + CONFIG.levelYieldPerLevel * 6)
     assert.ok(Math.abs(yieldMultiplier(s) - expectedYield) < 1e-9)
+  })
+})
+
+test('helpers: auto-harvest/sow/sell run through tick (and thus offline)', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1000
+    s.upgrades['erntehelfer'] = 5 // 2 plots/s
+    s.upgrades['saegnom'] = 5
+    s.upgrades['marktkarren'] = 6 // sells every 10 s
+    const basil = PLANTS[0]
+
+    // gnome sows by itself, helper harvests, cart sells — money grows hands-free
+    const moneyStart = s.money
+    for (let i = 0; i < 24; i++) tick(s, 10)
+    assert.ok(s.stats.planted > 0, 'gnome must sow')
+    assert.ok(s.stats.harvested > 0, 'helper must harvest')
+    assert.ok(s.stats.sold > 0, 'cart must sell')
+    assert.ok(s.money > moneyStart, `idle play must be profitable (${s.money} vs ${moneyStart})`)
+    assert.ok(s.totalEarned > 0, 'auto sales count as earnings')
+
+    // helpers are sober: no crits, no combo, no tickets
+    assert.equal(s.stats.crits, 0)
+    assert.equal(s.combo.count, 0)
+    assert.equal(s.scratchTickets, 0)
+    assert.ok(basil.yield >= 1)
+  })
+})
+
+test('offline catch-up is chunked: regrow cycles produce while away', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e15
+    s.upgrades['erntehelfer'] = 5
+    selectPlant('erdbeere')
+    const berry = PLANTS.find((p) => p.id === 'erdbeere')
+    assert.ok(sowPlot(0))
+    // away long enough for first growth + several regrow cycles
+    const away = berry.growTime + berry.regrowTime * 3 + 60
+    const report = applyOfflineProgress(Date.now() - away * 1000)
+    assert.ok(report)
+    // one big un-chunked tick could harvest at most once — chunking must
+    // capture multiple regrow cycles
+    assert.ok(
+      report.autoHarvested >= berry.yield * 3,
+      `expected ≥${berry.yield * 3} auto-harvested units, got ${report.autoHarvested}`
+    )
+  })
+})
+
+test('effect upgrades: water charges, combo window, offline cap, crit luck', () => {
+  const s = fresh()
+  s.money = 1e12
+  s.upgrades['wasserfass'] = 2
+  assert.equal(waterCharges(s), CONFIG.waterChargesPerCrop + 2)
+  withBoringRng(() => sowPlot(0))
+  assert.equal(s.plots[0].waterLeft, CONFIG.waterChargesPerCrop + 2)
+
+  s.upgrades['sternenuhr'] = 4
+  assert.ok(Math.abs(comboWindowSeconds(s) - (CONFIG.comboWindowSeconds + 2)) < 1e-9)
+
+  s.upgrades['nachteule'] = 8
+  assert.equal(offlineCapHours(s), CONFIG.offlineCapHours + 16)
+
+  // crit luck: a roll that misses by default becomes a perfect with clover
+  const probe = CONFIG.critLegendaryChance + CONFIG.critPerfectChance + 0.02
+  withRngQueue([probe, 0.5, 0.5], () => {
+    tick(s, 99999)
+    assert.equal(harvestPlot(0).crit, 'none', 'baseline: roll misses')
+  })
+  s.upgrades['kleeblatt'] = 5 // +5 % perfect, +1 % legendary
+  withBoringRng(() => sowPlot(0))
+  withRngQueue([probe, 0.5, 0.5], () => {
+    tick(s, 99999)
+    assert.equal(harvestPlot(0).crit, 'perfect', 'clover turns the same roll golden')
   })
 })
 

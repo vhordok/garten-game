@@ -2,8 +2,8 @@
   import { UPGRADES } from '../data/upgrades'
   import { buyUpgrade, nextUpgradeCost, upgradeLevel } from '../game/actions'
   import { gameStore } from '../game/state'
-  import type { UpgradeEffect } from '../game/types'
-  import { formatNumber } from '../util/format'
+  import type { UpgradeDef, UpgradeSection } from '../game/types'
+  import { formatDuration, formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
   import { coinBurst } from './fx/particles'
   import Overlay from './Overlay.svelte'
@@ -11,10 +11,61 @@
 
   let { onClose }: { onClose: () => void } = $props()
 
-  const EFFECT_LABEL: Record<UpgradeEffect, string> = {
-    growth: 'Wachstumstempo',
-    yield: 'Ertrag',
-    sellPrice: 'Verkaufspreis',
+  const SECTIONS: Array<{ id: UpgradeSection; label: string }> = [
+    { id: 'boost', label: 'Boosts' },
+    { id: 'glueck', label: 'Glück' },
+    { id: 'helfer', label: 'Helfer — arbeiten auch offline' },
+  ]
+
+  function effectText(u: UpgradeDef): string {
+    switch (u.effect) {
+      case 'growth':
+        return `+${Math.round(u.perLevel * 100)} % Wachstumstempo pro Stufe`
+      case 'yield':
+        return `+${Math.round(u.perLevel * 100)} % Ertrag pro Stufe`
+      case 'sellPrice':
+        return `+${Math.round(u.perLevel * 100)} % Verkaufspreis pro Stufe`
+      case 'waterCharges':
+        return `+${u.perLevel} Gieß-Ladung pro Stufe`
+      case 'comboWindow':
+        return `+${u.perLevel} s Combo-Fenster pro Stufe`
+      case 'critChance':
+        return `+${Math.round(u.perLevel * 100)} % Perfekt-Chance (Legendär ein Fünftel davon) pro Stufe`
+      case 'scratchLuck':
+        return `+${Math.round(u.perLevel * 100)} % Los-Chance pro Stufe`
+      case 'offlineCap':
+        return `+${u.perLevel} h Offline-Wachstum pro Stufe`
+      case 'autoHarvest':
+        return `erntet +${u.perLevel} Beete/s pro Stufe`
+      case 'autoSow':
+        return `sät +${u.perLevel} Beete/s pro Stufe (gewählte Sorte)`
+      case 'autoSell':
+        return 'verkauft das Lager — pro Stufe öfter'
+    }
+  }
+
+  function activeText(u: UpgradeDef, level: number): string {
+    if (level === 0) return ''
+    switch (u.effect) {
+      case 'growth':
+      case 'yield':
+      case 'sellPrice':
+        return `+${Math.round(u.perLevel * level * 100)} %`
+      case 'waterCharges':
+        return `+${u.perLevel * level} Ladungen`
+      case 'comboWindow':
+        return `+${(u.perLevel * level).toFixed(1)} s`
+      case 'critChance':
+      case 'scratchLuck':
+        return `+${Math.round(u.perLevel * level * 100)} %`
+      case 'offlineCap':
+        return `${8 + u.perLevel * level} h Cap`
+      case 'autoHarvest':
+      case 'autoSow':
+        return `${(u.perLevel * level).toFixed(1)} Beete/s`
+      case 'autoSell':
+        return `alle ${formatDuration(60 / level)}`
+    }
   }
 
   function handleBuy(e: MouseEvent, upgradeId: string) {
@@ -29,44 +80,55 @@
 </script>
 
 <Overlay title="Shop" {onClose}>
-  <p class="hint">Dauerhafte Upgrades — jede Stufe wirkt sofort und für immer.</p>
-  <ul class="shop-list">
-    {#each UPGRADES as upgrade (upgrade.id)}
-      {@const level = upgradeLevel($gameStore, upgrade.id)}
-      {@const cost = nextUpgradeCost(upgrade, $gameStore)}
-      {@const affordable = cost !== null && $gameStore.money >= cost}
-      <li class="row">
-        <span class="icon"><PixelIcon name={upgrade.sprite} scale={3} /></span>
-        <span class="info">
-          <span class="name">
-            {upgrade.name}
-            <span class="level num">Stufe {level}/{upgrade.maxLevel}</span>
+  <p class="hint">Dauerhafte Upgrades für diese Parzelle — jede Stufe wirkt sofort.</p>
+  {#each SECTIONS as section (section.id)}
+    <h3 class="section">{section.label}</h3>
+    <ul class="shop-list">
+      {#each UPGRADES.filter((u) => u.section === section.id) as upgrade (upgrade.id)}
+        {@const level = upgradeLevel($gameStore, upgrade.id)}
+        {@const cost = nextUpgradeCost(upgrade, $gameStore)}
+        {@const affordable = cost !== null && $gameStore.money >= cost}
+        <li class="row">
+          <span class="icon"><PixelIcon name={upgrade.sprite} scale={3} /></span>
+          <span class="info">
+            <span class="name">
+              {upgrade.name}
+              <span class="level num">Stufe {level}/{upgrade.maxLevel}</span>
+            </span>
+            <span class="desc">{upgrade.description}</span>
+            <span class="effect num">
+              {effectText(upgrade)}
+              {#if level > 0}
+                · aktiv: <b>{activeText(upgrade, level)}</b>
+              {/if}
+            </span>
           </span>
-          <span class="desc">{upgrade.description}</span>
-          <span class="effect num">
-            +{Math.round(upgrade.perLevel * 100)} % {EFFECT_LABEL[upgrade.effect]} pro Stufe
-            {#if level > 0}
-              · aktiv: <b>+{Math.round(upgrade.perLevel * level * 100)} %</b>
-            {/if}
-          </span>
-        </span>
-        {#if cost === null}
-          <span class="maxed">MAX</span>
-        {:else}
-          <button class="pxbtn gold num buy" disabled={!affordable} onclick={(e) => handleBuy(e, upgrade.id)}>
-            <PixelIcon name="coin" scale={1} />
-            {formatNumber(cost)}
-          </button>
-        {/if}
-      </li>
-    {/each}
-  </ul>
+          {#if cost === null}
+            <span class="maxed">MAX</span>
+          {:else}
+            <button class="pxbtn gold num buy" disabled={!affordable} onclick={(e) => handleBuy(e, upgrade.id)}>
+              <PixelIcon name="coin" scale={1} />
+              {formatNumber(cost)}
+            </button>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  {/each}
 </Overlay>
 
 <style>
+  .section {
+    margin: 14px 0 0;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--c-mist);
+  }
+
   .shop-list {
     list-style: none;
-    margin: 10px 0 0;
+    margin: 8px 0 0;
     padding: 0;
     display: flex;
     flex-direction: column;
