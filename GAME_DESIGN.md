@@ -142,9 +142,9 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 |---|---|---|
 | **1** | Beet-Grid (Start 4, kaufbar bis 16), 3 Kräuter, manuell pflanzen/ernten/verkaufen, Save/Load + Export/Import, Offline-Wachstum, Zahlenformat | ✅ umgesetzt |
 | **2** | Gemüse-Kategorie, Unlock-UI, Bewässerungs-Upgrades | ✅ via §9.8 (Gemüse, aktives Gießen; Sprinkler/Kompost aus R4) |
-| 3 | Helfer (Auto-Ernte, Auto-Aussaat, Auto-Verkauf) inkl. Offline-Simulation | offen |
-| 4 | Prestige: Parzellen + Kompost | offen |
-| 5 | Beerensträucher (Wiederernte), Obstbäume, Bäume (passives Einkommen) | offen |
+| **3** | Helfer (Auto-Ernte, Auto-Aussaat, Auto-Verkauf) inkl. Offline-Simulation | ✅ via §9.10 |
+| **4** | Prestige: Parzellen + Kompost | ✅ via §9.9 |
+| **5** | Beerensträucher (Wiederernte), Obstbäume | ✅ via §9.9 (passive Holz-Bäume offen) |
 | 6 | Hecken/Zier (Schönheits-Multiplikator), Cannabis + Lizenzen | offen |
 | 7 | Achievements, Statistiken, Sound, Feinschliff & Balancing | offen |
 
