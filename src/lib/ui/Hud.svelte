@@ -3,7 +3,7 @@
   import { Tween } from 'svelte/motion'
   import { xpToNext } from '../data/progression'
   import { anyUpgradeAffordable, compostGain, inventoryValue, leaseRequirement, questFulfillable, sellAll } from '../game/actions'
-  import { comboMultiplier, comboWindowSeconds } from '../game/modifiers'
+  import { comboMultiplier, comboWindowSeconds, marketFactor } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -53,6 +53,8 @@
     Math.min($gameStore.combo.remaining / comboWindowSeconds($gameStore), 1)
   )
 
+  const marketPct = $derived(Math.round((marketFactor($gameStore) - 1) * 100))
+
   const xpNeeded = $derived(xpToNext($gameStore.level))
   const xpFraction = $derived(Math.min($gameStore.xp / xpNeeded, 1))
 
@@ -78,6 +80,15 @@
       <span class="coin-pulse"><PixelIcon name="coin" scale={2} /></span>
     {/key}
     <span class="amount">{formatNumber(shownMoney.current)}</span>
+  </div>
+
+  <div
+    class="chip num market"
+    class:up={marketPct > 3}
+    class:down={marketPct < -3}
+    title="Marktpreise schwanken — im Hoch verkaufen lohnt! Wirkt auf alle Verkäufe (Aufträge sind Festpreise)."
+  >
+    {marketPct > 0 ? '▲' : marketPct < 0 ? '▼' : '◆'} {marketPct > 0 ? '+' : ''}{marketPct} %
   </div>
 
   {#if $gameStore.fertilizerCharges > 0}
@@ -340,6 +351,21 @@
   .boost {
     padding: 2px 8px;
     color: var(--c-leaf5);
+  }
+
+  .market {
+    padding: 2px 8px;
+    font-size: 0.78rem;
+    color: var(--c-mist);
+  }
+
+  .market.up {
+    color: var(--c-leaf4);
+    text-shadow: 0 0 8px rgba(168, 202, 88, 0.45);
+  }
+
+  .market.down {
+    color: var(--c-red1);
   }
 
   .ticket {

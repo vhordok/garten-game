@@ -46,6 +46,7 @@ import { generateQuest } from '../src/lib/game/quests.ts'
 import {
   beautyMultiplier,
   comboWindowSeconds,
+  marketFactor,
   scratchDropChance,
   growthMultiplier,
   offlineCapHours,
@@ -95,6 +96,7 @@ test('sow → grow → harvest → sell (baseline numbers)', () => {
     assert.equal(crit, 'none')
     assert.equal(units, basil.yield)
     assert.equal(s.inventory[basil.id], units)
+    s.marketTime = 0 // neutral market for the exact-price assertion
     const gain = sellPlant(basil.id)
     assert.equal(gain, units * basil.sellValue)
     assert.equal(s.totalEarned, gain)
@@ -530,6 +532,37 @@ test('turbo fertilizer: one charge doubles one harvest', () => {
   })
 })
 
+test('market wave: neutral at start, sales follow the wave', () => {
+  const s = fresh()
+  assert.ok(Math.abs(marketFactor(s) - 1) < 1e-9, 'fresh game starts neutral')
+  s.inventory['basilikum'] = 100
+  assert.equal(sellPlant('basilikum'), 300, 'neutral market = exact base price')
+
+  // scan several periods (the harmonics repeat slowly): real highs and lows
+  let peak = 1
+  let peakTime = 0
+  let trough = 1
+  for (let sec = 0; sec < CONFIG.marketPeriodSeconds * 10; sec += 5) {
+    s.marketTime = sec
+    const f = marketFactor(s)
+    if (f > peak) {
+      peak = f
+      peakTime = sec
+    }
+    trough = Math.min(trough, f)
+  }
+  assert.ok(peak > 1.2, `peak should pay noticeably more (${peak.toFixed(3)})`)
+  assert.ok(trough < 0.85, `trough should pay noticeably less (${trough.toFixed(3)})`)
+  s.marketTime = peakTime
+  s.inventory['basilikum'] = 100
+  assert.equal(sellPlant('basilikum'), Math.round(300 * peak))
+
+  // tick advances the clock
+  const before = s.marketTime
+  tick(s, 30)
+  assert.ok(Math.abs(s.marketTime - before - 30) < 1e-9)
+})
+
 test('bulk actions: sow all empty, water all growing', () => {
   withBoringRng(() => {
     const s = fresh()
@@ -745,8 +778,9 @@ test('ornamentals: never harvestable, beauty raises sell prices', () => {
     assert.equal(harvestPlot(0).units, 0)
     assert.equal(s.plots[0].plantId, 'nachtrose', 'the rose keeps standing')
 
-    // +5 % on every sale while it stands
+    // +5 % on every sale while it stands (market neutralized for exactness)
     assert.ok(Math.abs(beautyMultiplier(s) - 1.05) < 1e-9)
+    s.marketTime = 0
     s.inventory['basilikum'] = 100
     assert.equal(sellPlant('basilikum'), Math.round(100 * 3 * 1.05))
 

@@ -54,9 +54,19 @@ export function beautyMultiplier(state: GameState): number {
   return 1 + bonus
 }
 
-/** Sale price factor (upgrades × garden beauty). */
+/**
+ * Market wave: prices breathe ±~30 % over ~10 minutes (two overlaid sines,
+ * so highs/lows stay a little unpredictable). Hoard and sell high!
+ */
+export function marketFactor(state: GameState): number {
+  const phase = (state.marketTime / CONFIG.marketPeriodSeconds) * Math.PI * 2
+  // both sines start at 0 → fresh games begin neutral, no long-run bias
+  return 1 + 0.24 * Math.sin(phase) + 0.08 * Math.sin(phase * 2.33)
+}
+
+/** Sale price factor (upgrades × garden beauty × market wave). */
 export function sellMultiplier(state: GameState): number {
-  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state)
+  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state) * marketFactor(state)
 }
 
 /** Summed perLevel × level over all owned upgrades with the given effect. */

@@ -25,6 +25,7 @@ export function createDefaultState(now = Date.now()): GameState {
     scratchTickets: 0,
     fertilizerCharges: 0,
     helperAcc: { harvest: 0, sow: 0, sell: 0 },
+    marketTime: 0,
     combo: { count: 0, remaining: 0 },
     stats: { planted: 0, harvested: 0, sold: 0, crits: 0 },
     createdAt: now,

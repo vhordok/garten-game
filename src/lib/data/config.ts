@@ -53,6 +53,8 @@ export const CONFIG = {
    * level×compost feedback runs away in the late game (balance audit) */
   levelYieldPerLevel: 0.01,
   levelYieldMaxBonus: 1.0,
+  /** market wave: sell prices oscillate ±~30 % over this period (seconds) */
+  marketPeriodSeconds: 600,
   /** offline simulation cap; later extendable through upgrades (GAME_DESIGN.md §5) */
   offlineCapHours: 8,
   /** ignore gaps shorter than this when applying offline progress */

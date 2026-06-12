@@ -1,3 +1,4 @@
+import { CONFIG } from '../data/config'
 import { plantById } from '../data/plants'
 import {
   autoHarvestRate,
@@ -49,6 +50,9 @@ export function tick(state: GameState, dtSeconds: number): boolean {
       changed = true
     }
   }
+  // the market never sleeps
+  state.marketTime = (state.marketTime + dtSeconds) % (CONFIG.marketPeriodSeconds * 1e6)
+  changed = true
   if (processHelpers(state, dtSeconds)) changed = true
   return changed
 }

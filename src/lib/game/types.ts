@@ -152,6 +152,8 @@ export interface GameState {
   fertilizerCharges: number
   /** helper automation accumulators (seconds of pending work) */
   helperAcc: { harvest: number; sow: number; sell: number }
+  /** market-wave clock in seconds (advanced by tick, drives sell prices) */
+  marketTime: number
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number
