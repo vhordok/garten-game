@@ -19,6 +19,9 @@ export const CONFIG = {
   /** scratch tickets: drop chance per harvested plot, pending cap */
   scratchDropChance: 0.04,
   scratchMaxPending: 5,
+  /** pick 3 of 9: payout share for 2 matches / no match (of full prize) */
+  scratchPartialFactor: 0.4,
+  scratchConsolationFactor: 0.1,
   /** turbo fertilizer: yield factor while charges last (one per harvest) */
   fertilizerChargeMult: 2,
   /** quests (GAME_DESIGN.md §9.4): tier factors live in data/questFlavor.ts */

@@ -28,8 +28,10 @@ import {
   maxPlots,
   nextPlotCost,
   nextUpgradeCost,
+  refundScratchTicket,
   selectPlant,
   sellPlant,
+  settleScratchCard,
   skipQuest,
   sowPlot,
   upgradeLevel,
@@ -421,7 +423,7 @@ test('scratch tickets: drop on lucky harvests, capped pending', () => {
   })
 })
 
-test('scratch cards: weighted prizes, board layout, no totalEarned', () => {
+test('scratch cards 2.0: draw pays nothing, settle grades the picks', () => {
   const s = fresh()
   s.scratchTickets = 3
   const hv = bestHarvestValue(s)
@@ -433,30 +435,42 @@ test('scratch cards: weighted prizes, board layout, no totalEarned', () => {
     assert.ok(card)
     assert.equal(card.prizeType, 'money-small')
     assert.equal(card.amount, 2 * hv)
-    assert.equal(s.money, moneyBefore + 2 * hv)
-    assert.equal(s.totalEarned, 0, 'lottery winnings are not sales')
+    assert.equal(s.money, moneyBefore, 'drawing must not pay out yet')
     assert.equal(s.scratchTickets, 2)
     assert.equal(card.symbols.length, 9)
     assert.equal(card.symbols.filter((sym) => sym === card.symbol).length, 3)
+
+    // full hit pays everything, partial 40 %, miss a consolation (min 1)
+    assert.equal(settleScratchCard(card, 3).amount, card.amount)
+    assert.equal(settleScratchCard(card, 2).amount, Math.max(Math.round(card.amount * CONFIG.scratchPartialFactor), 1))
+    assert.equal(settleScratchCard(card, 0).amount, Math.max(Math.round(card.amount * CONFIG.scratchConsolationFactor), 1))
+    assert.equal(s.totalEarned, 0, 'lottery winnings are not sales')
   })
 
-  // 0.97 lands in the jackpot bracket
+  // 0.97 lands in the jackpot bracket; fertilizer settle grants charges
   withRngQueue([0.97], () => {
-    const moneyBefore = s.money
     const card = drawScratchCard()
     assert.equal(card.prizeType, 'jackpot')
+    const moneyBefore = s.money
+    assert.equal(settleScratchCard(card, 3).amount, 80 * hv)
     assert.equal(s.money, moneyBefore + 80 * hv)
   })
-
-  // 0.90 lands on fertilizer charges
   withRngQueue([0.9], () => {
     const card = drawScratchCard()
     assert.equal(card.prizeType, 'fertilizer')
-    assert.equal(s.fertilizerCharges, card.amount)
-    assert.ok(card.amount > 0)
+    const before = s.fertilizerCharges
+    const won = settleScratchCard(card, 3)
+    assert.equal(s.fertilizerCharges, before + won.amount)
   })
 
   assert.equal(drawScratchCard(), null, 'no ticket, no card')
+
+  // an abandoned card refunds the ticket (capped)
+  refundScratchTicket()
+  assert.equal(s.scratchTickets, 1)
+  s.scratchTickets = CONFIG.scratchMaxPending
+  refundScratchTicket()
+  assert.equal(s.scratchTickets, CONFIG.scratchMaxPending)
 })
 
 test('turbo fertilizer: one charge doubles one harvest', () => {

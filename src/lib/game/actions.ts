@@ -382,14 +382,22 @@ export interface ScratchCard {
   prizeType: ScratchPrizeType
   /** prize symbol (the matching one) */
   symbol: string
-  /** money, xp or fertilizer charges depending on type */
+  /** FULL prize value — the settle step scales it by matches */
   amount: number
+}
+
+export interface ScratchOutcome {
+  /** what was actually paid out */
+  amount: number
+  /** 'voll' | 'teil' | 'trost' for UI flavor */
+  grade: 'voll' | 'teil' | 'trost'
   levelUps: LevelUp[]
 }
 
 /**
- * Consume one ticket and draw a card. The prize is applied immediately —
- * the UI only plays the reveal theater. Returns null without a ticket.
+ * Consume one ticket and draw a hidden card: the board holds exactly one
+ * triple (the prize) plus three decoy pairs. NOTHING is paid out yet —
+ * the player picks 3 cells, then settleScratchCard() applies the result.
  */
 export function drawScratchCard(): ScratchCard | null {
   const s = getState()
@@ -409,16 +417,6 @@ export function drawScratchCard(): ScratchCard | null {
   }
   const amount = scratchPrizeAmount(prize, s)
 
-  let levelUps: LevelUp[] = []
-  if (prize.type === 'xp') {
-    levelUps = grantXp(s, amount)
-  } else if (prize.type === 'fertilizer') {
-    s.fertilizerCharges += amount
-  } else {
-    // lottery winnings are not sales: money yes, totalEarned no
-    s.money += amount
-  }
-
   // board: three matching symbols, six decoys as three pairs (never a triple)
   const decoyPool = SCRATCH_PRIZES.filter((p) => p.symbol !== prize.symbol)
   const cells = [prize.symbol, prize.symbol, prize.symbol]
@@ -434,7 +432,39 @@ export function drawScratchCard(): ScratchCard | null {
   }
 
   notify()
-  return { symbols: cells, prizeType: prize.type, symbol: prize.symbol, amount, levelUps }
+  return { symbols: cells, prizeType: prize.type, symbol: prize.symbol, amount }
+}
+
+/**
+ * Apply a scratched card: `matched` = how many of the three picked cells
+ * showed the prize symbol. 3 → full prize, 2 → partial, else consolation.
+ * Lottery winnings never count as earnings.
+ */
+export function settleScratchCard(card: ScratchCard, matched: number): ScratchOutcome {
+  const s = getState()
+  const grade: ScratchOutcome['grade'] = matched >= 3 ? 'voll' : matched === 2 ? 'teil' : 'trost'
+  const factor =
+    grade === 'voll' ? 1 : grade === 'teil' ? CONFIG.scratchPartialFactor : CONFIG.scratchConsolationFactor
+  const amount = Math.max(Math.round(card.amount * factor), 1)
+  let levelUps: LevelUp[] = []
+  if (card.prizeType === 'xp') {
+    levelUps = grantXp(s, amount)
+  } else if (card.prizeType === 'fertilizer') {
+    s.fertilizerCharges += amount
+  } else {
+    s.money += amount
+  }
+  notify()
+  return { amount, grade, levelUps }
+}
+
+/** Give a drawn but unscratched ticket back (panel closed early). */
+export function refundScratchTicket(): void {
+  const s = getState()
+  if (s.scratchTickets < CONFIG.scratchMaxPending) {
+    s.scratchTickets += 1
+    notify()
+  }
 }
 
 /**
