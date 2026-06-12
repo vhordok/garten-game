@@ -132,7 +132,8 @@ export const UPGRADES: UpgradeDef[] = [
     id: 'marktkarren',
     name: 'Marktkarren',
     sprite: 'marktkarren',
-    description: 'Fährt das Lager regelmäßig zum Markt und verkauft alles.',
+    description:
+      'Fährt das Lager regelmäßig zum Markt und verkauft den Überschuss — was offene Aufträge brauchen, bleibt liegen.',
     effect: 'autoSell',
     section: 'helfer',
     perLevel: 1,

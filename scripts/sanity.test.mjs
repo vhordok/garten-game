@@ -32,8 +32,10 @@ import {
   maxPlots,
   nextPlotCost,
   nextUpgradeCost,
+  quickSellAmount,
   refundScratchTicket,
   selectPlant,
+  sellAll,
   sellPlant,
   settleScratchCard,
   skipQuest,
@@ -47,7 +49,7 @@ import {
 import { questTier } from '../src/lib/data/questFlavor.ts'
 import { SCRATCH_PRIZES, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
 import { bestHarvestValue } from '../src/lib/data/scratch.ts'
-import { generateQuest } from '../src/lib/game/quests.ts'
+import { generateQuest, questReserved } from '../src/lib/game/quests.ts'
 import {
   beautyMultiplier,
   comboWindowSeconds,
@@ -905,6 +907,54 @@ test('PHASE 1: clearing refunds half the seed, softlock guard rescues', () => {
     delete t.inventory['basilikum']
     tick(t, 0.1)
     assert.equal(t.money, CONFIG.startMoney)
+  })
+})
+
+test('PHASE 2: partial sales, quest reservation, market cart keeps order stock', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    const basil = PLANTS.find((p) => p.id === 'basilikum')
+    s.inventory['basilikum'] = 10
+    s.marketTime = 0
+    const before = s.money
+
+    // exact partial sale: money and storage follow, overshoot is capped
+    const gain = sellPlant('basilikum', 3)
+    assert.equal(gain, Math.round(3 * basil.sellValue))
+    assert.equal(s.money, before + gain)
+    assert.equal(s.inventory['basilikum'], 7)
+    assert.equal(sellPlant('basilikum', 99), Math.round(7 * basil.sellValue))
+    assert.equal(s.inventory['basilikum'], undefined)
+    assert.equal(sellPlant('basilikum', 5), 0)
+
+    // open orders reserve their stock against quick sells
+    s.inventory['basilikum'] = 10
+    s.quests.push({
+      id: 999,
+      plantId: 'basilikum',
+      amount: 6,
+      reward: 1,
+      xp: 1,
+      tier: 'bronze',
+      client: 'Test',
+      skipCooldown: 0,
+    })
+    assert.equal(questReserved(s, 'basilikum'), 6)
+    assert.equal(quickSellAmount(s, 'basilikum', 1), 4)
+    assert.equal(quickSellAmount(s, 'basilikum', 0.5), 2)
+    assert.equal(quickSellAmount(s, 'basilikum', 0.25), 1) // never rounds to nothing
+    sellAll()
+    assert.equal(s.inventory['basilikum'], 6, 'quick sell keeps the reserved units')
+
+    // the market cart only ships the surplus
+    s.inventory['basilikum'] = 10
+    s.upgrades['marktkarren'] = 1 // one trip per 60 s
+    tick(s, 61)
+    assert.equal(s.inventory['basilikum'], 6, 'cart leaves the order stock alone')
+
+    // an explicit amount deliberately overrides the shield
+    assert.ok(sellPlant('basilikum', 6) > 0)
+    assert.equal(s.inventory['basilikum'], undefined)
   })
 })
 

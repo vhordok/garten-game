@@ -423,3 +423,10 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   Garantie im Tick: wer mit < Startkapital, leeren Beeten und leerem
   Lager dasteht, bekommt das Startkapital zurück — ein Festfahren ist
   damit unmöglich.
+- **Phase 2 — Lager-Teilverkauf & Auftragsschutz:** Verkaufsmenge im Lager
+  wählbar (25/50/75 %/Alles oder genaue Stückzahl per Eingabefeld).
+  **Auftragsschutz:** was offene Aufträge brauchen (`questReserved`),
+  bleibt bei Schnellverkäufen, beim HUD-Verkaufen-Button und beim
+  Marktkarren liegen — nur eine explizite Stückzahl verkauft auch
+  Reserviertes. Der Marktkarren verkauft damit nur noch Überschuss
+  (Mindestbestand = Auftragsbedarf), live wie offline.

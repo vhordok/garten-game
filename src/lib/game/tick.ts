@@ -12,6 +12,7 @@ import {
   waterCharges,
   yieldMultiplier,
 } from './modifiers'
+import { questReserved } from './quests'
 import type { GameState, PlantDef, PlotState } from './types'
 import { grantXp } from './xp'
 
@@ -170,12 +171,16 @@ function processHelpers(s: GameState, dt: number): boolean {
       for (const [plantId, count] of Object.entries(s.inventory)) {
         const def = plantById(plantId)
         if (!def || count <= 0) continue
-        const gain = saleValue(s, def.sellValue, count)
-        delete s.inventory[plantId]
+        // the cart only ships the surplus — open orders keep their stock (PHASE 2)
+        const surplus = count - questReserved(s, plantId)
+        if (surplus <= 0) continue
+        const gain = saleValue(s, def.sellValue, surplus)
+        if (surplus >= count) delete s.inventory[plantId]
+        else s.inventory[plantId] = count - surplus
         s.money += gain
         s.totalEarned += gain
         s.lifetimeEarned += gain
-        s.stats.sold += count
+        s.stats.sold += surplus
         changed = true
       }
     }
