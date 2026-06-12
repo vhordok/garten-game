@@ -3,7 +3,7 @@
   import { PLANTS } from './lib/data/plants'
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
-  import { playSound } from './lib/ui/fx/audio'
+  import { playSound, startAtmosphere } from './lib/ui/fx/audio'
   import AchievementsPanel from './lib/ui/AchievementsPanel.svelte'
   import { achievementById } from './lib/data/achievements'
   import DailyPanel from './lib/ui/DailyPanel.svelte'
@@ -47,6 +47,8 @@
 
   onMount(() => {
     registerShakeTarget(stageEl)
+    // browsers gate audio behind a gesture — arm atmosphere on the first one
+    window.addEventListener('pointerdown', startAtmosphere, { once: true })
 
     // first run only: short onboarding before anything was ever planted
     let tutorialSeen = true

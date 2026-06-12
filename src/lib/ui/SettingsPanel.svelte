@@ -3,7 +3,7 @@
   import { exportSave, importSave, resetSave, save } from '../game/save'
   import { gameStore } from '../game/state'
   import { formatDuration, formatNumber } from '../util/format'
-  import { playSound, setSoundEnabled, soundEnabled } from './fx/audio'
+  import { ambienceOn, musicOn, playSound, setAmbienceEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from './fx/audio'
   import Overlay from './Overlay.svelte'
   import { pushToast } from './toasts'
 
@@ -13,11 +13,23 @@
   let importText = $state('')
   let message = $state('')
   let sound = $state(soundEnabled())
+  let music = $state(musicOn())
+  let ambience = $state(ambienceOn())
 
   function toggleSound() {
     sound = !sound
     setSoundEnabled(sound)
     if (sound) playSound('click')
+  }
+
+  function toggleMusic() {
+    music = !music
+    setMusicEnabled(music)
+  }
+
+  function toggleAmbience() {
+    ambience = !ambience
+    setAmbienceEnabled(ambience)
   }
 
   function handleSaveNow() {
@@ -102,8 +114,12 @@
 
   <section>
     <h3>Audio</h3>
-    <button class="pxbtn small" onclick={toggleSound}>Sound: {sound ? 'An' : 'Aus'}</button>
-    <p class="hint">Alle Klänge werden live synthetisiert — keine Audiodateien, kein Laden.</p>
+    <div class="row">
+      <button class="pxbtn small" onclick={toggleSound}>Effekte: {sound ? 'An' : 'Aus'}</button>
+      <button class="pxbtn small" onclick={toggleMusic}>Musik: {music ? 'An' : 'Aus'}</button>
+      <button class="pxbtn small" onclick={toggleAmbience}>Ambience: {ambience ? 'An' : 'Aus'}</button>
+    </div>
+    <p class="hint">Alles wird live synthetisiert — Chiptune-Melodie, Grillen und Nachtwind inklusive.</p>
   </section>
 
   <section>
