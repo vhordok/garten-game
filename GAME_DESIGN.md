@@ -116,10 +116,12 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 - **Reset:** Geld, Beete, Pflanzen, Lager, Helfer und Upgrades der Runde.
 - **Bleibt:** Kompost, Lizenzen, Achievements, QoL-Freischaltungen
   (z. B. „Alle ernten"-Knopf, Schnellkauf).
-- **Belohnung:** `Kompost = floor(√(totalEarned der Runde / 1e6))`
-  → erstes Prestige lohnt ab ~1M Lifetime-Einnahmen.
-- **Effekt:** pro Kompost **+5 % Ertrag** und **+2 % Wachstumstempo**
-  (global, multiplikativ mit allem anderen).
+- **Belohnung:** `Kompost = floor(√(lifetimeEarned / 1e6)) − bereits
+  besessener Kompost` — Mini-Runden-Farming bringt nichts extra;
+  erstes Prestige lohnt ab ~1M Einnahmen.
+- **Effekt:** pro **effektivem** Kompost-Punkt **+5 % Ertrag** und
+  **+2 % Wachstumstempo**; effektive Punkte = `Kompost^0.7` (Softcap
+  gegen die Prestige-Spirale, siehe Balance-Audit §9.11).
 - Jede Parzelle erhöht zusätzlich das Beet-Maximum und schaltet Inhalte frei
   (Parzelle 2: Bäume-Slots & Lizenz-I-Voraussetzung, Parzelle 3: …).
 
@@ -145,7 +147,7 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 | **3** | Helfer (Auto-Ernte, Auto-Aussaat, Auto-Verkauf) inkl. Offline-Simulation | ✅ via §9.10 |
 | **4** | Prestige: Parzellen + Kompost | ✅ via §9.9 |
 | **5** | Beerensträucher (Wiederernte), Obstbäume | ✅ via §9.9 (passive Holz-Bäume offen) |
-| 6 | Hecken/Zier (Schönheits-Multiplikator), Cannabis + Lizenzen | offen |
+| 6 | Hecken/Zier (Schönheits-Multiplikator), Cannabis + Lizenzen | Zier ✅ via §9.11; Cannabis offen |
 | 7 | Achievements, Statistiken, Sound, Feinschliff & Balancing | offen |
 
 ### Phase-1-Balancing (Referenz, Werte in `data/plants.ts`)
@@ -367,6 +369,22 @@ v11 (Auftrags-Stufen/Auftraggeber/questStreak).
 
 Save-Format: v12 (`helperAcc`). XP-Vergabe liegt in `game/xp.ts`
 (geteilt von Aktionen und Helfern).
+
+### 9.11 Balance-Audit & Zierpflanzen
+
+**Balance-Werkzeug:** `npx tsx scripts/balance.sim.mjs [h aktiv/Tag]`
+spielt das Spiel mit dem echten Core durch und druckt Meilenstein-
+Zeiten. Gefundene & behobene Probleme: Stack-Overflow bei Massen-
+Level-Ups (Cap 50/Grant), Level-Ertragsbonus auf +100 % gedeckelt,
+Prestige-Spirale entschärft (Lifetime-Delta-Formel + Kompost-Softcap
+^0.7). Ziel-Pacing (2 h aktiv/Tag): Kürbis ~15 m, Prestige #1 ~45 m,
+Bäume Tag 1, Mondblume Tag ~4, Weltenbaum Tag ~10, Prestige ~1×/Tag.
+
+**Zierpflanzen (§3 #6 umgesetzt):** Nachtrose (+5 %, 250K),
+Leuchtlilie (+8 %, 8M), Sternenhecke (+12 %, 400M). Keine Ernte —
+ausgewachsen heben sie den globalen Verkaufspreis, solange sie ein
+Beet belegen (`beautyBonus`, wirkt über `sellMultiplier` auch für den
+Marktkarren). Aufträge/Lose klammern Zier aus; Helfer ignorieren sie.
 
 Der ursprüngliche Phasenplan (§8) läuft danach ab Phase 2 weiter;
 der Upgrade-Shop aus R4 ersetzt die Bewässerungs-Upgrades aus Phase 2.
