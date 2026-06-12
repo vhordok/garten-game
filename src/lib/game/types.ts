@@ -26,6 +26,9 @@ export interface PlantDef {
   /** ornamental plants: no harvest — while mature they add this fraction
    * to the global sell price ("Gartenschönheit", GAME_DESIGN §3) */
   beautyBonus?: number
+  /** timber trees: no harvest — while mature they trickle this much gold
+   * per second (sold as wood, so sell multipliers apply) */
+  passiveIncome?: number
   /** harvested units per harvest */
   yield: number
   /** money per harvested unit when sold */

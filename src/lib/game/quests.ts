@@ -26,7 +26,9 @@ export function questStreakBonus(s: GameState): number {
 export function generateQuest(s: GameState): QuestState {
   const tier = rollTier()
   const client = QUEST_CLIENTS[Math.floor(Math.random() * QUEST_CLIENTS.length)]
-  const unlocked = PLANTS.filter((p) => !p.beautyBonus && s.totalEarned >= p.unlockAtTotalEarned)
+  const unlocked = PLANTS.filter(
+    (p) => !p.beautyBonus && !p.passiveIncome && s.totalEarned >= p.unlockAtTotalEarned
+  )
   const plant = unlocked[Math.floor(Math.random() * unlocked.length)]
   // aim for a handful of harvests so orders stay snappy
   const harvests = 6 + Math.floor(Math.random() * 9) // 6..14

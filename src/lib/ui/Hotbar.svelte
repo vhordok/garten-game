@@ -13,6 +13,7 @@
     gemuese: 'Gemüse',
     beeren: 'Beeren',
     obst: 'Obst',
+    baeume: 'Bäume',
     zier: 'Zier',
     magie: 'Magie',
   }
@@ -122,6 +123,8 @@
             <span class="tip-profit num">
               {#if plant.beautyBonus}
                 +{Math.round(plant.beautyBonus * 100)} % Verkaufspreis, solange sie steht
+              {:else if plant.passiveIncome}
+                ≈ {formatNumber(plant.passiveIncome)} Gold/s passiv, sobald ausgewachsen
               {:else}
                 ≈ {formatNumber(steadyProfitPerSecond(plant))} Gold/s
                 {#if plant.regrowTime}

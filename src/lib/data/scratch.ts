@@ -36,7 +36,7 @@ export const SCRATCH_PRIZES: ScratchPrizeDef[] = [
 export function bestHarvestValue(state: GameState): number {
   let value = PLANTS[0].yield * PLANTS[0].sellValue
   for (const plant of PLANTS) {
-    if (plant.beautyBonus) continue
+    if (plant.beautyBonus || plant.passiveIncome) continue
     if (state.totalEarned >= plant.unlockAtTotalEarned) value = plant.yield * plant.sellValue
   }
   return value

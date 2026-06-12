@@ -661,13 +661,38 @@ test('weather events: rain waters, stars boost crits, boom boosts sales', () => 
   assert.equal(sellPlant('basilikum'), Math.round(300 * 1.5))
 })
 
+test('timber trees: mature trees trickle money through tick', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e15
+    selectPlant('eiche')
+    const oak = PLANTS.find((p) => p.id === 'eiche')
+    assert.ok(sowPlot(0))
+    tick(s, oak.growTime)
+    assert.equal(plotReady(s.plots[0]), false, 'trees are never harvestable')
+    s.marketTime = 0 // neutral market for exactness
+    const before = s.money
+    const earnedBefore = s.totalEarned
+    tick(s, 0.0001) // settle market clock effect ≈ none
+    const start = s.money
+    s.marketTime = 0
+    tick(s, 60)
+    const gained = s.money - start
+    assert.ok(gained > oak.passiveIncome * 60 * 0.9 && gained < oak.passiveIncome * 60 * 1.2,
+      `60s of oak should pay ≈${oak.passiveIncome * 60}, got ${Math.round(gained)}`)
+    assert.ok(s.totalEarned > earnedBefore, 'wood counts as earnings')
+    assert.ok(before <= s.money)
+  })
+})
+
 test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
   let lastUnlock = -1
   let lastProfit = 0
   for (const plant of PLANTS) {
     assert.ok(plant.unlockAtTotalEarned > lastUnlock || plant.unlockAtTotalEarned === 0, `${plant.id}: unlocks must ascend`)
-    if (plant.beautyBonus) {
-      assert.ok(plant.yield === 0 && plant.sellValue === 0, `${plant.id}: ornamentals never sell`)
+    if (plant.beautyBonus || plant.passiveIncome) {
+      assert.ok(plant.yield === 0 && plant.sellValue === 0, `${plant.id}: no harvest, no sale value`)
       lastUnlock = plant.unlockAtTotalEarned
       continue
     }

@@ -7,6 +7,7 @@ import {
   growthMultiplier,
   rollUnits,
   saleValue,
+  sellMultiplier,
   waterCharges,
   yieldMultiplier,
 } from './modifiers'
@@ -49,6 +50,17 @@ export function tick(state: GameState, dtSeconds: number): boolean {
       quest.skipCooldown = Math.max(quest.skipCooldown - dtSeconds, 0)
       changed = true
     }
+  }
+  // mature timber trees trickle wood money (sell multipliers apply)
+  for (const plot of state.plots) {
+    if (!plot.plantId) continue
+    const def = plantById(plot.plantId)
+    if (!def?.passiveIncome || plot.progress < def.growTime) continue
+    const gain = def.passiveIncome * dtSeconds * sellMultiplier(state)
+    state.money += gain
+    state.totalEarned += gain
+    state.lifetimeEarned += gain
+    changed = true
   }
   // weather events blow over
   if (state.weather.remaining > 0) {
@@ -146,6 +158,6 @@ function processHelpers(s: GameState, dt: number): boolean {
 export function plotReady(plot: PlotState): boolean {
   if (!plot.plantId) return false
   const def = plantById(plot.plantId)
-  if (!def || def.beautyBonus) return false
+  if (!def || def.beautyBonus || def.passiveIncome) return false
   return plot.progress >= cycleTime(plot, def)
 }

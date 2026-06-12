@@ -4,7 +4,7 @@
   import { gameStore } from '../game/state'
   import { cycleTime } from '../game/tick'
   import type { PlotState } from '../game/types'
-  import { formatDuration } from '../util/format'
+  import { formatDuration, formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
   import { celebrateLevelUps } from './fx/celebrate'
   import { coinBurst, leafBurst, legendaryBurst, perfectBurst, waterBurst } from './fx/particles'
@@ -23,7 +23,7 @@
   const target = $derived(def ? cycleTime(plot, def) : 0)
   const grown = $derived(def !== undefined && plot.progress >= target)
   // ornamentals never become harvestable — they just stand and shine
-  const mature = $derived(grown && def?.beautyBonus !== undefined)
+  const mature = $derived(grown && (def?.beautyBonus !== undefined || def?.passiveIncome !== undefined))
   const ready = $derived(grown && def?.beautyBonus === undefined)
   const fraction = $derived(def ? Math.min(plot.progress / target, 1) : 0)
   const remaining = $derived(def ? Math.max(target - plot.progress, 0) : 0)
@@ -133,7 +133,9 @@
 
   const title = $derived(
     mature && def
-      ? `${def.name} — verschönert den Garten: +${Math.round((def.beautyBonus ?? 0) * 100)} % Verkaufspreis · Shift-Klick: roden`
+      ? def.passiveIncome
+        ? `${def.name} — liefert ${formatNumber(def.passiveIncome)} Gold/s von selbst · Shift-Klick: roden`
+        : `${def.name} — verschönert den Garten: +${Math.round((def.beautyBonus ?? 0) * 100)} % Verkaufspreis · Shift-Klick: roden`
       : def && ready
         ? `${def.name} ernten${def.regrowTime ? ' — wächst danach von selbst nach' : ''}`
         : def
@@ -170,7 +172,9 @@
       />
     {/key}
     {#if mature && def}
-      <span class="beauty-tag num">+{Math.round((def.beautyBonus ?? 0) * 100)} %</span>
+      <span class="beauty-tag num" class:wood={def.passiveIncome}>
+        {def.passiveIncome ? `+${formatNumber(def.passiveIncome)}/s` : `+${Math.round((def.beautyBonus ?? 0) * 100)} %`}
+      </span>
     {:else if ready}
       <span class="ready-tag">Ernten!</span>
     {:else}
@@ -267,6 +271,11 @@
 
   .plot.mature {
     cursor: default;
+  }
+
+  .beauty-tag.wood {
+    background: var(--c-gold1);
+    box-shadow: 0 0 8px rgba(222, 158, 65, 0.6);
   }
 
   .beauty-tag {
