@@ -3,7 +3,7 @@
   import { Tween } from 'svelte/motion'
   import { xpToNext } from '../data/progression'
   import { anyUpgradeAffordable, compostGain, dailyClaimable, inventoryValue, leaseRequirement, questFulfillable, sellAll } from '../game/actions'
-  import { comboMultiplier, comboWindowSeconds, marketFactor } from '../game/modifiers'
+  import { comboMultiplier, comboWindowSeconds, marketFactor, maxScratchTickets } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -124,7 +124,11 @@
   {/if}
 
   {#if $gameStore.scratchTickets > 0}
-    <button class="pxbtn gold ticket num" onclick={onOpenScratch} title="Rubbellos gefunden — Glück versuchen!">
+    <button
+      class="pxbtn gold ticket num"
+      onclick={onOpenScratch}
+      title={`Rubbellose (${$gameStore.scratchTickets}/${maxScratchTickets($gameStore)}) — das Limit wächst mit deinem Level`}
+    >
       <PixelIcon name="los" scale={1} />
       {$gameStore.scratchTickets}
     </button>

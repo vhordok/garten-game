@@ -52,6 +52,7 @@ import {
   beautyMultiplier,
   comboWindowSeconds,
   marketFactor,
+  maxScratchTickets,
   scratchDropChance,
   growthMultiplier,
   offlineCapHours,
@@ -440,6 +441,50 @@ test('scratch tickets: drop on lucky harvests, capped pending', () => {
     assert.equal(tickets, 0)
     assert.equal(s.scratchTickets, CONFIG.scratchMaxPending)
   })
+})
+
+test('PHASE 0: ticket cap follows the gardener level (max(5, level))', () => {
+  const s = fresh()
+  // acceptance: level 1 and 5 cap at 5; level 10/44/50 cap at their level
+  for (const [level, cap] of [[1, 5], [5, 5], [10, 10], [44, 44], [50, 50]]) {
+    s.level = level
+    assert.equal(maxScratchTickets(s), cap, `level ${level} → cap ${cap}`)
+  }
+
+  // drops are no longer cut off at 5 for higher levels …
+  s.level = 10
+  s.scratchTickets = 7
+  withRngQueue([0.5, 0.5, 0.0], () => {
+    s.money = 100
+    sowPlot(0)
+    tick(s, 99999)
+    assert.equal(harvestPlot(0).tickets, 1)
+    assert.equal(s.scratchTickets, 8)
+  })
+  // … but the level cap still holds
+  s.scratchTickets = 10
+  withRngQueue([0.5, 0.5, 0.0], () => {
+    sowPlot(0)
+    tick(s, 99999)
+    assert.equal(harvestPlot(0).tickets, 0)
+    assert.equal(s.scratchTickets, 10)
+  })
+
+  // save/load keeps a big pocket at high level and clamps junk to the cap
+  s.level = 44
+  s.scratchTickets = 30
+  const code = exportSave()
+  fresh()
+  assert.notEqual(importSave(code), null)
+  assert.equal(getState().scratchTickets, 30, '30 tickets at level 44 survive')
+  const tampered = JSON.parse(Buffer.from(code, 'base64').toString())
+  tampered.state.scratchTickets = 999
+  assert.notEqual(importSave(JSON.stringify(tampered)), null)
+  assert.equal(getState().scratchTickets, 44, 'junk clamps to the level cap')
+  tampered.state.level = 2
+  tampered.state.scratchTickets = 7
+  assert.notEqual(importSave(JSON.stringify(tampered)), null)
+  assert.equal(getState().scratchTickets, 5, 'low levels still cap at 5')
 })
 
 test('scratch cards 2.0: draw pays nothing, settle grades the picks', () => {
