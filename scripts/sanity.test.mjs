@@ -33,7 +33,9 @@ import {
   sellPlant,
   settleScratchCard,
   skipQuest,
+  sowAllEmpty,
   sowPlot,
+  waterAllGrowing,
   upgradeLevel,
   waterPlot,
 } from '../src/lib/game/actions.ts'
@@ -525,6 +527,26 @@ test('turbo fertilizer: one charge doubles one harvest', () => {
       assert.equal(harvestPlot(0).units, expected)
     }
     assert.equal(s.fertilizerCharges, 0)
+  })
+})
+
+test('bulk actions: sow all empty, water all growing', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 100
+    assert.equal(sowAllEmpty(), CONFIG.startPlots)
+    assert.equal(s.plots.filter((p) => p.plantId !== null).length, CONFIG.startPlots)
+    assert.equal(waterAllGrowing(), CONFIG.startPlots)
+    for (const plot of s.plots) {
+      assert.ok(Math.abs(plot.progress - PLANTS[0].growTime * CONFIG.waterProgressBoost) < 1e-9)
+      assert.equal(plot.waterLeft, CONFIG.waterChargesPerCrop - 1)
+    }
+    assert.equal(sowAllEmpty(), 0, 'nothing empty left')
+    // money limit respected
+    const s2 = fresh()
+    s2.money = 2 // two basil seeds
+    assert.equal(sowAllEmpty(), 2)
+    assert.equal(s2.money, 0)
   })
 })
 

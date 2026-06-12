@@ -53,6 +53,44 @@ export function sowPlot(index: number): boolean {
   return true
 }
 
+/** Sow the selected plant on every affordable empty plot (bulk QoL). */
+export function sowAllEmpty(): number {
+  const s = getState()
+  const def = plantById(s.selectedPlantId)
+  if (!def || !isPlantUnlocked(def, s)) return 0
+  let count = 0
+  for (const plot of s.plots) {
+    if (plot.plantId !== null || s.money < def.seedCost) continue
+    s.money -= def.seedCost
+    plot.plantId = def.id
+    plot.progress = 0
+    plot.waterLeft = waterCharges(s)
+    plot.regrowing = false
+    s.stats.planted += 1
+    count += 1
+  }
+  if (count > 0) notify()
+  return count
+}
+
+/** Pour one watering charge on every growing plot that still has one. */
+export function waterAllGrowing(): number {
+  const s = getState()
+  let count = 0
+  for (const plot of s.plots) {
+    if (!plot.plantId || plot.waterLeft <= 0) continue
+    const def = plantById(plot.plantId)
+    if (!def) continue
+    const target = cycleTime(plot, def)
+    if (plot.progress >= target) continue
+    plot.progress = Math.min(plot.progress + target * CONFIG.waterProgressBoost, target)
+    plot.waterLeft -= 1
+    count += 1
+  }
+  if (count > 0) notify()
+  return count
+}
+
 /** Rip out a plant (no refund) — frees the plot for something better. */
 export function clearPlot(index: number): boolean {
   const s = getState()
