@@ -9,7 +9,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 13
+export const SAVE_VERSION = 14
 
 interface SaveEnvelope {
   version: number
@@ -150,6 +150,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 12:
       // v12 → v13: market-wave clock; defaults to 0.
       return { ...envelope, version: 13 }
+    case 13:
+      // v13 → v14: daily gift streak; defaults claimable.
+      return { ...envelope, version: 14 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -234,6 +237,11 @@ function sanitize(raw: unknown): GameState {
     sell: clampNumber(acc.sell, 0, 0, 3600),
   }
   state.marketTime = clampNumber(r.marketTime, 0, 0, 1e12)
+  const daily = (typeof r.daily === 'object' && r.daily !== null ? r.daily : {}) as Record<string, unknown>
+  state.daily = {
+    lastClaim: Math.floor(clampNumber(daily.lastClaim, 0, 0, 1e7)),
+    streak: Math.floor(clampNumber(daily.streak, 0, 0, 1e6)),
+  }
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
   state.questStreak = Math.floor(clampNumber(r.questStreak, 0, 0, 1e6))

@@ -4,7 +4,9 @@
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
   import { playSound } from './lib/ui/fx/audio'
+  import DailyPanel from './lib/ui/DailyPanel.svelte'
   import FxLayer from './lib/ui/fx/FxLayer.svelte'
+  import GoldenFirefly from './lib/ui/GoldenFirefly.svelte'
   import { registerShakeTarget } from './lib/ui/fx/shake'
   import Garden from './lib/ui/Garden.svelte'
   import Hotbar from './lib/ui/Hotbar.svelte'
@@ -24,7 +26,7 @@
   let { offline }: { offline: OfflineReport | null } = $props()
 
   let openPanel = $state<
-    'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'tutorial' | null
+    'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'tutorial' | null
   >(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
@@ -90,12 +92,14 @@
     onOpenQuests={() => (openPanel = 'quests')}
     onOpenScratch={() => (openPanel = 'scratch')}
     onOpenPrestige={() => (openPanel = 'prestige')}
+    onOpenDaily={() => (openPanel = 'daily')}
   />
   <main bind:this={stageEl}>
     <Garden />
   </main>
   <Hotbar />
 </div>
+<GoldenFirefly />
 <FxLayer />
 
 {#if openPanel === 'inventory'}
@@ -110,6 +114,8 @@
   <ScratchPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'prestige'}
   <PrestigePanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'daily'}
+  <DailyPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'tutorial'}
   <TutorialPanel onClose={closeTutorial} />
 {/if}

@@ -1407,6 +1407,26 @@ const marktkarren: SpriteGrid = [
   '................',
 ]
 
+/** Daily gift box, 16×16. */
+const geschenk: SpriteGrid = [
+  '................',
+  '................',
+  '......mm........',
+  '...mm.mm.mm.....',
+  '..m..mmmm..m....',
+  '...mmm..mmm.....',
+  '..oooooooooo....',
+  '..oOOOmmOOOo....',
+  '..oOOOmmOOOo....',
+  '..oooooooooo....',
+  '..oOOOmmOOOo....',
+  '..oOOOmmOOOo....',
+  '..oOOOmmOOOo....',
+  '..oooooooooo....',
+  '................',
+  '................',
+]
+
 /** Lucky scratch ticket, 16×16. */
 const los: SpriteGrid = [
   '................',
@@ -1579,6 +1599,7 @@ export const SPRITES: Record<string, SpriteGrid> = {
   marktkarren,
   scroll,
   los,
+  geschenk,
   coin,
   lock,
   gear,

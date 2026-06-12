@@ -17,8 +17,11 @@ import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
   buyUpgrade,
+  catchFirefly,
+  claimDaily,
   clearPlot,
   compostGain,
+  dailyClaimable,
   drawScratchCard,
   ensureQuests,
   fulfillQuest,
@@ -580,6 +583,44 @@ test('bulk actions: sow all empty, water all growing', () => {
     s2.money = 2 // two basil seeds
     assert.equal(sowAllEmpty(), 2)
     assert.equal(s2.money, 0)
+  })
+})
+
+test('daily gift: streak grows, resets after a gap, once per day', () => {
+  const s = fresh()
+  const DAY = 86400000
+  const base = Date.UTC(2026, 5, 20, 15) // afternoon avoids tz edge cases
+  assert.ok(dailyClaimable(s, base))
+  const r1 = claimDaily(base)
+  assert.ok(r1 && r1.day === 1 && r1.streak === 1 && r1.gold > 0)
+  assert.equal(claimDaily(base + 3600000), null, 'only once per day')
+
+  const r2 = claimDaily(base + DAY)
+  assert.ok(r2 && r2.day === 2 && r2.streak === 2)
+  assert.ok(r2.fertilizer > 0)
+
+  // a missed day breaks the streak
+  const r3 = claimDaily(base + 3 * DAY)
+  assert.ok(r3 && r3.streak === 1 && r3.day === 1)
+})
+
+test('golden firefly: rewards land in state', () => {
+  const s = fresh()
+  withRngQueue([0.0], () => {
+    const before = s.money
+    const r = catchFirefly()
+    assert.equal(r.kind, 'gold')
+    assert.equal(s.money, before + r.amount)
+  })
+  withRngQueue([0.6], () => {
+    const r = catchFirefly()
+    assert.equal(r.kind, 'ticket')
+    assert.equal(s.scratchTickets, 1)
+  })
+  withRngQueue([0.9], () => {
+    const r = catchFirefly()
+    assert.equal(r.kind, 'fertilizer')
+    assert.equal(s.fertilizerCharges, 3)
   })
 })
 

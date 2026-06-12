@@ -3,7 +3,7 @@
 
 import { CONFIG } from '../data/config'
 import { PLANTS, plantById } from '../data/plants'
-import { SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
+import { bestHarvestValue, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { questTier } from '../data/questFlavor'
 import {
@@ -528,6 +528,93 @@ export function refundScratchTicket(): void {
     s.scratchTickets += 1
     notify()
   }
+}
+
+/** Local day index (DST-safe enough for a daily gift). */
+function localDay(now: number): number {
+  return Math.floor((now - new Date(now).getTimezoneOffset() * 60000) / 86400000)
+}
+
+export interface DailyReward {
+  /** position in the 7-day cycle (1–7) */
+  day: number
+  streak: number
+  gold: number
+  tickets: number
+  fertilizer: number
+}
+
+export function dailyClaimable(state: GameState, now = Date.now()): boolean {
+  return localDay(now) > state.daily.lastClaim
+}
+
+/**
+ * Once per local day: a gift that grows along a 7-day streak (missing a day
+ * resets it). Gold gifts scale with the best unlocked harvest and never
+ * count as earnings.
+ */
+export function claimDaily(now = Date.now()): DailyReward | null {
+  const s = getState()
+  const day = localDay(now)
+  if (day <= s.daily.lastClaim) return null
+  s.daily.streak = day - s.daily.lastClaim === 1 ? s.daily.streak + 1 : 1
+  s.daily.lastClaim = day
+  const pos = ((s.daily.streak - 1) % 7) + 1
+  const hv = bestHarvestValue(s)
+  const reward: DailyReward = { day: pos, streak: s.daily.streak, gold: 0, tickets: 0, fertilizer: 0 }
+  switch (pos) {
+    case 1:
+      reward.gold = 5 * hv
+      break
+    case 2:
+      reward.fertilizer = 3
+      break
+    case 3:
+      reward.gold = 10 * hv
+      break
+    case 4:
+      reward.tickets = 1
+      break
+    case 5:
+      reward.fertilizer = 6
+      break
+    case 6:
+      reward.gold = 20 * hv
+      break
+    case 7:
+      reward.gold = 25 * hv
+      reward.tickets = 2
+      break
+  }
+  s.money += reward.gold
+  s.scratchTickets = Math.min(s.scratchTickets + reward.tickets, CONFIG.scratchMaxPending)
+  s.fertilizerCharges += reward.fertilizer
+  notify()
+  return reward
+}
+
+export interface FireflyReward {
+  kind: 'gold' | 'ticket' | 'fertilizer'
+  amount: number
+}
+
+/** The golden firefly was caught — a small random thank-you (gift, not earnings). */
+export function catchFirefly(): FireflyReward {
+  const s = getState()
+  const roll = Math.random()
+  let reward: FireflyReward
+  if (roll < 0.5) {
+    reward = { kind: 'gold', amount: 6 * bestHarvestValue(s) }
+    s.money += reward.amount
+  } else if (roll < 0.8 && s.scratchTickets < CONFIG.scratchMaxPending) {
+    reward = { kind: 'ticket', amount: 1 }
+    s.scratchTickets += 1
+  } else {
+    reward = { kind: 'fertilizer', amount: 3 }
+    s.fertilizerCharges += 3
+  }
+  notify()
+  return reward
 }
 
 /**

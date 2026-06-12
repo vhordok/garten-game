@@ -154,6 +154,8 @@ export interface GameState {
   helperAcc: { harvest: number; sow: number; sell: number }
   /** market-wave clock in seconds (advanced by tick, drives sell prices) */
   marketTime: number
+  /** daily gift: last claimed local day index + consecutive-day streak */
+  daily: { lastClaim: number; streak: number }
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

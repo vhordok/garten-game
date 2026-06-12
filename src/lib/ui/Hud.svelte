@@ -2,7 +2,7 @@
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
   import { xpToNext } from '../data/progression'
-  import { anyUpgradeAffordable, compostGain, inventoryValue, leaseRequirement, questFulfillable, sellAll } from '../game/actions'
+  import { anyUpgradeAffordable, compostGain, dailyClaimable, inventoryValue, leaseRequirement, questFulfillable, sellAll } from '../game/actions'
   import { comboMultiplier, comboWindowSeconds, marketFactor } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -17,6 +17,7 @@
     onOpenQuests,
     onOpenScratch,
     onOpenPrestige,
+    onOpenDaily,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
@@ -24,10 +25,12 @@
     onOpenQuests: () => void
     onOpenScratch: () => void
     onOpenPrestige: () => void
+    onOpenDaily: () => void
   } = $props()
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
   const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
+  const dailyReady = $derived(dailyClaimable($gameStore))
   const prestigeGain = $derived(compostGain($gameStore))
   const prestigeReady = $derived(prestigeGain >= leaseRequirement($gameStore))
   const showPrestige = $derived(prestigeGain >= 1 || $gameStore.parcels > 1)
@@ -124,6 +127,11 @@
       {$gameStore.scratchTickets}
     </button>
   {/if}
+
+  <button class="pxbtn" onclick={onOpenDaily} title="Tagesbonus — jeden Tag ein Geschenk">
+    <PixelIcon name="geschenk" scale={1} />
+    {#if dailyReady}<span class="dot" aria-hidden="true"></span>{/if}
+  </button>
 
   <button class="pxbtn" onclick={onOpenShop} title="Shop — dauerhafte Upgrades">
     <PixelIcon name="giesskanne" scale={1} />
