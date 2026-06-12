@@ -175,7 +175,7 @@ export function harvestAllReady(): HarvestResult {
     const result = harvestInternal(s, i, comboMult)
     units += result.units
     tickets += result.tickets
-    levelUps.push(...result.levelUps)
+    for (const up of result.levelUps) levelUps.push(up)
     if (CRIT_RANK[result.crit] > CRIT_RANK[best]) best = result.crit
   }
   if (units > 0) {
@@ -225,9 +225,14 @@ export function maxPlots(state: GameState): number {
   return CONFIG.maxPlots + (state.parcels - 1) * CONFIG.parcelExtraPlots
 }
 
-/** Compost earned by leasing a new parcel right now (GAME_DESIGN.md §6). */
+/**
+ * Compost earned by leasing a new parcel right now (GAME_DESIGN.md §6).
+ * Based on LIFETIME earnings minus compost already claimed — farming many
+ * tiny rounds gives nothing extra (balance audit).
+ */
 export function compostGain(state: GameState): number {
-  return Math.floor(Math.sqrt(state.totalEarned / CONFIG.prestigeBase))
+  const fromLifetime = Math.floor(Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase))
+  return Math.max(fromLifetime - state.compost, 0)
 }
 
 /**

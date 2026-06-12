@@ -19,17 +19,26 @@ function multiplierFor(state: GameState, effect: UpgradeEffect): number {
   return mult
 }
 
+/** Soft-capped compost points actually applied to the bonuses. */
+export function effectiveCompost(state: GameState): number {
+  return Math.pow(Math.max(state.compost, 0), CONFIG.compostSoftcapExp)
+}
+
 /** Growth speed factor applied to tick deltas (upgrades × compost). */
 export function growthMultiplier(state: GameState): number {
-  return multiplierFor(state, 'growth') * (1 + CONFIG.compostGrowthPerPoint * state.compost)
+  return multiplierFor(state, 'growth') * (1 + CONFIG.compostGrowthPerPoint * effectiveCompost(state))
 }
 
 /** Harvested-units factor: upgrades × compost × permanent level bonus. */
 export function yieldMultiplier(state: GameState): number {
+  const levelBonus = Math.min(
+    CONFIG.levelYieldPerLevel * Math.max(state.level - 1, 0),
+    CONFIG.levelYieldMaxBonus
+  )
   return (
     multiplierFor(state, 'yield') *
-    (1 + CONFIG.compostYieldPerPoint * state.compost) *
-    (1 + CONFIG.levelYieldPerLevel * Math.max(state.level - 1, 0))
+    (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
+    (1 + levelBonus)
   )
 }
 

@@ -580,9 +580,15 @@ test('prestige: compost payout, round reset, permanent perks stay', () => {
     assert.equal(maxPlots(s), CONFIG.maxPlots + CONFIG.parcelExtraPlots)
 
     // compost beats the lost upgrades? not necessarily — but it must apply:
+    const effective = Math.pow(2, CONFIG.compostSoftcapExp)
     const expectedYield =
-      (1 + CONFIG.compostYieldPerPoint * 2) * (1 + CONFIG.levelYieldPerLevel * 6)
+      (1 + CONFIG.compostYieldPerPoint * effective) * (1 + CONFIG.levelYieldPerLevel * 6)
     assert.ok(Math.abs(yieldMultiplier(s) - expectedYield) < 1e-9)
+
+    // lifetime-based: immediately prestiging again earns nothing extra
+    assert.equal(compostGain(s), 0, 'no compost from re-leasing without new earnings')
+    s.lifetimeEarned = 9 * CONFIG.prestigeBase // √9 = 3 total → 1 new point
+    assert.equal(compostGain(s), 1)
   })
 })
 

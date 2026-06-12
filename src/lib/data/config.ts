@@ -38,11 +38,16 @@ export const CONFIG = {
   prestigeBase: 1e6,
   /** additional plot cap per leased parcel */
   parcelExtraPlots: 4,
-  /** permanent bonuses per compost point */
+  /** permanent bonuses per EFFECTIVE compost point (see softcap below) */
   compostYieldPerPoint: 0.05,
   compostGrowthPerPoint: 0.02,
-  /** permanent yield bonus per gardener level above 1 */
+  /** effective points = compost^exp — soft cap against the prestige spiral
+   * (balance audit: linear bonus × accumulating compost ran away) */
+  compostSoftcapExp: 0.7,
+  /** permanent yield bonus per gardener level above 1, capped — otherwise
+   * level×compost feedback runs away in the late game (balance audit) */
   levelYieldPerLevel: 0.01,
+  levelYieldMaxBonus: 1.0,
   /** offline simulation cap; later extendable through upgrades (GAME_DESIGN.md §5) */
   offlineCapHours: 8,
   /** ignore gaps shorter than this when applying offline progress */

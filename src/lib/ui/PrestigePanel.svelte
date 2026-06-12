@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
   import { compostGain, leaseParcel } from '../game/actions'
+  import { effectiveCompost } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -13,7 +14,9 @@
   let { onClose }: { onClose: () => void } = $props()
 
   const gain = $derived(compostGain($gameStore))
-  const nextAt = $derived(CONFIG.prestigeBase * Math.pow(gain + 1, 2))
+  const nextAt = $derived(CONFIG.prestigeBase * Math.pow($gameStore.compost + gain + 1, 2))
+  const yieldPct = $derived(Math.round(effectiveCompost($gameStore) * CONFIG.compostYieldPerPoint * 100))
+  const growthPct = $derived(Math.round(effectiveCompost($gameStore) * CONFIG.compostGrowthPerPoint * 100))
 
   function handleLease() {
     if (
@@ -46,15 +49,13 @@
       <span>
         Parzelle {$gameStore.parcels} · {formatNumber($gameStore.compost)} Kompost
         {#if $gameStore.compost > 0}
-          (+{Math.round($gameStore.compost * CONFIG.compostYieldPerPoint * 100)} % Ertrag, +{Math.round(
-            $gameStore.compost * CONFIG.compostGrowthPerPoint * 100
-          )} % Tempo)
+          (+{yieldPct} % Ertrag, +{growthPct} % Tempo — sättigt sanft)
         {/if}
       </span>
     </div>
     <div class="row">
       <span class="label">Diese Runde</span>
-      <span>{formatNumber($gameStore.totalEarned)} verdient</span>
+      <span>{formatNumber($gameStore.totalEarned)} verdient · gesamt {formatNumber($gameStore.lifetimeEarned)}</span>
     </div>
     <div class="row gain-row" class:ready={gain >= 1}>
       <span class="label">Beim Pachten</span>
@@ -66,7 +67,7 @@
     {#if gain < 3}
       <div class="row">
         <span class="label">Nächster Punkt</span>
-        <span>ab {formatNumber(nextAt)} Runden-Einnahmen</span>
+        <span>ab {formatNumber(nextAt)} Gesamteinnahmen</span>
       </div>
     {/if}
   </div>
@@ -97,8 +98,8 @@
   </button>
   {#if gain < 1}
     <p class="hint">
-      Verdiene mindestens {formatNumber(CONFIG.prestigeBase)} in dieser Runde, um den ersten Kompost zu
-      ernten.
+      Kompost richtet sich nach deinen Gesamteinnahmen — ab {formatNumber(nextAt)} liegt der nächste
+      Punkt bereit.
     </p>
   {/if}
 </Overlay>
