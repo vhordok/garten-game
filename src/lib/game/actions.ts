@@ -6,6 +6,7 @@ import { PLANTS, plantById } from '../data/plants'
 import { bestHarvestValue, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { questTier } from '../data/questFlavor'
+import { LICENSES } from '../data/licenses'
 import { weatherById } from '../data/weather'
 import {
   comboMultiplier,
@@ -27,7 +28,19 @@ import { cycleTime, plotReady } from './tick'
 import type { GameState, PlantDef, UpgradeDef } from './types'
 
 export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
+  if (def.requiresLicense && state.licenses < def.requiresLicense) return false
   return state.totalEarned >= def.unlockAtTotalEarned
+}
+
+/** Buy the next cannabis license (money sink with hard requirements). */
+export function buyLicense(): boolean {
+  const s = getState()
+  const next = LICENSES.find((l) => l.level === s.licenses + 1)
+  if (!next || !next.requirementMet(s) || s.money < next.cost) return false
+  s.money -= next.cost
+  s.licenses = next.level
+  notify()
+  return true
 }
 
 export function selectPlant(plantId: string): void {

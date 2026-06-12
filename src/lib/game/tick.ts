@@ -35,7 +35,12 @@ export function tick(state: GameState, dtSeconds: number): boolean {
     if (!def) continue
     const target = cycleTime(plot, def)
     if (plot.progress < target) {
-      plot.progress = Math.min(plot.progress + grownSeconds, target)
+      // cannabis care: under-watered plants crawl at half speed
+      const care =
+        def.needsWateringLevel && (state.upgrades['giesskanne'] ?? 0) < def.needsWateringLevel
+          ? 0.5
+          : 1
+      plot.progress = Math.min(plot.progress + grownSeconds * care, target)
       changed = true
     }
   }

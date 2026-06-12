@@ -10,7 +10,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 16
+export const SAVE_VERSION = 17
 
 interface SaveEnvelope {
   version: number
@@ -160,6 +160,9 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 15:
       // v15 → v16: achievements list; defaults empty (re-earned via checks).
       return { ...envelope, version: 16 }
+    case 16:
+      // v16 → v17: cannabis licenses; default 0.
+      return { ...envelope, version: 17 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -261,6 +264,7 @@ function sanitize(raw: unknown): GameState {
     }
   }
   state.achievements = achievements
+  state.licenses = Math.floor(clampNumber(r.licenses, 0, 0, 3))
 
   state.questCounter = Math.floor(clampNumber(r.questCounter, 0))
   state.questStreak = Math.floor(clampNumber(r.questStreak, 0, 0, 1e6))

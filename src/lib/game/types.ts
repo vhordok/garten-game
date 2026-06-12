@@ -35,6 +35,10 @@ export interface PlantDef {
   sellValue: number
   /** available once lifetime earnings (totalEarned) reach this value */
   unlockAtTotalEarned: number
+  /** cannabis: additionally requires this license level (see data/licenses) */
+  requiresLicense?: number
+  /** cannabis care: below this Gießkannen-Stufe the plant grows at half speed */
+  needsWateringLevel?: number
 }
 
 export type UpgradeEffect =
@@ -163,6 +167,8 @@ export interface GameState {
   weather: { id: string | null; remaining: number }
   /** unlocked achievement ids — each grants +1 % permanent yield */
   achievements: string[]
+  /** cannabis license level owned (0–3), survives prestige */
+  licenses: number
   stats: GameStats
   /** epoch ms of the first game start */
   createdAt: number

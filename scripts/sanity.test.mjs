@@ -15,6 +15,7 @@ import { PLANTS, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
+  buyLicense,
   buyPlot,
   buyUpgrade,
   catchFirefly,
@@ -706,6 +707,37 @@ test('achievements: tick unlocks them, each grants +1 % yield', () => {
     fresh()
     importSave(code)
     assert.equal(getState().achievements.length, count)
+  })
+})
+
+test('cannabis: license-gated, requirements enforced, care malus', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e15
+    s.totalEarned = 1e15
+    const hemp = PLANTS.find((p) => p.id === 'cbdhanf')
+    assert.ok(hemp.requiresLicense === 1)
+    selectPlant('cbdhanf')
+    assert.notEqual(s.selectedPlantId, 'cbdhanf', 'no license, no selection')
+
+    assert.equal(buyLicense(), false, 'requirement (parcels ≥ 2) not met')
+    s.parcels = 2
+    assert.ok(buyLicense())
+    assert.equal(s.licenses, 1)
+    selectPlant('cbdhanf')
+    assert.equal(s.selectedPlantId, 'cbdhanf')
+
+    // care malus: without Gießkanne 5 the plant grows at half speed
+    assert.ok(sowPlot(0))
+    tick(s, hemp.growTime)
+    assert.equal(plotReady(s.plots[0]), false, 'under-watered hemp is slow')
+    tick(s, hemp.growTime)
+    assert.ok(plotReady(s.plots[0]))
+
+    // licenses survive prestige
+    s.lifetimeEarned = 1e15
+    assert.ok(leaseParcel() > 0)
+    assert.equal(s.licenses, 1)
   })
 })
 

@@ -1521,6 +1521,107 @@ const mammutbaum3: SpriteGrid = [
   '................',
 ]
 
+const cbdhanf1: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '......l.........',
+  '....l.F.l.......',
+  '.....lFl........',
+  '......f.........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const cbdhanf2: SpriteGrid = [
+  '................',
+  '................',
+  '......l.........',
+  '..l...F...l.....',
+  '...l..F..l......',
+  '....lfFfl.......',
+  '..llfFFFfll.....',
+  '.....fFf........',
+  '......F.........',
+  '......f.........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const cbdhanf3: SpriteGrid = [
+  '......L.........',
+  '..L...F...L.....',
+  '...L..F..L......',
+  '....LfFfL.......',
+  '..LLfFFFfLL.....',
+  '.....fFf........',
+  '..l...F...l.....',
+  '...lfFFFfl......',
+  '.....fFf........',
+  '......F.........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const medizinalhanf1 = cbdhanf1
+const medizinalhanf2 = cbdhanf2
+
+const medizinalhanf3: SpriteGrid = [
+  '......W.........',
+  '..W...F...W.....',
+  '...L..F..L......',
+  '....LfFfL.......',
+  '..LLfFFFfLL.....',
+  '..W..fFf..W.....',
+  '..l...F...l.....',
+  '...lfFFFfl......',
+  '..W..fFf..W.....',
+  '......F.........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const goldhanf1 = cbdhanf1
+const goldhanf2 = cbdhanf2
+
+const goldhanf3: SpriteGrid = [
+  '......y.........',
+  '..y...F...y.....',
+  '...y..F..y......',
+  '....yfFfy.......',
+  '..yyfFFFfyy.....',
+  '..O..fFf..O.....',
+  '..l...F...l.....',
+  '...lfFFFfl......',
+  '..O..fFf..O.....',
+  '......F.........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
 /** Trophy for the achievements panel, 16×16. */
 const pokal: SpriteGrid = [
   '................',
@@ -1716,6 +1817,15 @@ export const SPRITES: Record<string, SpriteGrid> = {
   'drachenfrucht-1': drachenfrucht1,
   'drachenfrucht-2': drachenfrucht2,
   'drachenfrucht-3': drachenfrucht3,
+  'cbdhanf-1': cbdhanf1,
+  'cbdhanf-2': cbdhanf2,
+  'cbdhanf-3': cbdhanf3,
+  'medizinalhanf-1': medizinalhanf1,
+  'medizinalhanf-2': medizinalhanf2,
+  'medizinalhanf-3': medizinalhanf3,
+  'goldhanf-1': goldhanf1,
+  'goldhanf-2': goldhanf2,
+  'goldhanf-3': goldhanf3,
   'mondblume-1': mondblume1,
   'mondblume-2': mondblume2,
   'mondblume-3': mondblume3,
