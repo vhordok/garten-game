@@ -305,7 +305,7 @@ Glücks-Kick im Stil von Rubbellosen.
    überspringt 15 % der Wachszeit, 3 Ladungen pro Aussaat
    (Tropfen-Pips am Beet, Splash-FX). Bewusst als Aktion statt im
    Tick — Offline-Verhalten bleibt unverändert.
-3. **Rubbellose:** 4 % Drop-Chance pro geerntetem Beet (Cap 5,
+3. **Rubbellose:** 4 % Drop-Chance pro geerntetem Beet (Vorrats-Limit = max(5, Gärtner-Level),
    HUD-Knopf wackelt). Rubbel-Overlay mit 9 Feldern, drei gleiche
    Symbole zeigen den Gewinn; der Preis ist beim Ziehen bereits
    verbucht (Abbruch verliert nichts). Gewichtete Preistabelle in

@@ -13,6 +13,7 @@ import {
   comboWindowSeconds,
   critChanceBonus,
   critWeatherMult,
+  maxScratchTickets,
   rollUnits,
   saleValue,
   scratchDropChance,
@@ -191,7 +192,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
     plot.regrowing = false
   }
   let tickets = 0
-  if (Math.random() < scratchDropChance(s, cycleSeconds) && s.scratchTickets < CONFIG.scratchMaxPending) {
+  if (Math.random() < scratchDropChance(s, cycleSeconds) && s.scratchTickets < maxScratchTickets(s)) {
     s.scratchTickets += 1
     tickets = 1
   }
@@ -420,7 +421,7 @@ export function fulfillQuest(questId: number): QuestReward | null {
   s.stats.sold += quest.amount
   s.questStreak += 1
   let bonusTicket = false
-  if (questTier(quest.tier).bonusTicket && s.scratchTickets < CONFIG.scratchMaxPending) {
+  if (questTier(quest.tier).bonusTicket && s.scratchTickets < maxScratchTickets(s)) {
     s.scratchTickets += 1
     bonusTicket = true
   }
@@ -543,7 +544,7 @@ export function settleScratchCard(card: ScratchCard, picked: string[]): ScratchO
 /** Give a drawn but unscratched ticket back (panel closed early). */
 export function refundScratchTicket(): void {
   const s = getState()
-  if (s.scratchTickets < CONFIG.scratchMaxPending) {
+  if (s.scratchTickets < maxScratchTickets(s)) {
     s.scratchTickets += 1
     notify()
   }
@@ -606,7 +607,7 @@ export function claimDaily(now = Date.now()): DailyReward | null {
       break
   }
   s.money += reward.gold
-  s.scratchTickets = Math.min(s.scratchTickets + reward.tickets, CONFIG.scratchMaxPending)
+  s.scratchTickets = Math.min(s.scratchTickets + reward.tickets, maxScratchTickets(s))
   s.fertilizerCharges += reward.fertilizer
   notify()
   return reward
@@ -650,7 +651,7 @@ export function catchFirefly(): FireflyReward {
   if (roll < 0.5) {
     reward = { kind: 'gold', amount: 6 * bestHarvestValue(s) }
     s.money += reward.amount
-  } else if (roll < 0.8 && s.scratchTickets < CONFIG.scratchMaxPending) {
+  } else if (roll < 0.8 && s.scratchTickets < maxScratchTickets(s)) {
     reward = { kind: 'ticket', amount: 1 }
     s.scratchTickets += 1
   } else {

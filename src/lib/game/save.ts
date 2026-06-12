@@ -3,6 +3,7 @@
 
 import { achievementById } from '../data/achievements'
 import { CONFIG } from '../data/config'
+import { maxScratchTickets } from './modifiers'
 import { PLANTS, plantById } from '../data/plants'
 import { questSlots } from '../data/progression'
 import { QUEST_CLIENTS, QUEST_TIERS } from '../data/questFlavor'
@@ -237,7 +238,7 @@ function sanitize(raw: unknown): GameState {
   // combo is session-only by design: loading always starts chainless
   state.combo = { count: 0, remaining: 0 }
 
-  state.scratchTickets = Math.floor(clampNumber(r.scratchTickets, 0, 0, CONFIG.scratchMaxPending))
+  state.scratchTickets = Math.floor(clampNumber(r.scratchTickets, 0, 0, maxScratchTickets(state)))
   state.fertilizerCharges = Math.floor(clampNumber(r.fertilizerCharges, 0, 0, 999))
 
   const acc = (typeof r.helperAcc === 'object' && r.helperAcc !== null ? r.helperAcc : {}) as Record<

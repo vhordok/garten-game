@@ -20,6 +20,8 @@ export const CONFIG = {
    * slow/expensive plants find tickets, basil spam does not */
   scratchDropPerMinute: 0.02,
   scratchDropCap: 0.35,
+  /** MINIMUM ticket pocket — the real cap grows with the gardener level,
+   * see maxScratchTickets() in game/modifiers.ts (PHASE 0) */
   scratchMaxPending: 5,
   /** pick 3 of 9: the full triple (1-in-84) pays ×mult; two equal picked
    * symbols pay a share of THAT symbol's prize; otherwise consolation */

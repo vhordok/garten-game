@@ -112,6 +112,11 @@ export function scratchDropChance(state: GameState, cycleSeconds: number): numbe
   return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }
 
+/** Ticket pocket size: at least 5, then one per gardener level. */
+export function maxScratchTickets(state: GameState): number {
+  return Math.max(CONFIG.scratchMaxPending, state.level)
+}
+
 /** Offline simulation cap in hours. */
 export function offlineCapHours(state: GameState): number {
   return CONFIG.offlineCapHours + effectBonus(state, 'offlineCap')
