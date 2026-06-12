@@ -308,8 +308,9 @@
     position: absolute;
     top: 4px;
     right: 4px;
-    font-size: 0.62rem;
-    color: var(--c-cloud);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--c-white);
     padding: 0 4px;
   }
 

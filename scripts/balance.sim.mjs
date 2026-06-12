@@ -93,7 +93,7 @@ while (t < SIM_DAYS * DAY) {
     }
     // prestige once it pays meaningfully more than current compost
     const gain = compostGain(s)
-    if (gain >= Math.max(2, Math.ceil(s.compost * 0.6))) {
+    if (gain >= Math.max(s.parcels, 2)) {
       prestiges += 1
       note(`prestige-${prestiges}`, `Prestige #${prestiges} (+${gain} Kompost, gesamt ${s.compost + gain})`, t)
       leaseParcel()

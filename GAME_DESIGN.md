@@ -380,6 +380,16 @@ Prestige-Spirale entschärft (Lifetime-Delta-Formel + Kompost-Softcap
 ^0.7). Ziel-Pacing (2 h aktiv/Tag): Kürbis ~15 m, Prestige #1 ~45 m,
 Bäume Tag 1, Mondblume Tag ~4, Weltenbaum Tag ~10, Prestige ~1×/Tag.
 
+**Feedback-Runde (Spieler-Test):** Rubbellos wertet jetzt die drei
+GERUBBELTEN Symbole: jedes Paar = Teilgewinn des jeweiligen Symbols,
+der versteckte Drilling (1/84) = Hauptgewinn ×10; Abbruch erstattet.
+Los-Drops skalieren mit der Wuchszeit (0.02/min, Cap 35 %) statt pro
+Klick — Basilikum-Spam bringt nichts mehr. Kompost kräftiger
+(+25 % Ertrag/+10 % Tempo je effektivem Punkt) bei härterem Softcap
+(^0.5); Pachten erst ab Gewinn ≥ Parzellenzahl — selten und wuchtig
+statt Mini-Prestiges. Ertrags-% überall erklärt (Chance auf
+Extra-Einheiten). Ziffern größer/heller (Lesbarkeit).
+
 **Zierpflanzen (§3 #6 umgesetzt):** Nachtrose (+5 %, 250K),
 Leuchtlilie (+8 %, 8M), Sternenhecke (+12 %, 400M). Keine Ernte —
 ausgewachsen heben sie den globalen Verkaufspreis, solange sie ein

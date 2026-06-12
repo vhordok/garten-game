@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
-  import { compostGain, leaseParcel } from '../game/actions'
+  import { compostGain, leaseParcel, leaseRequirement } from '../game/actions'
   import { effectiveCompost } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -14,6 +14,7 @@
   let { onClose }: { onClose: () => void } = $props()
 
   const gain = $derived(compostGain($gameStore))
+  const required = $derived(leaseRequirement($gameStore))
   const nextAt = $derived(CONFIG.prestigeBase * Math.pow($gameStore.compost + gain + 1, 2))
   const yieldPct = $derived(Math.round(effectiveCompost($gameStore) * CONFIG.compostYieldPerPoint * 100))
   const growthPct = $derived(Math.round(effectiveCompost($gameStore) * CONFIG.compostGrowthPerPoint * 100))
@@ -93,15 +94,20 @@
     </div>
   </div>
 
-  <button class="pxbtn gold full num" disabled={gain < 1} onclick={handleLease}>
+  <button class="pxbtn gold full num" disabled={gain < required} onclick={handleLease}>
     Parzelle {$gameStore.parcels + 1} pachten — +{formatNumber(gain)} Kompost
   </button>
-  {#if gain < 1}
+  {#if gain < required}
     <p class="hint">
-      Kompost richtet sich nach deinen Gesamteinnahmen — ab {formatNumber(nextAt)} liegt der nächste
-      Punkt bereit.
+      Parzelle {$gameStore.parcels + 1} braucht mindestens <b>+{required} Kompost</b> auf einmal —
+      Kompost wächst mit deinen Gesamteinnahmen (nächster Punkt ab {formatNumber(nextAt)}). Lieber
+      selten und wuchtig als oft und wirkungslos.
     </p>
   {/if}
+  <p class="hint">
+    Ertrags-% wirken als Chance: +25 % heißt, jede Ernte bringt im Schnitt das 1,25-fache — der Bonus
+    würfelt pro Ernte eine Extra-Einheit aus.
+  </p>
 </Overlay>
 
 <style>

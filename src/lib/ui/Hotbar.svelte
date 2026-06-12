@@ -208,8 +208,8 @@
     position: absolute;
     top: 1px;
     left: 4px;
-    font-size: 0.65rem;
-    color: var(--c-mist);
+    font-size: 0.72rem;
+    color: var(--c-cloud);
   }
 
   .regrow {
@@ -236,7 +236,7 @@
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-size: 0.7rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--c-gold2);
   }

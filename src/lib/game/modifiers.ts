@@ -85,9 +85,14 @@ export function critChanceBonus(state: GameState): number {
   return effectBonus(state, 'critChance')
 }
 
-/** Chance per harvested plot to find a scratch ticket. */
-export function scratchDropChance(state: GameState): number {
-  return CONFIG.scratchDropChance + effectBonus(state, 'scratchLuck')
+/**
+ * Chance to find a scratch ticket when harvesting a crop with the given
+ * cycle time — proportional to time invested, so quick herbs barely drop
+ * and slow trees feel lucky.
+ */
+export function scratchDropChance(state: GameState, cycleSeconds: number): number {
+  const perMinute = CONFIG.scratchDropPerMinute + effectBonus(state, 'scratchLuck')
+  return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }
 
 /** Offline simulation cap in hours. */

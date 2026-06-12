@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
+  import { CONFIG } from '../data/config'
   import {
     drawScratchCard,
     refundScratchTicket,
@@ -36,8 +37,8 @@
   }
 
   const GRADE_LABEL: Record<ScratchOutcome['grade'], string> = {
-    voll: 'Volltreffer!',
-    teil: 'Fast! 2 Treffer',
+    voll: `HAUPTGEWINN ×${CONFIG.scratchFullMult}!`,
+    teil: '2 Treffer — Teilgewinn',
     trost: 'Trostpreis',
   }
 
@@ -56,8 +57,7 @@
     burst(cx, cy, { colors: ['mist', 'silver', 'gold2'], count: 6, speed: 70, lift: 50, ttl: 0.45, sizeMax: 3 })
 
     if (picked.length === PICKS) {
-      const matched = picked.filter((i) => card!.symbols[i] === card!.symbol).length
-      outcome = settleScratchCard(card, matched)
+      outcome = settleScratchCard(card, picked.map((idx) => card!.symbols[idx]))
       if (outcome.grade === 'voll') {
         if (card.prizeType === 'jackpot') {
           legendaryBurst(cx, cy)
@@ -88,8 +88,9 @@
 <Overlay title="Rubbellos" {onClose}>
   {#if card}
     <p class="hint">
-      Rubbel genau <b>{PICKS} Felder</b> frei: 3 gleiche Symbole = Hauptgewinn, 2 gleiche = Teilgewinn —
-      und ein Trostpreis ist dir sicher.
+      Rubbel genau <b>{PICKS} Felder</b> frei. Irgendein Paar = Teilgewinn des Symbols, der versteckte
+      Drilling = <b>Hauptgewinn ×{CONFIG.scratchFullMult}</b> (trifft ~1 von 84 Losen) — und ein
+      Trostpreis ist dir sicher.
     </p>
     <div class="board">
       {#each card.symbols as symbol, i (i)}
@@ -98,7 +99,7 @@
           class="cell"
           class:revealed={isPicked || done}
           class:dimmed={done && !isPicked}
-          class:hit={done && isPicked && symbol === card.symbol}
+          class:hit={done && isPicked && outcome !== null && symbol === outcome.symbol}
           onclick={(e) => pick(i, e)}
           aria-label="Feld aufdecken"
         >
@@ -115,7 +116,7 @@
       <p class="picks-left num">Noch {PICKS - picked.length} Feld{PICKS - picked.length === 1 ? '' : 'er'} frei rubbeln …</p>
     {:else if outcome}
       <div class="result num" class:jackpot={card.prizeType === 'jackpot' && outcome.grade === 'voll'}>
-        {GRADE_LABEL[outcome.grade]} +{formatNumber(outcome.amount)} {PRIZE_LABEL[card.prizeType]}
+        {GRADE_LABEL[outcome.grade]} +{formatNumber(outcome.amount)} {PRIZE_LABEL[outcome.prizeType]}
       </div>
       {#if $gameStore.scratchTickets > 0}
         <button class="pxbtn gold full num" onclick={nextCard}>

@@ -2,7 +2,7 @@
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
   import { xpToNext } from '../data/progression'
-  import { anyUpgradeAffordable, compostGain, inventoryValue, questFulfillable, sellAll } from '../game/actions'
+  import { anyUpgradeAffordable, compostGain, inventoryValue, leaseRequirement, questFulfillable, sellAll } from '../game/actions'
   import { comboMultiplier, comboWindowSeconds } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -29,6 +29,7 @@
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
   const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
   const prestigeGain = $derived(compostGain($gameStore))
+  const prestigeReady = $derived(prestigeGain >= leaseRequirement($gameStore))
   const showPrestige = $derived(prestigeGain >= 1 || $gameStore.parcels > 1)
 
   const stockValue = $derived(inventoryValue($gameStore))
@@ -126,7 +127,7 @@
   {#if showPrestige}
     <button class="pxbtn" onclick={onOpenPrestige} title="Neue Parzelle pachten — Kompost wirkt für immer">
       <PixelIcon name="duenger" scale={1} />
-      {#if prestigeGain >= 1}<span class="dot prestige" aria-hidden="true"></span>{/if}
+      {#if prestigeReady}<span class="dot prestige" aria-hidden="true"></span>{/if}
     </button>
   {/if}
 
@@ -203,8 +204,8 @@
   }
 
   .xp-text {
-    font-size: 0.62rem;
-    color: var(--c-mist);
+    font-size: 0.72rem;
+    color: var(--c-cloud);
   }
 
   .logo {
@@ -273,7 +274,7 @@
   }
 
   .combo-count {
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--c-mist);
