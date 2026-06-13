@@ -44,6 +44,38 @@ export function yieldMultiplier(state: GameState): number {
   )
 }
 
+/** Mastery level for a plant from its lifetime harvested units (PHASE 11). */
+export function masteryLevel(harvested: number): number {
+  if (harvested <= 0) return 0
+  return Math.min(CONFIG.masteryMaxLevel, Math.floor(Math.log2(harvested / CONFIG.masteryBase + 1)))
+}
+
+/** Units harvested needed to reach the given mastery level (UI progress). */
+export function masteryThreshold(level: number): number {
+  return Math.round(CONFIG.masteryBase * (2 ** level - 1))
+}
+
+/** Per-plant yield factor from mastery — rewards sticking with a plant. */
+export function masteryYieldBonus(state: GameState, plantId: string): number {
+  return 1 + CONFIG.masteryYieldPerLevel * masteryLevel(state.mastery[plantId] ?? 0)
+}
+
+/** Owned specialisation level for a category (0 = none). */
+export function specializationLevel(state: GameState, category: string): number {
+  return state.specializations[category] ?? 0
+}
+
+/** Per-category yield factor from gold-bought specialisation (PHASE 11 sink). */
+export function specializationYieldBonus(state: GameState, category: string): number {
+  return 1 + CONFIG.specYieldPerLevel * specializationLevel(state, category)
+}
+
+/** Gold cost of the next specialisation level, or null when maxed. */
+export function specializationCost(level: number): number | null {
+  if (level >= CONFIG.specMaxLevel) return null
+  return Math.floor(CONFIG.specBaseCost * Math.pow(CONFIG.specCostFactor, level))
+}
+
 /** Garden beauty: mature ornamental plots raise the global sell price. */
 export function beautyMultiplier(state: GameState): number {
   let bonus = 0

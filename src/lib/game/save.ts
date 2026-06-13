@@ -11,7 +11,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 19
+export const SAVE_VERSION = 20
 
 interface SaveEnvelope {
   version: number
@@ -171,6 +171,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v18 → v19: separate auto-sow plant for the gnome; sanitize() defaults
       // it to null (= keep following the manual selection, old behavior).
       return { ...envelope, version: 19 }
+    case 19:
+      // v19 → v20: plant mastery + category specialisations; sanitize() defaults
+      // both to empty maps (= no bonuses yet, old saves unaffected).
+      return { ...envelope, version: 20 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -190,6 +194,30 @@ function sanitize(raw: unknown): GameState {
   state.lifetimeEarned = clampNumber(r.lifetimeEarned, state.totalEarned, state.totalEarned)
   state.parcels = Math.floor(clampNumber(r.parcels, 1, 1, 1000))
   state.compost = Math.floor(clampNumber(r.compost, 0, 0, 1e9))
+
+  // per-plant mastery XP — keep only known plants, clamp to a sane ceiling
+  const mastery: Record<string, number> = {}
+  if (typeof r.mastery === 'object' && r.mastery !== null) {
+    for (const [id, value] of Object.entries(r.mastery)) {
+      if (!plantById(id)) continue
+      const n = Math.floor(clampNumber(value, 0, 0, 1e15))
+      if (n > 0) mastery[id] = n
+    }
+  }
+  state.mastery = mastery
+
+  // per-category specialisation levels — keep only real categories
+  const categories = new Set<string>(PLANTS.map((p) => p.category))
+  const specializations: Record<string, number> = {}
+  if (typeof r.specializations === 'object' && r.specializations !== null) {
+    for (const [cat, value] of Object.entries(r.specializations)) {
+      if (!categories.has(cat)) continue
+      const n = Math.floor(clampNumber(value, 0, 0, CONFIG.specMaxLevel))
+      if (n > 0) specializations[cat] = n
+    }
+  }
+  state.specializations = specializations
+
   state.level = Math.floor(clampNumber(r.level, 1, 1, 9999))
   state.xp = clampNumber(r.xp, 0)
   state.createdAt = clampNumber(r.createdAt, state.createdAt)

@@ -138,6 +138,12 @@ export interface GameState {
   parcels: number
   /** prestige currency: permanent yield/growth bonuses */
   compost: number
+  /** per-plant mastery XP (= lifetime units harvested of each plant); survives
+   * prestige, drives a permanent per-plant yield bonus (PHASE 11) */
+  mastery: Record<string, number>
+  /** per-category specialisation level, bought with gold; survives prestige,
+   * drives a permanent per-category yield bonus (PHASE 11 gold sink) */
+  specializations: Record<string, number>
   /** gardener level (starts at 1); gates quest slots and future QoL */
   level: number
   /** progress within the current level (resets each level-up) */

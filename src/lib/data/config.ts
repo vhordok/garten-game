@@ -63,4 +63,17 @@ export const CONFIG = {
   offlineMinSeconds: 10,
   autosaveSeconds: 10,
   saveKey: 'garten-imperium-save',
+  /** plant mastery (PHASE 11): level = floor(log2(harvested / base + 1)),
+   * capped; each level adds masteryYieldPerLevel to THAT plant's yield. Makes
+   * sticking with / returning to a plant pay off — fights "newest plant wins". */
+  masteryBase: 120,
+  masteryMaxLevel: 10,
+  masteryYieldPerLevel: 0.1,
+  /** category specialisation (PHASE 11 gold sink): permanent per-category yield
+   * bonus, bought with gold. Cost grows ×specCostFactor per level so you must
+   * choose which categories to invest in rather than maxing everything. */
+  specYieldPerLevel: 0.08,
+  specBaseCost: 5e6,
+  specCostFactor: 3.4,
+  specMaxLevel: 25,
 } as const

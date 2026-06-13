@@ -94,15 +94,9 @@
 
   function doClear(cx: number, cy: number) {
     if (!def) return
-    // permanent plants are an investment — ask before ripping them out
-    const permanent = def.regrowTime !== undefined || def.beautyBonus !== undefined || def.passiveIncome !== undefined
-    const refundPreview = Math.floor(def.seedCost / 2)
-    if (
-      permanent &&
-      !window.confirm(`${def.name} wirklich roden? Du bekommst ${formatNumber(refundPreview)} Gold (50 % Saatpreis) zurück.`)
-    ) {
-      return
-    }
+    // Roden is a normal endgame action, not a catastrophe — no blocking
+    // confirm. A single tap in Roden-Modus is deliberate enough; the 50 %
+    // refund softens it, and "Alles roden" offers an undo (PHASE 11).
     const refund = clearPlot(index)
     if (refund !== null) {
       if (refund > 0) spawnFloater(`+${formatNumber(refund)}`, 'gain')

@@ -83,5 +83,7 @@ Los-Limit am Level (P0), Softlock/Roden (P1), Lager-Teilverkauf/
 Auftragsschutz (P2), Auto-Saat-Pin & faire Auto-Ernte (P3), Desktop-Topbar/
 Event-Feld (P4), Mobile/Touch (P5), Balancing-Sim (P6), Subsystem-Balance
 (P7), Quests/Begriffe & Ernteprodukte (P8), Sorten-Verdopplung (P9),
-kategoriespezifische Setzlinge (P10) — 42 Sorten in 8 Kategorien,
-Stand SAVE_VERSION 19.
+kategoriespezifische Setzlinge (P10), Gesamt-QA & Softlock-Härtung (P11).
+Endgame 2.0 (§9.13): Massenroden+Undo (kein Confirm), Pflanzen-Meisterschaft
+und Kategorie-Spezialisierung (Gold-Sink) — beide überstehen Prestige.
+42 Sorten in 8 Kategorien, Stand SAVE_VERSION 20.
