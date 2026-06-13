@@ -316,6 +316,11 @@
       height: 70px;
     }
 
+    /* keep the hover tooltip from forcing horizontal page-scroll (PHASE 11) */
+    .tip {
+      max-width: 86vw;
+    }
+
     /* full-width strip so wide categories scroll horizontally instead of
        spilling past the screen edges where taps can't reach (PHASE 5) */
     .hotbar-wrap {

@@ -139,6 +139,7 @@
     <button
       class="pxbtn gold ticket num"
       onclick={onOpenScratch}
+      aria-label="Rubbellose"
       title={`Rubbellose (${$gameStore.scratchTickets}/${maxScratchTickets($gameStore)}) — das Limit wächst mit deinem Level`}
     >
       <PixelIcon name="los" scale={1} />
@@ -146,33 +147,33 @@
     </button>
   {/if}
 
-  <button class="pxbtn" onclick={onOpenDaily} title="Tagesbonus — jeden Tag ein Geschenk">
+  <button class="pxbtn" onclick={onOpenDaily} aria-label="Tagesbonus" title="Tagesbonus — jeden Tag ein Geschenk">
     <PixelIcon name="geschenk" scale={1} />
     {#if dailyReady}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
-  <button class="pxbtn" onclick={onOpenShop} title="Shop — dauerhafte Upgrades">
+  <button class="pxbtn" onclick={onOpenShop} aria-label="Shop" title="Shop — dauerhafte Upgrades">
     <PixelIcon name="giesskanne" scale={1} />
     {#if upgradeHint}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
-  <button class="pxbtn" onclick={onOpenQuests} title="Aufträge — liefern lohnt sich">
+  <button class="pxbtn" onclick={onOpenQuests} aria-label="Aufträge" title="Aufträge — liefern lohnt sich">
     <PixelIcon name="scroll" scale={1} />
     {#if questHint}<span class="dot quest" aria-hidden="true"></span>{/if}
   </button>
 
   {#if showPrestige}
-    <button class="pxbtn" onclick={onOpenPrestige} title="Neue Parzelle pachten — Kompost wirkt für immer">
+    <button class="pxbtn" onclick={onOpenPrestige} aria-label="Prestige — neue Parzelle" title="Neue Parzelle pachten — Kompost wirkt für immer">
       <PixelIcon name="duenger" scale={1} />
       {#if prestigeReady}<span class="dot prestige" aria-hidden="true"></span>{/if}
     </button>
   {/if}
 
-  <button class="pxbtn" onclick={onOpenAchievements} title="Erfolge — jeder gibt +1 % Ertrag">
+  <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">
     <PixelIcon name="pokal" scale={1} />
   </button>
 
-  <button class="pxbtn" onclick={onOpenInventory} title="Lager öffnen">
+  <button class="pxbtn" onclick={onOpenInventory} aria-label="Lager" title="Lager öffnen">
     <PixelIcon name="basket" scale={2} />
     {#if stockCount > 0}<span class="badge num">{formatNumber(stockCount)}</span>{/if}
   </button>

@@ -22,7 +22,7 @@ import {
   nextPlotCost,
   nextUpgradeCost,
   selectPlant,
-  sellAll,
+  sellPlant,
   sowPlot,
   upgradeLevel,
 } from '../src/lib/game/actions.ts'
@@ -60,7 +60,13 @@ function bestPlant(s) {
 /** One greedy active beat: harvest, sell, replant, reinvest. */
 function activeBeat(s) {
   harvestAllReady()
-  sellAll()
+  // sell the whole stock by exact amount — bypasses the quest reservation
+  // (the greedy never fulfills orders, see PHASE 11 QA), so it models a player
+  // who just sells rather than hoarding for deliveries.
+  for (const p of PLANTS) {
+    const have = s.inventory[p.id] ?? 0
+    if (have > 0) sellPlant(p.id, have)
+  }
   const plant = bestPlant(s)
   if (s.selectedPlantId !== plant.id) selectPlant(plant.id)
   for (let i = 0; i < s.plots.length; i++) {
