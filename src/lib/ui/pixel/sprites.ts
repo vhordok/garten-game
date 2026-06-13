@@ -1761,6 +1761,386 @@ const hedgeFar: SpriteGrid = [
   'KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK',
 ]
 
+// --- PHASE 9 plants: reuse early growth stages, distinct mature sprites -----
+
+const veilchen1 = nachtrose1
+const veilchen2 = nachtrose2
+const veilchen3: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '.......p........',
+  '......pmp.......',
+  '.....pmWmp......',
+  '....pPmWmPp.....',
+  '.....pmWmp......',
+  '......pmp.......',
+  '......lGl.......',
+  '.....lFGFl......',
+  '......fGf.......',
+  '.......G........',
+  '................',
+  '................',
+  '................',
+]
+
+const ringelblume1 = nachtrose1
+const ringelblume2 = nachtrose2
+const ringelblume3: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '......o.o.......',
+  '.....oOyOo......',
+  '....oOyOyOo.....',
+  '....OyOyOyO.....',
+  '....oOyOyOo.....',
+  '.....oOyOo......',
+  '......lGl.......',
+  '.....lFGFl......',
+  '......fGf.......',
+  '.......G........',
+  '................',
+  '................',
+  '................',
+]
+
+const tulpe1 = nachtrose1
+const tulpe2 = nachtrose2
+const tulpe3: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '......R.R.......',
+  '.....RrRrR......',
+  '....RrRRRrR.....',
+  '....RrRRRrR.....',
+  '.....RRRRR......',
+  '......lGl.......',
+  '.....lFGFl......',
+  '......fGf.......',
+  '.......G........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const mohn1 = nachtrose1
+const mohn2 = nachtrose2
+const mohn3: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '.....r.r.r......',
+  '....rRrRrRr.....',
+  '....rRRkRRr.....',
+  '....rRRkRRr.....',
+  '.....rRRRr......',
+  '......lGl.......',
+  '.....lFGFl......',
+  '......fGf.......',
+  '.......G........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const hortensie1 = leuchtlilie1
+const hortensie2 = leuchtlilie2
+const hortensie3: SpriteGrid = [
+  '................',
+  '................',
+  '....cc.cc.......',
+  '...cUccUUc......',
+  '...cUUcUuc......',
+  '....ccUcc.......',
+  '...cUcUcUc......',
+  '....cUccc.......',
+  '.....lGl........',
+  '....lFGFl.......',
+  '.....fGf........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const glyzinie1 = leuchtlilie1
+const glyzinie2 = leuchtlilie2
+const glyzinie3: SpriteGrid = [
+  '................',
+  '...FfFfFf.......',
+  '..fFlFFlFf......',
+  '...PmPmPm.......',
+  '...mMmMmM.......',
+  '...PmPmPm.......',
+  '....mMmM........',
+  '....PmPm........',
+  '.....mM.........',
+  '......M.........',
+  '......G.........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+]
+
+const feuerlilie1 = leuchtlilie1
+const feuerlilie2 = leuchtlilie2
+const feuerlilie3: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '......y.........',
+  '...R..O..R......',
+  '...oRyOyRo......',
+  '....RyOyR.......',
+  '...oRyOyRo......',
+  '...R..f..R......',
+  '......f.........',
+  '.....fGf........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+]
+
+const pfingstrose1 = nachtrose1
+const pfingstrose2 = nachtrose2
+const pfingstrose3: SpriteGrid = [
+  '................',
+  '................',
+  '....mMmMm.......',
+  '...mMWMWMm......',
+  '..mMWmMmWMm.....',
+  '..mMmMWMmMm.....',
+  '...mMWMWMm......',
+  '....mMmMm.......',
+  '.....lGl........',
+  '....lFGFl.......',
+  '.....fGf........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const himmelsorchidee1 = leuchtlilie1
+const himmelsorchidee2 = leuchtlilie2
+const himmelsorchidee3: SpriteGrid = [
+  '................',
+  '................',
+  '....H.W.H.......',
+  '...HcUWUcH......',
+  '...cUWHWUc......',
+  '....UWHWU.......',
+  '...cUWHWUc......',
+  '....H.c.H.......',
+  '......c.........',
+  '.....cGc........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const walnussbaum1 = eiche1
+const walnussbaum2 = eiche2
+const walnussbaum3: SpriteGrid = [
+  '................',
+  '....fFFFFf......',
+  '...fFlFFlFf.....',
+  '..fFFbFFbFFf....',
+  '..fFlFFFFlFf....',
+  '..fFFbFFbFFf....',
+  '...fFFlFFFf.....',
+  '....ffffff......',
+  '......DD........',
+  '......DD........',
+  '.....bDDb.......',
+  '....bDDDDb......',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const goldahorn1 = eiche1
+const goldahorn2 = eiche2
+const goldahorn3: SpriteGrid = [
+  '....yOOOyy......',
+  '...yOyOOyOy.....',
+  '..yOOyOyOOOy....',
+  '..yOyOOyOyOy....',
+  '..OyOOyOOyOO....',
+  '...yOOyOyOy.....',
+  '....yOyOOy......',
+  '......DD........',
+  '......Db........',
+  '......DD........',
+  '.....bDDb.......',
+  '....bDDDDb......',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const ebenholz1 = mammutbaum1
+const ebenholz2 = mammutbaum2
+const ebenholz3: SpriteGrid = [
+  '....nNNNNn......',
+  '...nNEnNENn.....',
+  '..nNENnNENNn....',
+  '..nNnNENNnNn....',
+  '..nNENnNENNn....',
+  '...nNNEnNNn.....',
+  '....nnnnnn......',
+  '......kd........',
+  '......kd........',
+  '......kd........',
+  '.....dkkd.......',
+  '....dkddkd......',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const mondzeder1 = mammutbaum1
+const mondzeder2 = mammutbaum2
+const mondzeder3: SpriteGrid = [
+  '......W.........',
+  '......c.........',
+  '.....fcf........',
+  '....fcUcf.......',
+  '...fcUWUcf......',
+  '..fcUcfcUcf.....',
+  '.fcUWUcUWUcf....',
+  '..ffcUcUcff.....',
+  '....fcUcf.......',
+  '......D.........',
+  '......D.........',
+  '.....bDb........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const sternfrucht1 = mondblume1
+const sternfrucht2 = mondblume2
+const sternfrucht3: SpriteGrid = [
+  '................',
+  '......y.........',
+  '.....yOy........',
+  '....yOWOy.......',
+  '..y.yOWOy.y.....',
+  '...yOOWOOy......',
+  '....yOWOy.......',
+  '...yOy.yOy......',
+  '..y.......y.....',
+  '.....fGf........',
+  '......f.........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const nebelbeere1 = kristallbeere1
+const nebelbeere2 = kristallbeere2
+const nebelbeere3: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '....HwH.wH......',
+  '...HcUHcUcH.....',
+  '...wUccUcUw.....',
+  '....HcUHcH......',
+  '.....wHcw.......',
+  '......fGf.......',
+  '.....fFGFf......',
+  '......fGf.......',
+  '.......G........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const phoenixfrucht1 = mondblume1
+const phoenixfrucht2 = mondblume2
+const phoenixfrucht3: SpriteGrid = [
+  '................',
+  '......W.........',
+  '....y.O.y.......',
+  '...yORRROy......',
+  '..yORrRrROy.....',
+  '..ORrRkRrRO.....',
+  '..yORrRrROy.....',
+  '...yORRROy......',
+  '....yOyOy.......',
+  '......f.........',
+  '.....fGf........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
+const ewigkeitsbluete1 = mondblume1
+const ewigkeitsbluete2 = mondblume2
+const ewigkeitsbluete3: SpriteGrid = [
+  '................',
+  '......y.........',
+  '...y..W..y......',
+  '....WyOyW.......',
+  '..yWyOWOyWy.....',
+  '...WOWyWOW......',
+  '..yOWyWyWOy.....',
+  '...WOWyWOW......',
+  '....WyOyW.......',
+  '...y..f..y......',
+  '......f.........',
+  '.....fGf........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+]
+
+const weltenrose1 = nachtrose1
+const weltenrose2 = nachtrose2
+const weltenrose3: SpriteGrid = [
+  '................',
+  '......y.........',
+  '....yMmMy.......',
+  '...yMmWmMy......',
+  '..yMmWyWmMy.....',
+  '..MmWyOyWmM.....',
+  '..yMmWyWmMy.....',
+  '...yMmWmMy......',
+  '....yMmMy.......',
+  '.....lGl........',
+  '....lFGFl.......',
+  '.....fGf........',
+  '......G.........',
+  '................',
+  '................',
+  '................',
+]
+
 export const SPRITES: Record<string, SpriteGrid> = {
   'seedling': seedling,
   'basilikum-1': basilikum1,
@@ -1835,6 +2215,60 @@ export const SPRITES: Record<string, SpriteGrid> = {
   'weltenbaum-1': weltenbaum1,
   'weltenbaum-2': weltenbaum2,
   'weltenbaum-3': weltenbaum3,
+  'veilchen-1': veilchen1,
+  'veilchen-2': veilchen2,
+  'veilchen-3': veilchen3,
+  'ringelblume-1': ringelblume1,
+  'ringelblume-2': ringelblume2,
+  'ringelblume-3': ringelblume3,
+  'tulpe-1': tulpe1,
+  'tulpe-2': tulpe2,
+  'tulpe-3': tulpe3,
+  'mohn-1': mohn1,
+  'mohn-2': mohn2,
+  'mohn-3': mohn3,
+  'hortensie-1': hortensie1,
+  'hortensie-2': hortensie2,
+  'hortensie-3': hortensie3,
+  'glyzinie-1': glyzinie1,
+  'glyzinie-2': glyzinie2,
+  'glyzinie-3': glyzinie3,
+  'feuerlilie-1': feuerlilie1,
+  'feuerlilie-2': feuerlilie2,
+  'feuerlilie-3': feuerlilie3,
+  'pfingstrose-1': pfingstrose1,
+  'pfingstrose-2': pfingstrose2,
+  'pfingstrose-3': pfingstrose3,
+  'himmelsorchidee-1': himmelsorchidee1,
+  'himmelsorchidee-2': himmelsorchidee2,
+  'himmelsorchidee-3': himmelsorchidee3,
+  'walnussbaum-1': walnussbaum1,
+  'walnussbaum-2': walnussbaum2,
+  'walnussbaum-3': walnussbaum3,
+  'goldahorn-1': goldahorn1,
+  'goldahorn-2': goldahorn2,
+  'goldahorn-3': goldahorn3,
+  'ebenholz-1': ebenholz1,
+  'ebenholz-2': ebenholz2,
+  'ebenholz-3': ebenholz3,
+  'mondzeder-1': mondzeder1,
+  'mondzeder-2': mondzeder2,
+  'mondzeder-3': mondzeder3,
+  'sternfrucht-1': sternfrucht1,
+  'sternfrucht-2': sternfrucht2,
+  'sternfrucht-3': sternfrucht3,
+  'nebelbeere-1': nebelbeere1,
+  'nebelbeere-2': nebelbeere2,
+  'nebelbeere-3': nebelbeere3,
+  'phoenixfrucht-1': phoenixfrucht1,
+  'phoenixfrucht-2': phoenixfrucht2,
+  'phoenixfrucht-3': phoenixfrucht3,
+  'ewigkeitsbluete-1': ewigkeitsbluete1,
+  'ewigkeitsbluete-2': ewigkeitsbluete2,
+  'ewigkeitsbluete-3': ewigkeitsbluete3,
+  'weltenrose-1': weltenrose1,
+  'weltenrose-2': weltenrose2,
+  'weltenrose-3': weltenrose3,
   soil,
   'ghost-plot': ghostPlot,
   giesskanne,

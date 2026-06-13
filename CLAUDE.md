@@ -77,8 +77,10 @@ Aufträge mit Lieferserie, Pick-3-Rubbellose, aktives Gießen, Juice-
 und Sound-Schicht sowie das Zehner-Paket aus §9.11: Marktwelle,
 Tagesbonus-Serie, Glühwurm, Wetter-Events, Holz-Bäume, Achievements,
 Cannabis + Lizenzen, Rekorde/Graph, Massen-Aktionen und generative
-Musik/Ambience (25 Sorten in 7 Kategorien). Damit ist der §8-Phasenplan
-vollständig umgesetzt. Laufende Feinschliff-Phasen (GAME_DESIGN §9.12):
-Los-Limit am Level (P0), Softlock-Schutz/Roden (P1), Lager-Teilverkauf/
-Auftragsschutz (P2), Auto-Saat-Pin & faire Auto-Ernte (P3) —
-Stand SAVE_VERSION 19.
+Musik/Ambience. Damit ist der §8-Phasenplan
+vollständig umgesetzt. Feinschliff-Phasen (GAME_DESIGN §9.12) umgesetzt:
+Los-Limit am Level (P0), Softlock/Roden (P1), Lager-Teilverkauf/
+Auftragsschutz (P2), Auto-Saat-Pin & faire Auto-Ernte (P3), Desktop-Topbar/
+Event-Feld (P4), Mobile/Touch (P5), Balancing-Sim (P6), Subsystem-Balance
+(P7), Quests/Begriffe & Ernteprodukte (P8), Sorten-Verdopplung (P9) —
+42 Sorten in 8 Kategorien, Stand SAVE_VERSION 19.

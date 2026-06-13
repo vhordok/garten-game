@@ -219,8 +219,8 @@ function runSubsystems() {
   }
   console.log(
     '\n  Lesart: ~0.9–1.9× ist gesund — Passiv handelt Crit/Kombo/Aufträge/Lose\n' +
-      '  gegen Null-Aufwand + Offline-Lauf ein. Lücke: zwischen Eiche (800K) und\n' +
-      '  Mammutbaum (120M) fehlt ein mittlerer Passiv-Baum → Kandidat für Phase 9.'
+      '  gegen Null-Aufwand + Offline-Lauf ein. Die Passiv-Leiter ist seit Phase 9\n' +
+      '  lückenlos: Eiche → Walnussbaum → Mammutbaum → Goldahorn → Ebenholz → Mondzeder.'
   )
 
   // daily gift: 7-day streak total in units of one best harvest (hv)
