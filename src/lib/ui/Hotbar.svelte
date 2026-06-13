@@ -154,7 +154,7 @@
 <style>
   .hotbar-wrap {
     position: fixed;
-    bottom: 12px;
+    bottom: calc(var(--safe-bottom, 0px) + 12px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -162,6 +162,7 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    max-width: 100vw;
   }
 
   .tabs {
@@ -313,6 +314,44 @@
     .slot {
       width: 56px;
       height: 70px;
+    }
+
+    /* full-width strip so wide categories scroll horizontally instead of
+       spilling past the screen edges where taps can't reach (PHASE 5) */
+    .hotbar-wrap {
+      left: 0;
+      right: 0;
+      transform: none;
+      width: 100%;
+      align-items: stretch;
+      padding: 0 6px;
+    }
+
+    .tabs {
+      max-width: 100%;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      scrollbar-width: none;
+    }
+
+    .hotbar {
+      max-width: 100%;
+      overflow-x: auto;
+      justify-content: flex-start;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar,
+    .hotbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .slot {
+      scroll-snap-align: start;
+      flex: 0 0 auto;
     }
   }
 </style>

@@ -203,10 +203,10 @@
 <style>
   .hud {
     position: fixed;
-    top: 10px;
+    top: calc(var(--safe-top, 0px) + 10px);
     left: 50%;
     transform: translateX(-50%);
-    width: min(1060px, calc(100vw - 20px));
+    width: min(1060px, calc(100vw - 20px - var(--safe-left, 0px) - var(--safe-right, 0px)));
     z-index: 20;
     display: flex;
     flex-direction: column;
@@ -217,7 +217,10 @@
   .row {
     display: flex;
     align-items: center;
+    /* wrap is safe now that --hud-h drives the content padding (PHASE 4/5) */
+    flex-wrap: wrap;
     gap: 12px;
+    row-gap: 6px;
   }
 
   .xp-row {
@@ -445,6 +448,21 @@
   @media (max-width: 640px) {
     h1 {
       display: none;
+    }
+
+    /* drop the push-spacer so the crowded action cluster wraps naturally
+       across full lines instead of being shoved off-screen (PHASE 5) */
+    .spacer {
+      display: none;
+    }
+
+    .row {
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .amount {
+      font-size: 1.1rem;
     }
   }
 </style>

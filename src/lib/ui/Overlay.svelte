@@ -48,12 +48,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 18px;
+    /* clear notch / home indicator on phones (PHASE 5) */
+    padding:
+      calc(var(--safe-top, 0px) + 18px)
+      calc(var(--safe-right, 0px) + 18px)
+      calc(var(--safe-bottom, 0px) + 18px)
+      calc(var(--safe-left, 0px) + 18px);
   }
 
   .modal {
     width: min(560px, 100%);
     max-height: 86vh;
+    /* dynamic viewport height so tall panels aren't clipped behind the
+       mobile URL bar (PHASE 5) */
+    max-height: 86dvh;
     overflow: auto;
     padding: 6px 10px 12px;
   }

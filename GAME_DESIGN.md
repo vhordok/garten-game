@@ -449,3 +449,14 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   eigener Knopf optisch außerhalb der Topbar in der Ecke; auf schmalen
   Screens bleibt es — durch einen Trenner abgesetzt — in der HUD (kein
   Mobile-Regress). Reine UI/CSS-Phase, kein Save-Format-Change.
+- **Phase 5 — Mobile-UI & Touch:** `viewport-fit=cover` + Safe-Area-Tokens
+  (`--safe-top/bottom/left/right` aus `env(safe-area-inset-*)`); HUD,
+  Hotbar, App-Padding, Overlays, Banner/Toasts halten jetzt Abstand zu
+  Notch/Home-Indicator. Höhen auf `dvh` umgestellt (App, Body, Overlay) —
+  kein abgeschnittenes Layout mehr hinter der mobilen URL-Leiste. Touch-
+  Targets ≥ 44 px via `@media (pointer: coarse)` (Maus-Desktop behält die
+  kompakten Buttons); `touch-action: manipulation` + entfernter Tap-Highlight.
+  Gegen Überlauf: HUD-Zeile bricht um (gefahrlos dank `--hud-h`, Spacer auf
+  Phones aus), Hotbar-Tabs/-Slots scrollen auf Phones horizontal mit
+  Snap, Garten-Kopf bricht um. Geprüfte Breakpoints 360/390/430/667/768/
+  1024 — mehrstufig statt Single-Breakpoint. Kein Save-Format-Change.
