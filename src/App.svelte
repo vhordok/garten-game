@@ -164,20 +164,26 @@
     position: relative;
     z-index: 1;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     /* keep clear of the fixed HUD (top, real height via --hud-h) and the
-       hotbar (bottom). The fallback covers the first paint before measuring. */
-    padding: calc(10px + var(--hud-h, 76px) + 16px) 16px 130px;
+       hotbar (bottom), plus device safe-areas. The fallback covers the first
+       paint before --hud-h is measured (PHASE 4/5). */
+    padding:
+      calc(var(--safe-top, 0px) + 10px + var(--hud-h, 76px) + 16px)
+      calc(var(--safe-right, 0px) + 16px)
+      calc(var(--safe-bottom, 0px) + 130px)
+      calc(var(--safe-left, 0px) + 16px);
   }
 
   /* detached settings gear — hidden until there is room beside the topbar */
   .settings-fab {
     display: none;
     position: fixed;
-    top: 14px;
-    right: 16px;
+    top: calc(var(--safe-top, 0px) + 14px);
+    right: calc(var(--safe-right, 0px) + 16px);
     z-index: 30;
   }
 

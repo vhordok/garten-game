@@ -49,8 +49,8 @@
 <style>
   .banner {
     position: fixed;
-    /* sit in the event zone right below the real topbar height (PHASE 4) */
-    top: calc(10px + var(--hud-h, 76px) + 8px);
+    /* sit in the event zone right below the real topbar height (PHASE 4/5) */
+    top: calc(var(--safe-top, 0px) + 10px + var(--hud-h, 76px) + 8px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 18;

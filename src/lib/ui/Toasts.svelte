@@ -15,8 +15,8 @@
 <style>
   .toasts {
     position: fixed;
-    /* below the real topbar height so toasts never cover HUD buttons (PHASE 4) */
-    top: calc(10px + var(--hud-h, 76px) + 8px);
+    /* below the real topbar height so toasts never cover HUD buttons (PHASE 4/5) */
+    top: calc(var(--safe-top, 0px) + 10px + var(--hud-h, 76px) + 8px);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
