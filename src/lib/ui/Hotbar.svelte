@@ -13,7 +13,7 @@
     gemuese: 'Gemüse',
     beeren: 'Beeren',
     obst: 'Obst',
-    baeume: 'Bäume',
+    baeume: 'Holz',
     zier: 'Zier',
     cannabis: 'Hanf',
     magie: 'Magie',

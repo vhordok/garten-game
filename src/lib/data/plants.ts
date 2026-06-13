@@ -62,6 +62,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'karotte',
     name: 'Karotte',
+    produce: 'Karotten',
     emoji: '🥕',
     category: 'gemuese',
     description: 'Das erste Gemüse: knackig, zuverlässig, gutes Geld.',
@@ -74,6 +75,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'tomate',
     name: 'Tomate',
+    produce: 'Tomaten',
     emoji: '🍅',
     category: 'gemuese',
     description: 'Braucht Geduld am Strauch, zahlt dafür kräftig aus.',
@@ -86,6 +88,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'kuerbis',
     name: 'Kürbis',
+    produce: 'Kürbisse',
     emoji: '🎃',
     category: 'gemuese',
     description: 'Ein einziger Koloss pro Beet — Crits machen ihn legendär.',
@@ -98,6 +101,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'erdbeere',
     name: 'Erdbeere',
+    produce: 'Erdbeeren',
     emoji: '🍓',
     category: 'beeren',
     description: 'Einmal pflanzen, immer wieder ernten — der Strauch bleibt stehen.',
@@ -137,6 +141,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'blaubeere',
     name: 'Blaubeere',
+    produce: 'Blaubeeren',
     emoji: '🫐',
     category: 'beeren',
     description: 'Trägt geduldig Nacht für Nacht — perfekt für lange Pausen.',
@@ -163,6 +168,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'himbeere',
     name: 'Himbeere',
+    produce: 'Himbeeren',
     emoji: '🍇',
     category: 'beeren',
     description: 'Wuchernde Ruten mit dicken Trauben — die Krone der Sträucher.',
@@ -176,6 +182,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'apfelbaum',
     name: 'Apfelbaum',
+    produce: 'Äpfel',
     emoji: '🍎',
     category: 'obst',
     description: 'Ein echter Baum: lange Anlaufzeit, dann trägt er für immer.',
@@ -202,6 +209,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'kirschbaum',
     name: 'Kirschbaum',
+    produce: 'Kirschen',
     emoji: '🍒',
     category: 'obst',
     description: 'Blüht rosa, zahlt rubinrot — Geduld wird fürstlich belohnt.',
@@ -228,6 +236,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'drachenfrucht',
     name: 'Drachenfrucht',
+    produce: 'Drachenfrüchte',
     emoji: '🌵',
     category: 'obst',
     description: 'Exotischer Endgegner: über Nacht reif, Erträge wie ein Drachenhort.',
@@ -241,6 +250,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'mondblume',
     name: 'Mondblume',
+    produce: 'Mondblüten',
     emoji: '🌙',
     category: 'magie',
     description: 'Blüht nur im Mondlicht — Sammler zahlen jeden Preis.',
@@ -253,6 +263,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'kristallbeere',
     name: 'Kristallbeere',
+    produce: 'Kristallbeeren',
     emoji: '💎',
     category: 'magie',
     description: 'Wächst zu funkelnden Kristallen heran — und immer wieder nach.',
@@ -266,6 +277,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'weltenbaum',
     name: 'Weltenbaum',
+    produce: 'Weltenfrüchte',
     emoji: '🌳',
     category: 'magie',
     description: 'Der Baum am Ende aller Gärten. Wer ihn pflanzt, hat es geschafft.',
@@ -279,6 +291,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'cbdhanf',
     name: 'CBD-Hanf',
+    produce: 'CBD-Blüten',
     emoji: '🌱',
     category: 'cannabis',
     description: 'Medizinischer Anbau mit Lizenz I — braucht Gießkanne Stufe 5, sonst wächst er halb so schnell.',
@@ -293,6 +306,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'medizinalhanf',
     name: 'Medizinalhanf',
+    produce: 'Medizinalblüten',
     emoji: '💊',
     category: 'cannabis',
     description: 'Gewächshaus-Qualität (Lizenz II) — verlangt Gießkanne Stufe 8.',
@@ -307,6 +321,7 @@ export const PLANTS: PlantDef[] = [
   {
     id: 'goldhanf',
     name: 'Goldener Hanf',
+    produce: 'Goldblüten',
     emoji: '🏆',
     category: 'cannabis',
     description: 'Plantagen-Spitzenklasse (Lizenz III) — nur mit voller Bewässerung (Stufe 10).',
@@ -324,6 +339,11 @@ const byId = new Map(PLANTS.map((p) => [p.id, p]))
 
 export function plantById(id: string): PlantDef | undefined {
   return byId.get(id)
+}
+
+/** Name of the harvested goods (PHASE 8) — "Äpfel", not "Apfelbaum". */
+export function produceName(def: PlantDef): string {
+  return def.produce ?? def.name
 }
 
 /** Money per second once the plant is in steady production. */

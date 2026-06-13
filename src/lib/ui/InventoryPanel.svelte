@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PLANTS } from '../data/plants'
+  import { PLANTS, produceName } from '../data/plants'
   import { quickSellAmount, sellableValue, sellAll, sellPlant } from '../game/actions'
   import { saleValue } from '../game/modifiers'
   import { questReserved } from '../game/quests'
@@ -94,7 +94,7 @@
         <li>
           <span class="inv-item">
             <img class="px" src={spriteUrl(`${plant.id}-3`)} width="32" height="32" alt="" />
-            {plant.name}
+            {produceName(plant)}
             <b class="num">×{formatNumber(count)}</b>
             {#if reserved > 0}
               <span class="lock num" title="Für offene Aufträge reserviert">

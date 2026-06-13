@@ -485,3 +485,12 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   Crit/Kombo/Auftrags/Lose-Boni der Bäume ein. Offen für Phase 9: ein
   mittlerer Passiv-Baum zwischen Eiche (800K) und Mammutbaum (120M). Save-
   Format unverändert (Passiv-Wert ist Pflanzen-Definition, keine Migration).
+- **Phase 8 — Quests & Begriffe:** Neues optionales Feld `produce` je Sorte
+  (Ernteprodukt im Plural) + Helfer `produceName()` (Fallback = Pflanzenname).
+  Aufträge liefern jetzt das **Produkt** statt der Pflanze („Liefere 80×
+  Äpfel" statt „… Apfelbaum"), genauso das Lager-Panel. 15 erntbare Sorten
+  bekamen ein Produkt (Äpfel, Kirschen, Erdbeeren, Kürbisse, Mondblüten,
+  CBD-Blüten …); Kräuter fallen auf den Namen zurück. Kategorien geschärft:
+  die Passiv-Holzbäume heißen jetzt **„Holz"** (statt „Bäume"), klar getrennt
+  von den Obstbäumen unter **„Obst"**. Reine Daten/Text-Phase, kein
+  Save-Format-Change (`produce` ist Definition, kein gespeichertes Feld).

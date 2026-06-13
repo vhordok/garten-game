@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
-  import { plantById } from '../data/plants'
+  import { plantById, produceName } from '../data/plants'
   import { questSlots } from '../data/progression'
   import { questTier } from '../data/questFlavor'
   import { fulfillQuest, questFulfillable, skipQuest } from '../game/actions'
@@ -64,7 +64,7 @@
               <span class="tier {quest.tier}">{tier.label}</span>
               {quest.client}
             </span>
-            <span class="name">Liefere {quest.amount}× {plant.name}</span>
+            <span class="name">Liefere {quest.amount}× {produceName(plant)}</span>
             <span class="progress num" class:done={fulfillable}>
               {formatNumber(Math.min(have, quest.amount))}/{formatNumber(quest.amount)} im Lager
             </span>
