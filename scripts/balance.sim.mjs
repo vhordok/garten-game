@@ -10,6 +10,7 @@
 globalThis.localStorage ??= { getItem: () => null, setItem: () => {}, removeItem: () => {} }
 
 import { PLANTS } from '../src/lib/data/plants.ts'
+import { steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { UPGRADES } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
@@ -182,8 +183,68 @@ function runLongHorizon(activeHours) {
   console.log(`Upgrades: ${UPGRADES.map((u) => `${u.name}:${upgradeLevel(s, u.id)}`).join(' ')}`)
 }
 
+// ── subsystem balance audit (PHASE 7) ──────────────────────────────────────
+// Static arithmetic — checks whether the passive trees, the daily gift and the
+// watering boost are tier-appropriate against the active crop economy.
+function runSubsystems() {
+  console.log('\n══ Subsystem-Audit (Phase 7) ══\n')
+
+  // best active steady profit/s among harvest crops unlocked at-or-before tier
+  const bestActiveAt = (earned) => {
+    let best = 0
+    let name = '—'
+    for (const p of PLANTS) {
+      if (p.beautyBonus || p.passiveIncome) continue
+      if (p.unlockAtTotalEarned > earned) continue
+      const v = steadyProfitPerSecond(p)
+      if (v > best) {
+        best = v
+        name = p.name
+      }
+    }
+    return { best, name }
+  }
+
+  console.log('Passiv-Bäume vs. beste aktive Sorte derselben Stufe (Gold/s, ohne Multis):')
+  console.log('  Baum        | passiv/s | beste aktive Sorte (Stufe) | Verhältnis')
+  console.log('  ────────────┼──────────┼────────────────────────────┼──────────')
+  for (const p of PLANTS) {
+    if (!p.passiveIncome) continue
+    const a = bestActiveAt(p.unlockAtTotalEarned)
+    const ratio = a.best > 0 ? (p.passiveIncome / a.best).toFixed(2) : '—'
+    console.log(
+      `  ${p.name.padEnd(11)} | ${String(p.passiveIncome).padStart(8)} | ` +
+        `${(a.name + ' (' + fmtN(p.unlockAtTotalEarned) + ')').padEnd(26)} | ×${ratio}`
+    )
+  }
+  console.log(
+    '\n  Lesart: ~0.9–1.9× ist gesund — Passiv handelt Crit/Kombo/Aufträge/Lose\n' +
+      '  gegen Null-Aufwand + Offline-Lauf ein. Lücke: zwischen Eiche (800K) und\n' +
+      '  Mammutbaum (120M) fehlt ein mittlerer Passiv-Baum → Kandidat für Phase 9.'
+  )
+
+  // daily gift: 7-day streak total in units of one best harvest (hv)
+  const dailyGoldXhv = 5 + 10 + 20 + 25 // days 1,3,6,7 pay gold in ×hv
+  console.log(
+    `\nTagesbonus: 7-Tage-Serie zahlt ${dailyGoldXhv}× eine Besternte (hv) + ` +
+      '5 Tickets + 9 Dünger.\n  Gold zählt NICHT als Einnahme (kein Unlock-Push), ' +
+      'skaliert linear mit der besten\n  Sorte — beschränkt und progressionsgekoppelt, kein Runaway.'
+  )
+
+  // watering: active splash skips a flat fraction of grow time
+  console.log(
+    '\nGießen: je Guss +' +
+      Math.round(0.15 * 100) +
+      ' % der Wuchszeit (Config waterProgressBoost), 3 Ladungen/Aussaat,\n' +
+      '  via Wasserfass bis 6 → max ~90 % Skip pro Sorte. Rein aktiv (kein Auto-\n' +
+      '  Gießer), pro Sorte gedeckelt — lohnt bei langsamen Sorten, belanglos bei schnellen.'
+  )
+}
+
 if (process.argv[2] === 'day') {
   runLongHorizon(Number(process.argv[3] ?? 2))
+} else if (process.argv[2] === 'subsystems') {
+  runSubsystems()
 } else {
   runSession()
 }

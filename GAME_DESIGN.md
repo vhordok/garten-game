@@ -395,7 +395,7 @@ Extra-Einheiten). Ziffern größer/heller (Lesbarkeit).
 (»Alle säen/gießen«), Marktwelle ±30 % über ~10 min (Aufträge bleiben
 Festpreise), Tagesbonus mit 7-Tage-Serie, Goldener Glühwurm
 (Golden-Cookie-Moment), Wetter-Events (Regen/Sternschnuppen/Marktboom,
-live-only), passive Holz-Bäume (Eiche 28/s, Mammutbaum 480/s — §3 #5),
+live-only), passive Holz-Bäume (Eiche 32/s, Mammutbaum 480/s — §3 #5),
 22 Achievements à +1 % Ertrag, Cannabis hinter 3 Lizenzen mit
 Pflege-Malus (§3 #7), Rekorde + 24-h-Einnahmen-Graph, generative
 Chiptune-Musik + Nacht-Ambience. Save v13–v18. 25 Sorten in
@@ -473,3 +473,15 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   (Shop/Gießen/Tagesbonus) gehört in Phase 7, die Sorten-Verteilung über
   die Spielphasen in Phase 9. Reine Tooling-/Verifikationsphase, kein
   Code-Pfad und kein Save-Format berührt.
+- **Phase 7 — Shop/Passiv/Tagesbonus/Gießen-Balance:** Subsystem-Audit als
+  `node scripts/balance.sim.mjs subsystems` (Passiv-Bäume vs. beste aktive
+  Sorte derselben Stufe in Gold/s, Tagesbonus-Summe, Gieß-Mechanik). Befund:
+  Tagesbonus/Glühwurm skalieren linear mit der besten Sorte und zählen nicht
+  als Einnahme (kein Runaway); Gießen ist pro Sorte gedeckelt und aktiv-
+  belohnend; der Shop folgt sauberen Idle-Kurven. Einzige Justierung:
+  **Eiche 28 → 32 Gold/s** — der frühe Passiv-Baum lag mit ×0,88 knapp unter
+  dem gesunden Band, jetzt ×1,01 (Parität mit Erdbeere bei null Aufwand +
+  Offline-Lauf). Mammutbaum (×1,86) bleibt — die Spanne kauft die fehlenden
+  Crit/Kombo/Auftrags/Lose-Boni der Bäume ein. Offen für Phase 9: ein
+  mittlerer Passiv-Baum zwischen Eiche (800K) und Mammutbaum (120M). Save-
+  Format unverändert (Passiv-Wert ist Pflanzen-Definition, keine Migration).
