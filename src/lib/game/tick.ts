@@ -44,11 +44,11 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
     if (!def) continue
     const target = cycleTime(plot, def)
     if (plot.progress < target) {
-      // cannabis care: under-watered plants crawl at half speed
-      const care =
-        def.needsWateringLevel && (state.upgrades['giesskanne'] ?? 0) < def.needsWateringLevel
-          ? 0.5
-          : 1
+      // cannabis care: under-watered plants crawl at half speed. Wasserfass
+      // (extra water storage) counts toward the requirement too, so it has
+      // idle value for cannabis growers (PHASE 12).
+      const watering = (state.upgrades['giesskanne'] ?? 0) + (state.upgrades['wasserfass'] ?? 0)
+      const care = def.needsWateringLevel && watering < def.needsWateringLevel ? 0.5 : 1
       plot.progress = Math.min(plot.progress + grownSeconds * care, target)
       changed = true
     }
@@ -81,6 +81,11 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
   if (state.weather.remaining > 0) {
     state.weather.remaining = Math.max(state.weather.remaining - dtSeconds, 0)
     if (state.weather.remaining === 0) state.weather.id = null
+    changed = true
+  }
+  // track the best round ever reached so post-prestige quests stay on tier
+  if (state.totalEarned > state.maxUnlockEarned) {
+    state.maxUnlockEarned = state.totalEarned
     changed = true
   }
   // the market never sleeps

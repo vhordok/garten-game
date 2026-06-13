@@ -134,6 +134,9 @@ export interface GameState {
   totalEarned: number
   /** money earned across all rounds (stats, never resets) */
   lifetimeEarned: number
+  /** highest single-round totalEarned ever reached (survives prestige) — the
+   * floor that keeps post-prestige quests at the player's tier (PHASE 12) */
+  maxUnlockEarned: number
   /** leased parcels (starts at 1); raises the plot cap */
   parcels: number
   /** prestige currency: permanent yield/growth bonuses */

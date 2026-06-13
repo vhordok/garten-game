@@ -1217,7 +1217,8 @@ test('effect upgrades: water charges, combo window, offline cap, crit luck', () 
   assert.ok(Math.abs(comboWindowSeconds(s) - (CONFIG.comboWindowSeconds + 2)) < 1e-9)
 
   s.upgrades['nachteule'] = 8
-  assert.equal(offlineCapHours(s), CONFIG.offlineCapHours + 16)
+  // PHASE 12: Sternenuhr (level 4 above) now also stretches the offline cap
+  assert.equal(offlineCapHours(s), CONFIG.offlineCapHours + 16 + 4 * CONFIG.sternenuhrOfflinePerLevel)
 
   // crit luck: a roll that misses by default becomes a perfect with clover
   const probe = CONFIG.critLegendaryChance + CONFIG.critPerfectChance + 0.02
@@ -1231,6 +1232,43 @@ test('effect upgrades: water charges, combo window, offline cap, crit luck', () 
     tick(s, 99999)
     assert.equal(harvestPlot(0).crit, 'perfect', 'clover turns the same roll golden')
   })
+})
+
+test('PHASE 12: post-prestige quests stay on tier; idle upgrade bonuses', () => {
+  withBoringRng(() => {
+    // post-prestige: low round earnings but a high all-time floor → no basil,
+    // and never an order for produce the player has never reached
+    const s = fresh()
+    s.totalEarned = 0
+    s.maxUnlockEarned = 1e12
+    for (let i = 0; i < 30; i++) {
+      const q = generateQuest(s)
+      const def = PLANTS.find((p) => p.id === q.plantId)
+      assert.notEqual(q.plantId, 'basilikum', 'no trivial basil after prestige')
+      assert.ok(def.unlockAtTotalEarned <= s.maxUnlockEarned, 'order plant was reachable before')
+      assert.ok(!def.beautyBonus && !def.passiveIncome, 'only harvestable produce')
+    }
+    // a fresh start (no progress) may still ask for basil
+    const e = fresh()
+    e.totalEarned = 0
+    e.maxUnlockEarned = 0
+    assert.equal(generateQuest(e).plantId, 'basilikum', 'fresh start can ask basil')
+  })
+
+  // Wasserfass: passive growth bonus (idle value) + counts toward cannabis care
+  const w = fresh()
+  assert.ok(Math.abs(growthMultiplier(w) - 1) < 1e-9)
+  w.upgrades['wasserfass'] = 3
+  assert.ok(Math.abs(growthMultiplier(w) - (1 + 3 * CONFIG.wasserfassGrowthPerLevel)) < 1e-9, 'wasserfass adds growth')
+  w.money = 1e15
+  w.totalEarned = 1e18
+  w.licenses = 3
+  w.upgrades['giesskanne'] = 3 // cbdhanf needs 5; 3 + wasserfass 3 = 6 ≥ 5 → full speed
+  selectPlant('cbdhanf')
+  assert.ok(sowPlot(0))
+  const cbd = PLANTS.find((p) => p.id === 'cbdhanf')
+  tick(w, cbd.growTime)
+  assert.ok(plotReady(w.plots[0]), 'wasserfass tops up the cannabis watering care')
 })
 
 test('ornamentals: never harvestable, beauty raises sell prices', () => {

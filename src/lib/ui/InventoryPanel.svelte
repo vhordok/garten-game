@@ -37,6 +37,8 @@
       .filter((row) => row.count > 0)
       .map((row) => ({
         ...row,
+        reservedShown: Math.min(row.reserved, row.count),
+        free: Math.max(0, row.count - row.reserved),
         toSell:
           exact > 0 ? Math.min(exact, row.count) : quickSellAmount($gameStore, row.plant.id, fraction),
       }))
@@ -85,29 +87,30 @@
     </div>
     {#if anyReserved}
       <p class="hint reserve-note">
-        🔒 Für offene Aufträge reservierte Ernte bleibt beim Schnellverkauf liegen — nur eine
-        genaue Stückzahl verkauft auch Reserviertes.
+        🔒 = für offene Aufträge reserviert. Schnellverkauf, „Lager verkaufen" und der Marktkarren
+        verkaufen nur den <b>freien</b> Überschuss — eine genaue Stückzahl verkauft auch Reserviertes.
       </p>
     {/if}
     <ul class="inv-list">
-      {#each rows as { plant, count, reserved, toSell } (plant.id)}
+      {#each rows as { plant, count, reservedShown, free, toSell } (plant.id)}
         <li>
           <span class="inv-item">
             <img class="px" src={spriteUrl(`${plant.id}-3`)} width="32" height="32" alt="" />
-            {produceName(plant)}
-            <b class="num">×{formatNumber(count)}</b>
-            {#if reserved > 0}
-              <span class="lock num" title="Für offene Aufträge reserviert">
-                🔒{formatNumber(Math.min(reserved, count))}
-              </span>
-            {/if}
+            <span class="inv-name">
+              <span class="inv-title">{produceName(plant)} <b class="num">×{formatNumber(count)}</b></span>
+              {#if reservedShown > 0}
+                <span class="inv-breakdown num">
+                  🔒 {formatNumber(reservedShown)} reserviert · {formatNumber(free)} frei
+                </span>
+              {/if}
+            </span>
           </span>
           <button
             class="pxbtn small num"
             disabled={toSell === 0}
             onclick={(e) => sellFx(e, sellPlant(plant.id, toSell))}
             title={toSell === 0
-              ? 'Alles für Aufträge reserviert'
+              ? 'Alles für Aufträge reserviert — genaue Stückzahl verkauft auch Reserviertes'
               : `${formatNumber(toSell)} Stück verkaufen`}
           >
             ×{formatNumber(toSell)} +{formatNumber(saleValue($gameStore, plant.sellValue, toSell))}
@@ -121,7 +124,7 @@
       onclick={(e) => sellFx(e, sellAll(fraction))}
     >
       <PixelIcon name="coin" scale={2} />
-      Lager verkaufen ({fractionLabel}) +{formatNumber(bulkValue)}
+      Lager verkaufen ({fractionLabel}){anyReserved ? ' · nur Überschuss' : ''} +{formatNumber(bulkValue)}
     </button>
   {/if}
 </Overlay>
@@ -160,11 +163,6 @@
     margin: 0 0 10px;
   }
 
-  .lock {
-    color: var(--c-gold2);
-    font-size: 0.8rem;
-  }
-
   .inv-list {
     list-style: none;
     margin: 4px 0 12px;
@@ -186,6 +184,19 @@
     align-items: center;
     gap: 8px;
     font-size: 0.9rem;
+    min-width: 0;
+  }
+
+  .inv-name {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .inv-breakdown {
+    font-size: 0.7rem;
+    color: var(--c-gold2);
   }
 
   .inv-item b {

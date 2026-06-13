@@ -50,9 +50,9 @@
       case 'sellPrice':
         return `+${Math.round(u.perLevel * 100)} % Verkaufspreis pro Stufe`
       case 'waterCharges':
-        return `+${u.perLevel} Gieß-Ladung pro Stufe`
+        return `+${u.perLevel} Gieß-Ladung · +${Math.round(CONFIG.wasserfassGrowthPerLevel * 100)} % Wachstum (offline) pro Stufe`
       case 'comboWindow':
-        return `+${u.perLevel} s Combo-Fenster pro Stufe`
+        return `+${u.perLevel} s Combo-Fenster · +${CONFIG.sternenuhrOfflinePerLevel} h Offline pro Stufe`
       case 'critChance':
         return `+${Math.round(u.perLevel * 100)} % Perfekt-Chance (Legendär ein Fünftel davon) pro Stufe`
       case 'scratchLuck':

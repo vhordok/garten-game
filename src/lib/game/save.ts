@@ -11,7 +11,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 20
+export const SAVE_VERSION = 21
 
 interface SaveEnvelope {
   version: number
@@ -175,6 +175,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v19 → v20: plant mastery + category specialisations; sanitize() defaults
       // both to empty maps (= no bonuses yet, old saves unaffected).
       return { ...envelope, version: 20 }
+    case 20:
+      // v20 → v21: maxUnlockEarned (post-prestige quest floor); sanitize()
+      // seeds it from the round's totalEarned for old saves.
+      return { ...envelope, version: 21 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -192,6 +196,8 @@ function sanitize(raw: unknown): GameState {
   state.money = clampNumber(r.money, state.money)
   state.totalEarned = clampNumber(r.totalEarned, 0)
   state.lifetimeEarned = clampNumber(r.lifetimeEarned, state.totalEarned, state.totalEarned)
+  // old saves: seed the quest floor from the current round so orders stay on tier
+  state.maxUnlockEarned = clampNumber(r.maxUnlockEarned, state.totalEarned, state.totalEarned)
   state.parcels = Math.floor(clampNumber(r.parcels, 1, 1, 1000))
   state.compost = Math.floor(clampNumber(r.compost, 0, 0, 1e9))
 

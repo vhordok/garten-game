@@ -86,4 +86,6 @@ Event-Feld (P4), Mobile/Touch (P5), Balancing-Sim (P6), Subsystem-Balance
 kategoriespezifische Setzlinge (P10), Gesamt-QA & Softlock-Härtung (P11).
 Endgame 2.0 (§9.13): Massenroden+Undo (kein Confirm), Pflanzen-Meisterschaft
 und Kategorie-Spezialisierung (Gold-Sink) — beide überstehen Prestige.
-42 Sorten in 8 Kategorien, Stand SAVE_VERSION 20.
+Phase 12 (§9.14): Post-Prestige-Aufträge via maxUnlockEarned, Lager
+reserviert/frei, Idle-Nutzen für Wasserfass/Sternenuhr, Touch-Tooltip,
+Toasts unter Modals. 42 Sorten in 8 Kategorien, Stand SAVE_VERSION 21.

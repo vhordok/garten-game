@@ -11,6 +11,7 @@ export function createDefaultState(now = Date.now()): GameState {
     money: CONFIG.startMoney,
     totalEarned: 0,
     lifetimeEarned: 0,
+    maxUnlockEarned: 0,
     parcels: 1,
     compost: 0,
     mastery: {},

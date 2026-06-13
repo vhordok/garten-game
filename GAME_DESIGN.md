@@ -570,3 +570,32 @@ Gold-Sink und Dauerziele — sie bremsen die Roh-Pacing aber nicht künstlich
 Kostenkurven, straffere Prestige-Spirale) und weitere Endgame-Systeme
 (Parzellen-Meilensteine, Endgame-Auftragstypen, Achievement-Ziele) sind als
 nächste Phasen vorgesehen.
+
+### 9.14 Phase 12 — Quest-Qualität, Bedienkomfort, Idle-Upgrades (Save v21)
+
+Gezielte QA-Nachbesserungen, keine neuen großen Systeme:
+
+- **Post-Prestige-Aufträge (`maxUnlockEarned`, übersteht Prestige):** neuer
+  persistenter Höchststand des Runden-Verdienstes. `generateQuest` zieht aus
+  einem Tier-Band `[reach / questBandWidth, reach]` mit
+  `reach = max(totalEarned, maxUnlockEarned × questReachFactor)`. Nach Prestige
+  kippen Aufträge nicht mehr auf Basilikum zurück, bleiben aber ≤ dem je
+  erreichten Niveau → immer (bald) erfüllbar; das Band lässt triviale Frühsorten
+  weg, sobald man fortgeschritten ist. Frischer Start fragt weiter Basilikum.
+- **Lager: reserviert vs. frei** — jede Zeile zeigt „🔒 X reserviert · Y frei",
+  der Hinweis erklärt, dass Schnellverkauf/„Lager verkaufen"/Marktkarren nur den
+  **freien** Überschuss verkaufen; der Bulk-Button ergänzt „· nur Überschuss".
+- **Wasserfass & Sternenuhr bekommen Idle-Nutzen** (vorher reine Aktiv-Upgrades):
+  Wasserfass gibt zusätzlich +3 % Wachstum/Stufe (wirkt offline) und zählt zur
+  Cannabis-Bewässerungsstufe; Sternenuhr gibt +1 h Offline-Cap/Stufe. Modest,
+  keine Breakpoints — Sim bestätigt kein Runaway (beide maxed gekauft, Zahlen
+  finit, Pacing nahezu unverändert).
+- **Touch-Info:** Hotbar-Tooltip öffnet jetzt auch bei `:focus` (Tap auf Touch
+  zeigt die Sorten-Info), `pointer-events:none` bleibt → blockiert nichts.
+- **Toasts unter Modals:** z-index 60 → 45 (unter Modal-Backdrop 50), damit
+  Panels lesbar bleiben; Toasts erscheinen weiter im normalen Spiel.
+- **Massenroden + Undo** (bereits in §9.13 ausgeliefert): „Alles roden" +
+  8-s-Undo, keine Confirm-Dialoge — erfüllt Phase-12-Punkt C.
+
+Save v20 → v21: `maxUnlockEarned` ergänzt (alte Saves: aus `totalEarned`
+geseedet). Sonst keine Format-Änderung.

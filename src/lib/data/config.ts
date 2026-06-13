@@ -12,6 +12,12 @@ export const CONFIG = {
   /** active watering: charges per sown crop, growth skip per splash */
   waterChargesPerCrop: 3,
   waterProgressBoost: 0.15,
+  /** PHASE 12 idle value for the otherwise active-only upgrades:
+   * Wasserfass also gives a small passive growth bonus (and its level counts
+   * toward the cannabis watering-care requirement, see tick.ts); Sternenuhr
+   * also stretches the offline cap a little. Modest on purpose — no breakpoints. */
+  wasserfassGrowthPerLevel: 0.03,
+  sternenuhrOfflinePerLevel: 1,
   /** combo harvesting (GAME_DESIGN.md §9.4): chain window and per-stack bonus */
   comboWindowSeconds: 4,
   comboPerStack: 0.05,
@@ -32,6 +38,12 @@ export const CONFIG = {
   fertilizerChargeMult: 2,
   /** quests (GAME_DESIGN.md §9.4): tier factors live in data/questFlavor.ts */
   questSkipCooldownSeconds: 60,
+  /** post-prestige quest floor (PHASE 12): orders draw from a tier band
+   * [reach / questBandWidth, reach] where reach = max(totalEarned,
+   * maxUnlockEarned × questReachFactor) — keeps orders at the player's level
+   * after a prestige instead of dropping back to basil. */
+  questReachFactor: 0.12,
+  questBandWidth: 60,
   /** payout bonus per consecutive delivery, and its cap */
   questStreakPerDelivery: 0.02,
   questStreakMaxBonus: 0.3,
