@@ -13,6 +13,8 @@ export function createDefaultState(now = Date.now()): GameState {
     lifetimeEarned: 0,
     parcels: 1,
     compost: 0,
+    mastery: {},
+    specializations: {},
     level: 1,
     xp: 0,
     plots: Array.from({ length: CONFIG.startPlots }, emptyPlot),

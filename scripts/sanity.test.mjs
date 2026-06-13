@@ -17,11 +17,14 @@ import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
   buyLicense,
   buyPlot,
+  buySpecialization,
   buyUpgrade,
   catchFirefly,
   claimDaily,
+  clearAllPlots,
   clearPlot,
   compostGain,
+  restorePlots,
   dailyClaimable,
   drawScratchCard,
   ensureQuests,
@@ -55,10 +58,16 @@ import {
   beautyMultiplier,
   comboWindowSeconds,
   marketFactor,
+  masteryLevel,
+  masteryThreshold,
+  masteryYieldBonus,
   maxScratchTickets,
   scratchDropChance,
   growthMultiplier,
   offlineCapHours,
+  specializationCost,
+  specializationLevel,
+  specializationYieldBonus,
   waterCharges,
   yieldMultiplier,
 } from '../src/lib/game/modifiers.ts'
@@ -876,6 +885,60 @@ test('PHASE 11: softlock guard sees reserved stock; gnome skips ornamentals', ()
     for (const p of g.plots) p.plantId = null
     tick(g, 10)
     assert.ok(g.plots.every((p) => p.plantId === null), 'gnome leaves the field empty for ornamentals')
+  })
+})
+
+test('PHASE 11 endgame: mastery, specialisation, bulk-clear + undo, survive prestige', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e15
+    s.totalEarned = 1e18 // unlock everything
+
+    // mastery level derives from harvested units and lifts that plant's yield
+    s.mastery['basilikum'] = masteryThreshold(3)
+    assert.equal(masteryLevel(s.mastery['basilikum']), 3)
+    assert.ok(Math.abs(masteryYieldBonus(s, 'basilikum') - 1.3) < 1e-9)
+    assert.equal(masteryYieldBonus(s, 'tomate'), 1, 'mastery is per-plant')
+
+    // harvesting accrues mastery
+    selectPlant('basilikum')
+    const before = s.mastery['basilikum']
+    assert.ok(sowPlot(0))
+    tick(s, PLANTS[0].growTime)
+    assert.ok(harvestPlot(0).units > 0)
+    assert.ok(s.mastery['basilikum'] > before, 'harvest grows mastery')
+
+    // specialisation costs gold, lifts a whole category, rejects bad input
+    const cost0 = specializationCost(0)
+    const moneyBefore = s.money
+    assert.ok(buySpecialization('kraeuter'))
+    assert.equal(specializationLevel(s, 'kraeuter'), 1)
+    assert.equal(s.money, moneyBefore - cost0)
+    assert.ok(Math.abs(specializationYieldBonus(s, 'kraeuter') - 1.08) < 1e-9)
+    assert.equal(specializationYieldBonus(s, 'gemuese'), 1, 'specialisation is per-category')
+    assert.ok(!buySpecialization('nichtskategorie'))
+
+    // bulk clear + undo
+    selectPlant('basilikum')
+    for (let i = 0; i < s.plots.length; i++) if (s.plots[i].plantId === null) sowPlot(i)
+    const planted = s.plots.filter((p) => p.plantId !== null).length
+    assert.ok(planted >= 1)
+    const moneyPre = s.money
+    const res = clearAllPlots()
+    assert.equal(res.count, planted)
+    assert.ok(s.plots.every((p) => p.plantId === null), 'everything is cleared')
+    assert.equal(s.money, moneyPre + res.refund)
+    assert.ok(restorePlots(res.cleared, res.refund))
+    assert.equal(s.plots.filter((p) => p.plantId !== null).length, planted, 'undo restores plants')
+    assert.equal(s.money, moneyPre, 'undo takes the refund back')
+
+    // both survive a prestige (meta progression)
+    s.lifetimeEarned = 1e12
+    s.totalEarned = 1e12
+    const keptMastery = s.mastery['basilikum']
+    assert.ok(leaseParcel() > 0)
+    assert.equal(getState().mastery['basilikum'], keptMastery, 'mastery survives prestige')
+    assert.equal(specializationLevel(getState(), 'kraeuter'), 1, 'specialisation survives prestige')
   })
 })
 

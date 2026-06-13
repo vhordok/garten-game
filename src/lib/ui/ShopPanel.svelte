@@ -1,9 +1,11 @@
 <script lang="ts">
   import { LICENSES } from '../data/licenses'
   import { UPGRADES } from '../data/upgrades'
-  import { buyLicense, buyUpgrade, nextUpgradeCost, upgradeLevel } from '../game/actions'
+  import { buyLicense, buySpecialization, buyUpgrade, nextUpgradeCost, PLANT_CATEGORIES, upgradeLevel } from '../game/actions'
+  import { specializationCost, specializationLevel } from '../game/modifiers'
+  import { CONFIG } from '../data/config'
   import { gameStore } from '../game/state'
-  import type { UpgradeDef, UpgradeSection } from '../game/types'
+  import type { PlantCategory, UpgradeDef, UpgradeSection } from '../game/types'
   import { formatDuration, formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
   import { coinBurst } from './fx/particles'
@@ -17,6 +19,27 @@
     { id: 'glueck', label: 'Glück' },
     { id: 'helfer', label: 'Helfer — arbeiten auch offline' },
   ]
+
+  const CATEGORY_LABEL: Record<PlantCategory, string> = {
+    kraeuter: 'Kräuter',
+    gemuese: 'Gemüse',
+    beeren: 'Beeren',
+    obst: 'Obst',
+    baeume: 'Holz',
+    zier: 'Zier',
+    cannabis: 'Hanf',
+    magie: 'Magie',
+  }
+
+  function handleBuySpec(e: MouseEvent, category: string) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    if (buySpecialization(category)) {
+      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 14)
+      playSound('buy')
+    } else {
+      playSound('error')
+    }
+  }
 
   function effectText(u: UpgradeDef): string {
     switch (u.effect) {
@@ -129,6 +152,40 @@
       {/each}
     </ul>
   {/each}
+
+  <h3 class="section">Spezialisierung — dauerhaft, übersteht Prestige</h3>
+  <p class="hint spec-hint">
+    Gold-Investition pro Kategorie: jede Stufe gibt +{Math.round(CONFIG.specYieldPerLevel * 100)} % Ertrag
+    für alle Sorten dieser Kategorie. Die Kosten steigen steil — entscheide, worauf du dich spezialisierst.
+  </p>
+  <ul class="shop-list">
+    {#each PLANT_CATEGORIES as category (category)}
+      {@const level = specializationLevel($gameStore, category)}
+      {@const cost = specializationCost(level)}
+      {@const affordable = cost !== null && $gameStore.money >= cost}
+      <li class="row">
+        <span class="icon spec-icon num">+{Math.round(level * CONFIG.specYieldPerLevel * 100)}%</span>
+        <span class="info">
+          <span class="name">
+            {CATEGORY_LABEL[category as PlantCategory] ?? category}
+            <span class="level num">Stufe {level}{cost === null ? ' (MAX)' : `/${CONFIG.specMaxLevel}`}</span>
+          </span>
+          <span class="desc">+{Math.round(CONFIG.specYieldPerLevel * 100)} % Ertrag pro Stufe für diese Kategorie</span>
+          {#if level > 0}
+            <span class="effect num">aktiv: <b>+{Math.round(level * CONFIG.specYieldPerLevel * 100)} % Ertrag</b></span>
+          {/if}
+        </span>
+        {#if cost === null}
+          <span class="maxed">MAX</span>
+        {:else}
+          <button class="pxbtn gold num buy" disabled={!affordable} onclick={(e) => handleBuySpec(e, category)}>
+            <PixelIcon name="coin" scale={1} />
+            {formatNumber(cost)}
+          </button>
+        {/if}
+      </li>
+    {/each}
+  </ul>
 
   <h3 class="section">Lizenzen — medizinischer Anbau</h3>
   <ul class="shop-list">
@@ -243,5 +300,15 @@
     font-size: 0.8rem;
     color: var(--c-gold2);
     text-shadow: 0 0 8px rgba(222, 158, 65, 0.5);
+  }
+
+  .spec-hint {
+    margin-top: 6px;
+  }
+
+  .spec-icon {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--c-leaf4);
   }
 </style>

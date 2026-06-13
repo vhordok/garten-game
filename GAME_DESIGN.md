@@ -532,3 +532,41 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   (Geld-Drain-Foot-Gun). (4) UI-Politur: aria-labels auf allen HUD-Icon-Buttons,
   Hotbar-Tooltip auf Mobil breitenbegrenzt. Regressionstest ergänzt (38 Tests).
   Keine Save-Format-Änderung.
+
+### 9.13 Endgame 2.0 — Tiefe, Entscheidungen, Gold-Sink, Bedienkomfort (Save v20)
+
+Antwort auf „Endgame läuft zu schnell leer, Fortschritt zu linear, beste
+Pflanze überall". Drei Systeme, robust und testgesichert:
+
+- **Massenroden + Undo (Endgame-QoL):** „Alles roden" rodet alle bepflanzten
+  Beete auf einmal (50 % Saatpreis zurück). **Keine blockierende Bestätigung
+  mehr** — auch das Einzel-Roden fragt nicht mehr nach; stattdessen erscheint
+  nach dem Massenroden 8 s lang „X Pflanzen gerodet · Rückgängig" (`clearAllPlots`/
+  `restorePlots`, Undo nur über noch leere Beete, Geld wird zurückgebucht).
+  Undo ist Session-State → kein Save-Format-Risiko.
+- **Pflanzen-Meisterschaft (`mastery`, übersteht Prestige):** jede geerntete
+  Einheit zählt als Meisterschafts-XP der Sorte; Level =
+  `floor(log2(harvested/120 + 1))`, gedeckelt bei 10 → bis **+100 % Ertrag**
+  für genau diese Sorte. Belohnt das Dranbleiben an / Zurückkommen zu einer
+  Sorte: eine voll gemeisterte Sorte schlägt die nächste ungemeisterte Stufe
+  → „immer die neueste" ist nicht mehr automatisch optimal. Anzeige im Hotbar-
+  Tooltip.
+- **Kategorie-Spezialisierung (`specializations`, Gold-Sink, übersteht
+  Prestige):** pro Kategorie mit **Gold** kaufbar, +8 % Ertrag/Stufe für alle
+  Sorten der Kategorie; Kosten ×3,4/Stufe (5 M Basis) — man kann nicht alles
+  maxen, sondern muss wählen, worauf man sich spezialisiert. Gibt Endgame-Gold
+  echten Wert. Sektion im Shop.
+
+Save v19 → v20: `mastery`/`specializations` als leere Maps ergänzt (alte
+Saves unbetroffen, `leaseParcel` setzt beide bewusst NICHT zurück). Ertrag
+wird jetzt aus `… × masteryYieldBonus × specializationYieldBonus` gerollt
+(beide ×1 ohne Investition → Baseline unverändert). Sim erweitert: Level-
+Meilensteine 50/100/250/500/1000, Parzelle 5/10/20/40, erste Endgame-Pflanze,
+„Beete voll", „alle 42 Sorten", plus Gold-Sink- und Meisterschafts-Bilanz.
+
+**Ehrliche Einordnung:** Diese Systeme schaffen Tiefe, Entscheidungen, einen
+Gold-Sink und Dauerziele — sie bremsen die Roh-Pacing aber nicht künstlich
+(Mastery/Spez. sind Power-Layer). Echte Pacing-Bremsen (steilere Spät-
+Kostenkurven, straffere Prestige-Spirale) und weitere Endgame-Systeme
+(Parzellen-Meilensteine, Endgame-Auftragstypen, Achievement-Ziele) sind als
+nächste Phasen vorgesehen.

@@ -13,10 +13,14 @@ import {
   comboWindowSeconds,
   critChanceBonus,
   critWeatherMult,
+  masteryYieldBonus,
   maxScratchTickets,
   rollUnits,
   saleValue,
   scratchDropChance,
+  specializationCost,
+  specializationLevel,
+  specializationYieldBonus,
   waterCharges,
   yieldMultiplier,
 } from './modifiers'
@@ -26,7 +30,7 @@ import { grantXp, type LevelUp } from './xp'
 export type { LevelUp } from './xp'
 import { emptyPlot, getState, notify } from './state'
 import { cycleTime, plotReady } from './tick'
-import type { GameState, PlantDef, UpgradeDef } from './types'
+import type { GameState, PlantDef, PlotState, UpgradeDef } from './types'
 
 export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
   if (def.requiresLicense && state.licenses < def.requiresLicense) return false
@@ -142,6 +146,65 @@ export function clearPlot(index: number): number | null {
   return refund
 }
 
+/** A plot snapshot used for the bulk-clear undo (PHASE 11). */
+export interface ClearedPlot {
+  index: number
+  plot: PlotState
+}
+
+/**
+ * Clear every planted plot at once (PHASE 11 endgame QoL). Refunds 50 % of
+ * each seed and returns a snapshot so the UI can offer a short undo — no
+ * blocking confirm dialogs. An optional filter narrows what gets cleared.
+ */
+export function clearAllPlots(filter?: (plot: PlotState, def: PlantDef) => boolean): {
+  count: number
+  refund: number
+  cleared: ClearedPlot[]
+} {
+  const s = getState()
+  let refund = 0
+  const cleared: ClearedPlot[] = []
+  s.plots.forEach((plot, index) => {
+    if (plot.plantId === null) return
+    const def = plantById(plot.plantId)
+    if (filter && (!def || !filter(plot, def))) return
+    refund += def ? Math.floor(def.seedCost / 2) : 0
+    cleared.push({ index, plot: { ...plot } })
+    plot.plantId = null
+    plot.progress = 0
+    plot.waterLeft = 0
+    plot.regrowing = false
+  })
+  if (cleared.length > 0) {
+    s.money += refund
+    notify()
+  }
+  return { count: cleared.length, refund, cleared }
+}
+
+/**
+ * Undo a bulk clear: put the plants back into still-empty plots and take the
+ * refund money back (never below zero). Plots the player already re-sowed are
+ * left untouched, so undo can't clobber new work.
+ */
+export function restorePlots(cleared: ClearedPlot[], refund: number): boolean {
+  const s = getState()
+  let restored = false
+  for (const { index, plot } of cleared) {
+    const target = s.plots[index]
+    if (target && target.plantId === null) {
+      s.plots[index] = { ...plot }
+      restored = true
+    }
+  }
+  if (restored) {
+    s.money = Math.max(0, s.money - refund)
+    notify()
+  }
+  return restored
+}
+
 /**
  * Pour one watering charge on a growing plot: skips ahead by a fraction of
  * the grow time (may finish ripening). Returns true on success.
@@ -197,9 +260,18 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
     fertilizerMult = CONFIG.fertilizerChargeMult
     s.fertilizerCharges -= 1
   }
-  const units = rollUnits(def.yield * yieldMultiplier(s) * crit.mult * comboMult * fertilizerMult)
+  const units = rollUnits(
+    def.yield *
+      yieldMultiplier(s) *
+      crit.mult *
+      comboMult *
+      fertilizerMult *
+      masteryYieldBonus(s, def.id) *
+      specializationYieldBonus(s, def.category)
+  )
   if (units > s.records.bestHarvest) s.records.bestHarvest = units
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
+  s.mastery[def.id] = (s.mastery[def.id] ?? 0) + units
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
   if (def.regrowTime) {
@@ -409,6 +481,25 @@ export function buyUpgrade(upgradeId: string): boolean {
   if (cost === null || s.money < cost) return false
   s.money -= cost
   s.upgrades[def.id] = upgradeLevel(s, def.id) + 1
+  notify()
+  return true
+}
+
+/** Distinct plant categories in content order (UI lists, specialisation). */
+export const PLANT_CATEGORIES: string[] = [...new Set(PLANTS.map((p) => p.category))]
+
+/**
+ * Buy one level of a category specialisation with gold (PHASE 11 gold sink).
+ * Permanent, survives prestige; the steep cost curve forces a choice of which
+ * categories to invest in. Returns true on success.
+ */
+export function buySpecialization(category: string): boolean {
+  const s = getState()
+  if (!PLANT_CATEGORIES.includes(category)) return false
+  const cost = specializationCost(specializationLevel(s, category))
+  if (cost === null || s.money < cost) return false
+  s.money -= cost
+  s.specializations[category] = specializationLevel(s, category) + 1
   notify()
   return true
 }

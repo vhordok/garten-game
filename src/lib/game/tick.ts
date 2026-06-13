@@ -7,11 +7,13 @@ import {
   autoSowChoice,
   autoSowRate,
   growthMultiplier,
+  masteryYieldBonus,
   maxScratchTickets,
   rollUnits,
   saleValue,
   scratchDropChance,
   sellMultiplier,
+  specializationYieldBonus,
   waterCharges,
   yieldMultiplier,
 } from './modifiers'
@@ -136,8 +138,11 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
       const plot = s.plots[index]
       const def = plantById(plot.plantId!)!
       const cycleSeconds = cycleTime(plot, def)
-      const units = rollUnits(def.yield * yieldMultiplier(s))
+      const units = rollUnits(
+        def.yield * yieldMultiplier(s) * masteryYieldBonus(s, def.id) * specializationYieldBonus(s, def.category)
+      )
       s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
+      s.mastery[def.id] = (s.mastery[def.id] ?? 0) + units
       s.stats.harvested += units
       if (def.regrowTime) {
         plot.progress = 0

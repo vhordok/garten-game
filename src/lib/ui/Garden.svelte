@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { buyPlot, harvestAllReady, maxPlots, nextPlotCost, setAutoSowPlant, sowAllEmpty, waterAllGrowing } from '../game/actions'
+  import { buyPlot, clearAllPlots, harvestAllReady, maxPlots, nextPlotCost, restorePlots, setAutoSowPlant, sowAllEmpty, waterAllGrowing } from '../game/actions'
   import { autoSowRate } from '../game/modifiers'
   import { plantById } from '../data/plants'
   import { gameStore } from '../game/state'
@@ -16,6 +16,11 @@
   // PHASE 1: tap-to-clear mode — the touch-friendly way to free plots
   let clearMode = $state(false)
 
+  // PHASE 11: bulk-clear with a short undo instead of per-plot confirms
+  let undo = $state<ReturnType<typeof clearAllPlots> | null>(null)
+  let undoTimer: ReturnType<typeof setTimeout> | undefined
+
+  const plantedCount = $derived($gameStore.plots.filter((p) => p.plantId !== null).length)
   const readyCount = $derived($gameStore.plots.filter(plotReady).length)
   const emptyCount = $derived($gameStore.plots.filter((p) => p.plantId === null).length)
   const waterableCount = $derived(
@@ -103,6 +108,26 @@
       screenShake(0.8)
     }
   }
+
+  function handleClearAll(e: MouseEvent) {
+    const res = clearAllPlots()
+    if (res.count > 0) {
+      const [cx, cy] = eventCenter(e)
+      leafBurst(cx, cy, Math.min(8 + res.count * 2, 30))
+      playSound('close')
+      undo = res
+      clearTimeout(undoTimer)
+      undoTimer = setTimeout(() => (undo = null), 8000)
+    } else {
+      playSound('error')
+    }
+  }
+
+  function handleUndo() {
+    if (undo && restorePlots(undo.cleared, undo.refund)) playSound('sow')
+    undo = null
+    clearTimeout(undoTimer)
+  }
 </script>
 
 <section class="garden" aria-label="Dein Garten">
@@ -124,6 +149,14 @@
       title="Roden-Modus: Beet antippen, um die Pflanze zu entfernen — 50 % Saatpreis zurück"
     >
       Roden{clearMode ? ': AN' : ''}
+    </button>
+    <button
+      class="pxbtn small"
+      disabled={plantedCount === 0}
+      onclick={handleClearAll}
+      title="Alle bepflanzten Beete auf einmal roden — 50 % Saatpreis zurück, kurz rückgängig machbar"
+    >
+      Alles roden{plantedCount > 0 ? ` (${plantedCount})` : ''}
     </button>
     {#if gnomeOwned}
       <button
@@ -150,6 +183,13 @@
       Alle ernten{readyCount > 0 ? ` (${readyCount})` : ''}
     </button>
   </div>
+
+  {#if undo}
+    <div class="undo-bar" role="status">
+      <span class="num">{undo.count} {undo.count === 1 ? 'Pflanze' : 'Pflanzen'} gerodet · +{formatNumber(undo.refund)} Gold</span>
+      <button class="pxbtn small gold" onclick={handleUndo}>Rückgängig</button>
+    </div>
+  {/if}
 
   <div class="grid" style:grid-template-columns={`repeat(${cols}, var(--cell))`}>
     {#each $gameStore.plots as plot, index (index)}
@@ -253,5 +293,19 @@
 
   .full-note {
     text-align: center;
+  }
+
+  .undo-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: -4px 0 12px;
+    padding: 6px 12px;
+    background: rgba(16, 20, 31, 0.7);
+    border: 2px solid var(--c-gold0);
+    font-size: 0.82rem;
+    color: var(--c-gold2);
   }
 </style>

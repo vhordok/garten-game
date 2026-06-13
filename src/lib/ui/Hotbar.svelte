@@ -1,6 +1,8 @@
 <script lang="ts">
   import { PLANTS, steadyProfitPerSecond } from '../data/plants'
   import { selectPlant } from '../game/actions'
+  import { masteryLevel } from '../game/modifiers'
+  import { CONFIG } from '../data/config'
   import { gameStore } from '../game/state'
   import type { PlantCategory } from '../game/types'
   import { formatDuration, formatNumber } from '../util/format'
@@ -137,6 +139,13 @@
                 {/if}
               {/if}
             </span>
+            {#if !plant.beautyBonus && !plant.passiveIncome}
+              {@const mLevel = masteryLevel($gameStore.mastery[plant.id] ?? 0)}
+              <span class="tip-mastery num">
+                🏅 Meisterschaft Lv {mLevel}/{CONFIG.masteryMaxLevel}
+                {#if mLevel > 0}· +{Math.round(mLevel * CONFIG.masteryYieldPerLevel * 100)} % Ertrag{:else}· ernten zum Steigern{/if}
+              </span>
+            {/if}
           {:else}
             <b class="tip-name">???</b>
             <span class="tip-desc">
@@ -308,6 +317,11 @@
   .tip-profit {
     font-size: 0.72rem;
     color: var(--c-leaf4);
+  }
+
+  .tip-mastery {
+    font-size: 0.7rem;
+    color: var(--c-gold2);
   }
 
   @media (max-width: 640px) {

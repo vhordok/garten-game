@@ -14,6 +14,7 @@ import { steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { UPGRADES } from '../src/lib/data/upgrades.ts'
 import {
   buyPlot,
+  buySpecialization,
   buyUpgrade,
   compostGain,
   harvestAllReady,
@@ -26,6 +27,7 @@ import {
   sowPlot,
   upgradeLevel,
 } from '../src/lib/game/actions.ts'
+import { specializationCost, specializationLevel } from '../src/lib/game/modifiers.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
 import { tick } from '../src/lib/game/tick.ts'
 
@@ -77,6 +79,9 @@ function activeBeat(s) {
     const cost = nextUpgradeCost(u, s)
     if (cost !== null && cost < s.money * 0.35) buyUpgrade(u.id)
   }
+  // gold sink (PHASE 11): invest spare gold into the current crop's category
+  const sc = specializationCost(specializationLevel(s, plant.category))
+  if (sc !== null && sc < s.money * 0.35) buySpecialization(plant.category)
 }
 
 const unlockedCount = (s) => PLANTS.filter((p) => s.totalEarned >= p.unlockAtTotalEarned).length
@@ -173,8 +178,16 @@ function runLongHorizon(activeHours) {
     for (const p of PLANTS) {
       if (s.totalEarned >= p.unlockAtTotalEarned) note(`plant-${p.id}`, `Unlock ${p.name}`, t)
     }
-    if (s.level >= 5) note('lvl5', 'Level 5 (3. Auftragsslot)', t)
-    if (s.level >= 10) note('lvl10', 'Level 10', t)
+    // endgame milestones (PHASE 11)
+    for (const lv of [5, 10, 25, 50, 100, 250, 500, 1000]) {
+      if (s.level >= lv) note(`lvl${lv}`, `Level ${lv}`, t)
+    }
+    for (const pc of [2, 5, 10, 20, 40]) {
+      if (s.parcels >= pc) note(`parcel${pc}`, `Parzelle ${pc}`, t)
+    }
+    if (s.totalEarned >= 8e12) note('endgame', 'Erste Endgame-Pflanze (Sternfrucht)', t)
+    if (s.plots.length >= maxPlots(s) && s.parcels >= 5) note('plotsfull', `Beete voll (${s.plots.length})`, t)
+    if (PLANTS.every((p) => s.totalEarned >= p.unlockAtTotalEarned)) note('allplants', 'Alle 42 Sorten freigeschaltet', t)
   }
 
   console.log(`\n══ Langzeit-Audit: ${activeHours} h aktiv/Tag, Rest idle ══\n`)
@@ -187,6 +200,10 @@ function runLongHorizon(activeHours) {
       `Beete ${s.plots.length}/${maxPlots(s)}`
   )
   console.log(`Upgrades: ${UPGRADES.map((u) => `${u.name}:${upgradeLevel(s, u.id)}`).join(' ')}`)
+  const specs = Object.entries(s.specializations).filter(([, l]) => l > 0)
+  console.log(`Spezialisierung (Gold-Sink): ${specs.length ? specs.map(([c, l]) => `${c}:${l}`).join(' ') : '—'}`)
+  const tops = Object.entries(s.mastery).sort((a, b) => b[1] - a[1]).slice(0, 3)
+  console.log(`Top-Meisterschaft (Einheiten): ${tops.length ? tops.map(([id, n]) => `${id}:${fmtN(n)}`).join(' ') : '—'}`)
 }
 
 // ── subsystem balance audit (PHASE 7) ──────────────────────────────────────
