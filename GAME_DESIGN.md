@@ -460,3 +460,16 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   Phones aus), Hotbar-Tabs/-Slots scrollen auf Phones horizontal mit
   Snap, Garten-Kopf bricht um. Geprüfte Breakpoints 360/390/430/667/768/
   1024 — mehrstufig statt Single-Breakpoint. Kein Save-Format-Change.
+- **Phase 6 — Balancing-Simulation:** `scripts/balance.sim.mjs` bekommt einen
+  zweiten Modus. Default = **Erste-Session-Pacing**: durchgehend aktives
+  Greedy-Spiel mit Snapshots bei 5/15/30/60/120 min (Geld, verdient, Level,
+  Beete, freie Sorten, Prestige-Bereitschaft, beste Sorte) plus Unlock- und
+  Prestige-Zeitpunkten. `node scripts/balance.sim.mjs day [h]` fährt weiter
+  den 14-Tage-Langzeit-Audit. Befund: Früh-Pacing liegt auf den
+  GAME_DESIGN-Zielwerten — Kürbis ~12–14 min (Ziel 15), Prestige #1 ~23 min
+  durchgehend bzw. ~38 min bei 2 h/Tag (Ziel 45), Bäume Tag 1, stetiger
+  Unlock-Drip ohne Totzonen oder Raketenstart, kein Softlock. **Bewusst
+  keine Balance-Werte geändert** — die Kurve ist gesund; Subsystem-Tuning
+  (Shop/Gießen/Tagesbonus) gehört in Phase 7, die Sorten-Verteilung über
+  die Spielphasen in Phase 9. Reine Tooling-/Verifikationsphase, kein
+  Code-Pfad und kein Save-Format berührt.

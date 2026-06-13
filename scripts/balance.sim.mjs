@@ -1,6 +1,11 @@
-// Balance audit: plays the game through the REAL core with a greedy
-// strategy and prints time-to-milestone tables. Run via `npx tsx
-// scripts/balance.sim.mjs [activeHoursPerDay]` — not part of npm test.
+// Balance audit: plays the game through the REAL core with a greedy strategy.
+// Two modes:
+//   (default)            first-session pacing — continuous active play, snapshots
+//                        at 5/15/30/60/120 minutes (PHASE 6).
+//   day [activeHours]    long-horizon audit — N active hours/day over 14 days,
+//                        prints a time-to-milestone table.
+// Run via `npx tsx scripts/balance.sim.mjs [day [activeHoursPerDay]]`.
+// Not part of npm test.
 
 globalThis.localStorage ??= { getItem: () => null, setItem: () => {}, removeItem: () => {} }
 
@@ -23,9 +28,8 @@ import {
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
 import { tick } from '../src/lib/game/tick.ts'
 
-const ACTIVE_HOURS = Number(process.argv[2] ?? 2) // active play per day, rest idles
-const SIM_DAYS = 14
 const STEP = 5 // seconds per loop
+const DAY = 86400
 
 function fmtT(s) {
   if (s < 3600) return `${(s / 60).toFixed(0)}m`
@@ -39,19 +43,8 @@ function fmtN(v) {
   return `${Math.round(v)}`
 }
 
-replaceState(createDefaultState())
-const s = getState()
-
-const milestones = []
-const seen = new Set()
-function note(key, label, t) {
-  if (seen.has(key)) return
-  seen.add(key)
-  milestones.push({ t, label })
-}
-
-/** best unlocked & affordable-ish plant by steady profit/s */
-function bestPlant() {
+/** best unlocked & affordable-ish plant by list order (later = stronger) */
+function bestPlant(s) {
   let best = PLANTS[0]
   for (const p of PLANTS) {
     if (p.beautyBonus || p.passiveIncome) continue // not the sim's business
@@ -63,58 +56,134 @@ function bestPlant() {
   return best
 }
 
-let t = 0
-let prestiges = 0
-const DAY = 86400
-const activeSecs = ACTIVE_HOURS * 3600
+/** One greedy active beat: harvest, sell, replant, reinvest. */
+function activeBeat(s) {
+  harvestAllReady()
+  sellAll()
+  const plant = bestPlant(s)
+  if (s.selectedPlantId !== plant.id) selectPlant(plant.id)
+  for (let i = 0; i < s.plots.length; i++) {
+    if (s.plots[i].plantId === null) sowPlot(i)
+  }
+  if (s.plots.length < maxPlots(s) && nextPlotCost(s) < s.money * 0.35) buyPlot()
+  for (const u of UPGRADES) {
+    const cost = nextUpgradeCost(u, s)
+    if (cost !== null && cost < s.money * 0.35) buyUpgrade(u.id)
+  }
+}
 
-while (t < SIM_DAYS * DAY) {
-  const tod = t % DAY
-  const active = tod < activeSecs
+const unlockedCount = (s) => PLANTS.filter((p) => s.totalEarned >= p.unlockAtTotalEarned).length
 
-  tick(s, STEP)
-  t += STEP
+// ── first-session pacing ───────────────────────────────────────────────────
+function runSession() {
+  replaceState(createDefaultState())
+  const s = getState()
+  const CHECKPOINTS = [5, 15, 30, 60, 120].map((m) => m * 60)
+  const limit = CHECKPOINTS[CHECKPOINTS.length - 1]
+  const rows = []
+  const unlockLog = []
+  let prestigeReadyAt = null
+  let nextCp = 0
+  let seenUnlocks = unlockedCount(s)
 
-  if (active) {
-    harvestAllReady()
-    sellAll()
-    // sow best plant everywhere
-    const plant = bestPlant()
-    if (s.selectedPlantId !== plant.id) selectPlant(plant.id)
-    for (let i = 0; i < s.plots.length; i++) {
-      if (s.plots[i].plantId === null) sowPlot(i)
+  for (let t = 0; t <= limit; t += STEP) {
+    tick(s, STEP)
+    activeBeat(s)
+
+    if (prestigeReadyAt === null && compostGain(s) >= 1) prestigeReadyAt = t
+    const nowUnlocks = unlockedCount(s)
+    if (nowUnlocks > seenUnlocks) {
+      for (const p of PLANTS) {
+        if (s.totalEarned >= p.unlockAtTotalEarned && !unlockLog.some((u) => u.id === p.id)) {
+          unlockLog.push({ id: p.id, name: p.name, t })
+        }
+      }
+      seenUnlocks = nowUnlocks
     }
-    // greedy purchases: anything costing < 35 % of cash
-    if (s.plots.length < maxPlots(s) && nextPlotCost(s) < s.money * 0.35) buyPlot()
-    for (const u of UPGRADES) {
-      const cost = nextUpgradeCost(u, s)
-      if (cost !== null && cost < s.money * 0.35) {
-        buyUpgrade(u.id)
-        note(`upg-${u.id}-1`, `Upgrade ${u.name} Stufe 1`, t)
+
+    if (nextCp < CHECKPOINTS.length && t >= CHECKPOINTS[nextCp]) {
+      rows.push({
+        t,
+        money: s.money,
+        earned: s.totalEarned,
+        level: s.level,
+        plots: `${s.plots.length}/${maxPlots(s)}`,
+        sorten: nowUnlocks,
+        prestige: compostGain(s),
+        best: bestPlant(s).name,
+      })
+      nextCp++
+    }
+  }
+
+  console.log('\n══ Erste Session — durchgehend aktiv (greedy) ══\n')
+  console.log('  Zeit |     Geld | verdient | Lvl | Beete |Sort| Prestige | beste Sorte')
+  console.log('  ─────┼──────────┼──────────┼─────┼───────┼────┼──────────┼────────────')
+  for (const r of rows) {
+    console.log(
+      `  ${fmtT(r.t).padStart(4)} | ${fmtN(r.money).padStart(8)} | ${fmtN(r.earned).padStart(8)} | ` +
+        `${String(r.level).padStart(3)} | ${r.plots.padStart(5)} | ${String(r.sorten).padStart(2)} | ` +
+        `${(r.prestige + ' K').padStart(8)} | ${r.best}`
+    )
+  }
+  console.log('\nFreischaltungen in den ersten 2 h:')
+  if (unlockLog.length <= 1) console.log('  (nur die Start-Sorten)')
+  for (const u of unlockLog) console.log(`  ${fmtT(u.t).padStart(5)}  ${u.name}`)
+  console.log(
+    `\nPrestige #1 verfügbar: ${prestigeReadyAt === null ? 'noch nicht in 2 h' : 'ab ' + fmtT(prestigeReadyAt)}`
+  )
+}
+
+// ── long-horizon audit (legacy) ────────────────────────────────────────────
+function runLongHorizon(activeHours) {
+  replaceState(createDefaultState())
+  const s = getState()
+  const SIM_DAYS = 14
+  const activeSecs = activeHours * 3600
+  const milestones = []
+  const seen = new Set()
+  const note = (key, label, t) => {
+    if (seen.has(key)) return
+    seen.add(key)
+    milestones.push({ t, label })
+  }
+  let t = 0
+  let prestiges = 0
+
+  while (t < SIM_DAYS * DAY) {
+    const active = t % DAY < activeSecs
+    tick(s, STEP)
+    t += STEP
+    if (active) {
+      activeBeat(s)
+      const gain = compostGain(s)
+      if (gain >= Math.max(s.parcels, 2)) {
+        prestiges += 1
+        note(`prestige-${prestiges}`, `Prestige #${prestiges} (+${gain} Kompost, gesamt ${s.compost + gain})`, t)
+        leaseParcel()
       }
     }
-    // prestige once it pays meaningfully more than current compost
-    const gain = compostGain(s)
-    if (gain >= Math.max(s.parcels, 2)) {
-      prestiges += 1
-      note(`prestige-${prestiges}`, `Prestige #${prestiges} (+${gain} Kompost, gesamt ${s.compost + gain})`, t)
-      leaseParcel()
+    for (const p of PLANTS) {
+      if (s.totalEarned >= p.unlockAtTotalEarned) note(`plant-${p.id}`, `Unlock ${p.name}`, t)
     }
+    if (s.level >= 5) note('lvl5', 'Level 5 (3. Auftragsslot)', t)
+    if (s.level >= 10) note('lvl10', 'Level 10', t)
   }
 
-  for (const p of PLANTS) {
-    if (s.totalEarned >= p.unlockAtTotalEarned) note(`plant-${p.id}`, `Unlock ${p.name}`, t)
+  console.log(`\n══ Langzeit-Audit: ${activeHours} h aktiv/Tag, Rest idle ══\n`)
+  for (const m of milestones.sort((a, b) => a.t - b.t)) {
+    console.log(`${fmtT(m.t).padStart(6)}  ${m.label}`)
   }
-  if (s.level >= 5) note('lvl5', 'Level 5 (3. Auftragsslot)', t)
-  if (s.level >= 10) note('lvl10', 'Level 10', t)
+  console.log(
+    `\nEnde nach ${SIM_DAYS}d: Geld ${fmtN(s.money)}, verdient (Runde) ${fmtN(s.totalEarned)}, ` +
+      `lifetime ${fmtN(s.lifetimeEarned)}, Level ${s.level}, Parzelle ${s.parcels}, Kompost ${s.compost}, ` +
+      `Beete ${s.plots.length}/${maxPlots(s)}`
+  )
+  console.log(`Upgrades: ${UPGRADES.map((u) => `${u.name}:${upgradeLevel(s, u.id)}`).join(' ')}`)
 }
 
-console.log(`\nStrategie: ${ACTIVE_HOURS}h aktiv/Tag, danach idle (Helfer/Offline-Logik via tick)\n`)
-for (const m of milestones.sort((a, b) => a.t - b.t)) {
-  console.log(`${fmtT(m.t).padStart(6)}  ${m.label}`)
+if (process.argv[2] === 'day') {
+  runLongHorizon(Number(process.argv[3] ?? 2))
+} else {
+  runSession()
 }
-console.log(`\nEnde nach ${SIM_DAYS}d: Geld ${fmtN(s.money)}, verdient (Runde) ${fmtN(s.totalEarned)}, ` +
-  `lifetime ${fmtN(s.lifetimeEarned)}, Level ${s.level}, Parzelle ${s.parcels}, Kompost ${s.compost}, ` +
-  `Beete ${s.plots.length}/${maxPlots(s)}`)
-const lvls = UPGRADES.map((u) => `${u.name}:${upgradeLevel(s, u.id)}`).join(' ')
-console.log(`Upgrades: ${lvls}`)
