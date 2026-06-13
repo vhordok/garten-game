@@ -82,5 +82,6 @@ vollständig umgesetzt. Feinschliff-Phasen (GAME_DESIGN §9.12) umgesetzt:
 Los-Limit am Level (P0), Softlock/Roden (P1), Lager-Teilverkauf/
 Auftragsschutz (P2), Auto-Saat-Pin & faire Auto-Ernte (P3), Desktop-Topbar/
 Event-Feld (P4), Mobile/Touch (P5), Balancing-Sim (P6), Subsystem-Balance
-(P7), Quests/Begriffe & Ernteprodukte (P8), Sorten-Verdopplung (P9) —
-42 Sorten in 8 Kategorien, Stand SAVE_VERSION 19.
+(P7), Quests/Begriffe & Ernteprodukte (P8), Sorten-Verdopplung (P9),
+kategoriespezifische Setzlinge (P10) — 42 Sorten in 8 Kategorien,
+Stand SAVE_VERSION 19.
