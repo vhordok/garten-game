@@ -129,7 +129,7 @@ export const PLANTS: PlantDef[] = [
     description: 'Kein Ernten nötig: ausgewachsen verkauft sie stetig Holz — Gold tröpfelt von selbst.',
     seedCost: 60000,
     growTime: 1800,
-    passiveIncome: 28,
+    passiveIncome: 32,
     yield: 0,
     sellValue: 0,
     unlockAtTotalEarned: 800000,
