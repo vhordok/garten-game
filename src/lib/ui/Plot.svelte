@@ -30,8 +30,9 @@
   const fraction = $derived(def ? Math.min(plot.progress / target, 1) : 0)
   const remaining = $derived(def ? Math.max(target - plot.progress, 0) : 0)
 
-  // four visible growth stages: shared seedling, then per-plant sprites 1–3.
-  // Regrowing berries/trees never shrink back below stage 1.
+  // four visible growth stages: a per-category sprout (PHASE 10), then
+  // per-plant sprites 1–3. Regrowing berries/trees never shrink back below
+  // stage 1, so they skip the sprout.
   const stageSprite = $derived(
     def === undefined
       ? null
@@ -40,7 +41,7 @@
         : fraction < 1 / 3
           ? plot.regrowing
             ? `${def.id}-1`
-            : 'seedling'
+            : `seedling-${def.category}`
           : fraction < 2 / 3
             ? `${def.id}-1`
             : `${def.id}-2`

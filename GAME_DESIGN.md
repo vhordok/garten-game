@@ -509,3 +509,12 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   `medizinalhanf1 = cbdhanf1`) und bekommt ein eigenes 16×16-Reife-Grid; ein
   Validierungsskript prüft 16×16 + Legenden-Zeichen + drei Stufen je Sorte.
   Additive Daten, kein Save-Format-Change (neue IDs entstehen unlock-gegated).
+- **Phase 10 — Sprites & Wachstumsstufen:** Der gemeinsame Einheits-Setzling
+  der frühesten Stufe wird durch **kategoriespezifische Sprouts** ersetzt:
+  Kräuter, Gemüse (mit Wurzelansatz), Beeren (erste rote Knospe), Obst &
+  Holz (kleiner Stamm), Zier (Blütenknospe), Magie (Funkeln), Cannabis
+  (gezacktes Blatt) — `seedling-<category>` in `ui/pixel/sprites.ts`, gewählt
+  in `Plot.svelte` über die Kategorie. Frisch gesäte Beete sprießen jetzt „in
+  character" statt alle gleich; Wiederernte-Pflanzen überspringen den Sprout
+  (starten bei Stufe 1) wie bisher. Reine UI/Sprite-Phase, kein Save-Format-
+  Change; das Sprite-Validierungsskript deckt auch die 8 neuen Sprouts ab.
