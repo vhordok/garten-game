@@ -147,7 +147,7 @@ Allokations- und Kaufentscheidungen — klassisches Idle-Endstadium pro Runde.
 | **2** | Gemüse-Kategorie, Unlock-UI, Bewässerungs-Upgrades | ✅ via §9.8 (Gemüse, aktives Gießen; Sprinkler/Kompost aus R4) |
 | **3** | Helfer (Auto-Ernte, Auto-Aussaat, Auto-Verkauf) inkl. Offline-Simulation | ✅ via §9.10 |
 | **4** | Prestige: Parzellen + Kompost | ✅ via §9.9 |
-| **5** | Beerensträucher (Wiederernte), Obstbäume | ✅ via §9.9 (passive Holz-Bäume offen) |
+| **5** | Beerensträucher (Wiederernte), Obstbäume, passive Holz-Bäume | ✅ via §9.9 + §9.12 |
 | 6 | Hecken/Zier (Schönheits-Multiplikator), Cannabis + Lizenzen | Zier ✅ via §9.11; Cannabis offen |
 | 7 | Achievements, Statistiken, Sound, Feinschliff & Balancing | offen |
 
@@ -398,8 +398,8 @@ Festpreise), Tagesbonus mit 7-Tage-Serie, Goldener Glühwurm
 live-only), passive Holz-Bäume (Eiche 32/s, Mammutbaum 480/s — §3 #5),
 22 Achievements à +1 % Ertrag, Cannabis hinter 3 Lizenzen mit
 Pflege-Malus (§3 #7), Rekorde + 24-h-Einnahmen-Graph, generative
-Chiptune-Musik + Nacht-Ambience. Save v13–v18. 25 Sorten in
-7 Kategorien.
+Chiptune-Musik + Nacht-Ambience. Save v13–v18. Seit Phase 9 (§9.12)
+42 Sorten in 8 Kategorien.
 
 **Zierpflanzen (§3 #6 umgesetzt):** Nachtrose (+5 %, 250K),
 Leuchtlilie (+8 %, 8M), Sternenhecke (+12 %, 400M). Keine Ernte —
@@ -494,3 +494,18 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   die Passiv-Holzbäume heißen jetzt **„Holz"** (statt „Bäume"), klar getrennt
   von den Obstbäumen unter **„Obst"**. Reine Daten/Text-Phase, kein
   Save-Format-Change (`produce` ist Definition, kein gespeichertes Feld).
+- **Phase 9 — Sorten-Verdopplung (24 → 42):** 18 neue Sorten, über alle
+  Spielphasen verteilt. Harte Randbedingung: die testgesicherte Profit-Kette
+  (jede erntbare Sorte > 1,5× der vorigen) ist mit ~2×-Schritten zu dicht zum
+  Einschieben — neue **erntbare** Sorten erweitern daher die Endgame-Decke
+  (5 Magie-Früchte: Sternfrucht, Nebelbeere, Phönixfrucht, Ewigkeitsblüte,
+  Weltenrose, bis ~2,4 M Gold/s). **Zier** und **Holz** sind kettenfrei und
+  füllen Früh-/Mittelspiel: 9 neue Zierpflanzen (Veilchen → Himmelsorchidee,
+  Schönheit 2 → 18 %) und 4 neue Passiv-Bäume. Die Passiv-Leiter ist jetzt
+  lückenlos (Phase-7-Notiz erledigt): Eiche 32 → **Walnussbaum 150** →
+  Mammutbaum 480 → **Goldahorn 1700** → **Ebenholz 16000** → **Mondzeder
+  150000** Gold/s, alle im 0,9–1,9×-Band (Audit `… subsystems`). Sprites sind
+  Code: jede neue Sorte erbt ihre frühen Wachstumsstufen (wie
+  `medizinalhanf1 = cbdhanf1`) und bekommt ein eigenes 16×16-Reife-Grid; ein
+  Validierungsskript prüft 16×16 + Legenden-Zeichen + drei Stufen je Sorte.
+  Additive Daten, kein Save-Format-Change (neue IDs entstehen unlock-gegated).
