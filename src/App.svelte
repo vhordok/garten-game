@@ -13,6 +13,7 @@
   import Garden from './lib/ui/Garden.svelte'
   import Hotbar from './lib/ui/Hotbar.svelte'
   import Hud from './lib/ui/Hud.svelte'
+  import PixelIcon from './lib/ui/PixelIcon.svelte'
   import InventoryPanel from './lib/ui/InventoryPanel.svelte'
   import PrestigePanel from './lib/ui/PrestigePanel.svelte'
   import QuestPanel from './lib/ui/QuestPanel.svelte'
@@ -123,6 +124,16 @@
   </main>
   <Hotbar />
 </div>
+<!-- PHASE 4: on roomy desktops the settings gear sits outside the topbar,
+     in the corner; on narrower screens the in-HUD gear is used instead -->
+<button
+  class="settings-fab pxbtn"
+  onclick={() => (openPanel = 'settings')}
+  title="Einstellungen & Spielstand"
+  aria-label="Einstellungen"
+>
+  <PixelIcon name="gear" scale={2} />
+</button>
 <GoldenFirefly />
 <WeatherEvents />
 <FxLayer />
@@ -156,8 +167,24 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* keep clear of the fixed HUD (top) and hotbar (bottom) */
-    padding: 84px 16px 130px;
+    /* keep clear of the fixed HUD (top, real height via --hud-h) and the
+       hotbar (bottom). The fallback covers the first paint before measuring. */
+    padding: calc(10px + var(--hud-h, 76px) + 16px) 16px 130px;
+  }
+
+  /* detached settings gear — hidden until there is room beside the topbar */
+  .settings-fab {
+    display: none;
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    z-index: 30;
+  }
+
+  @media (min-width: 1100px) {
+    .settings-fab {
+      display: inline-flex;
+    }
   }
 
   main {

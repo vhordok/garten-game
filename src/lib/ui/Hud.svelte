@@ -63,6 +63,14 @@
   const xpNeeded = $derived(xpToNext($gameStore.level))
   const xpFraction = $derived(Math.min($gameStore.xp / xpNeeded, 1))
 
+  // PHASE 4: publish the real HUD height so event banners and the content
+  // padding always sit below the topbar — even when the row wraps on a
+  // narrow desktop. No more guessing with a hardcoded offset.
+  let hudHeight = $state(0)
+  $effect(() => {
+    document.documentElement.style.setProperty('--hud-h', `${hudHeight}px`)
+  })
+
   function handleSellAll(e: MouseEvent) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const gain = sellAll()
@@ -73,7 +81,7 @@
   }
 </script>
 
-<header class="hud pxpanel">
+<header class="hud pxpanel" bind:offsetHeight={hudHeight}>
   <div class="row">
     <div class="logo">
       <PixelIcon name="sparkle" scale={2} />
@@ -169,7 +177,13 @@
     {#if stockCount > 0}<span class="badge num">{formatNumber(stockCount)}</span>{/if}
   </button>
 
-    <button class="pxbtn" onclick={onOpenSettings} title="Einstellungen & Spielstand" aria-label="Einstellungen">
+    <span class="hud-divider" aria-hidden="true"></span>
+    <button
+      class="pxbtn settings-in-hud"
+      onclick={onOpenSettings}
+      title="Einstellungen & Spielstand"
+      aria-label="Einstellungen"
+    >
       <PixelIcon name="gear" scale={2} />
     </button>
   </div>
@@ -336,6 +350,23 @@
   .badge {
     font-size: 0.7rem;
     color: var(--c-leaf5);
+  }
+
+  /* PHASE 4: set the settings gear apart from the gameplay actions */
+  .hud-divider {
+    width: 2px;
+    align-self: stretch;
+    margin: 2px 0;
+    background: var(--c-edge);
+    opacity: 0.6;
+  }
+
+  /* on roomy desktops a detached corner gear takes over (see App.svelte) */
+  @media (min-width: 1100px) {
+    .hud-divider,
+    .settings-in-hud {
+      display: none;
+    }
   }
 
   .pxbtn {

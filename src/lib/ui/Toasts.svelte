@@ -15,7 +15,8 @@
 <style>
   .toasts {
     position: fixed;
-    top: 72px;
+    /* below the real topbar height so toasts never cover HUD buttons (PHASE 4) */
+    top: calc(10px + var(--hud-h, 76px) + 8px);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -25,6 +26,8 @@
     align-items: center;
     width: max-content;
     max-width: 92vw;
+    /* the container itself must never intercept clicks; toasts opt back in */
+    pointer-events: none;
   }
 
   .toast {
@@ -36,6 +39,7 @@
     font-size: 0.82rem;
     text-align: left;
     padding: 4px 10px;
+    pointer-events: auto;
   }
 
   .toast-icon {
