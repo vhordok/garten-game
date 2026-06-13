@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { buyPlot, harvestAllReady, maxPlots, nextPlotCost, sowAllEmpty, waterAllGrowing } from '../game/actions'
+  import { buyPlot, harvestAllReady, maxPlots, nextPlotCost, setAutoSowPlant, sowAllEmpty, waterAllGrowing } from '../game/actions'
+  import { autoSowRate } from '../game/modifiers'
+  import { plantById } from '../data/plants'
   import { gameStore } from '../game/state'
   import { plotReady } from '../game/tick'
   import { formatNumber } from '../util/format'
@@ -21,6 +23,15 @@
   )
   const plotCost = $derived(nextPlotCost($gameStore))
   const canBuyMore = $derived($gameStore.plots.length < maxPlots($gameStore))
+
+  // PHASE 3: the Sä-Gnom can sow a pinned plant instead of the hand selection,
+  // so manual picking never hijacks the automation. Control only shows once
+  // the gnome exists.
+  const gnomeOwned = $derived(autoSowRate($gameStore) > 0)
+  const autoSowPinned = $derived($gameStore.autoSowPlantId)
+  const autoSowLabel = $derived(
+    autoSowPinned ? (plantById(autoSowPinned)?.name ?? 'Auswahl') : 'Auswahl'
+  )
   // roughly square field, 4–7 columns depending on plot count
   const tileCount = $derived($gameStore.plots.length + (canBuyMore ? 1 : 0))
   const cols = $derived(Math.min(Math.max(4, Math.ceil(Math.sqrt(tileCount))), 7))
@@ -114,6 +125,21 @@
     >
       Roden{clearMode ? ': AN' : ''}
     </button>
+    {#if gnomeOwned}
+      <button
+        class="pxbtn small"
+        class:gold={autoSowPinned}
+        onclick={() => {
+          setAutoSowPlant(autoSowPinned ? null : $gameStore.selectedPlantId)
+          playSound('click')
+        }}
+        title={autoSowPinned
+          ? `Sä-Gnom sät fest „${autoSowLabel}“ — antippen, um wieder deiner Auswahl zu folgen`
+          : 'Sä-Gnom folgt deiner Auswahl — antippen, um die aktuelle Sorte fest zu pinnen'}
+      >
+        Auto-Saat: {autoSowLabel}{autoSowPinned ? ' 🔒' : ''}
+      </button>
+    {/if}
     <button
       class="pxbtn primary"
       class:attention={readyCount > 0}

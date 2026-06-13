@@ -430,3 +430,12 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   Marktkarren liegen — nur eine explizite Stückzahl verkauft auch
   Reserviertes. Der Marktkarren verkauft damit nur noch Überschuss
   (Mindestbestand = Auftragsbedarf), live wie offline.
+- **Phase 3 — Auto-Aussaat entkoppelt & faire Auto-Ernte (Save v19):**
+  Der Sä-Gnom hat eine eigene Sorte (`autoSowPlantId`, `autoSowChoice()`):
+  null = folgt der Handauswahl (altes Verhalten), gepinnt = sät fest diese
+  Sorte, egal was du gerade von Hand wählst. Umschalter im Garten-Kopf,
+  nur sichtbar wenn der Gnom existiert. Auto-Ernte ist jetzt fair: im
+  Live-Spiel wirft sie Rubbellose mit derselben zeitbasierten Chance ab
+  wie das Ernten von Hand (Taschen-Cap gilt), der gechunkte Offline-Pass
+  bleibt los-frei (`tick(state, dt, { offline: true })`), damit kein
+  Heimkommen die Tasche flutet. Kombo bleibt bewusst reine Aktiv-Belohnung.

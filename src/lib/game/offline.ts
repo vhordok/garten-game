@@ -35,7 +35,7 @@ export function applyOfflineProgress(savedAt: number, now = Date.now()): Offline
   let remaining = simulatedSeconds
   while (remaining > 0) {
     const step = Math.min(remaining, CHUNK_SECONDS)
-    tick(state, step)
+    tick(state, step, { offline: true })
     remaining -= step
   }
 
