@@ -52,6 +52,20 @@ export function selectPlant(plantId: string): void {
   notify()
 }
 
+/**
+ * Pin the plant the Sä-Gnom auto-sows, or pass null to let it follow the
+ * manual selection again (PHASE 3). A pinned plant must be unlocked.
+ */
+export function setAutoSowPlant(plantId: string | null): void {
+  const s = getState()
+  if (plantId !== null) {
+    const def = plantById(plantId)
+    if (!def || !isPlantUnlocked(def, s)) return
+  }
+  s.autoSowPlantId = plantId
+  notify()
+}
+
 /** Sow the currently selected plant on an empty plot. Returns true on success. */
 export function sowPlot(index: number): boolean {
   const s = getState()
@@ -358,6 +372,7 @@ export function leaseParcel(): number {
   s.questStreak = 0
   s.combo = { count: 0, remaining: 0 }
   s.selectedPlantId = PLANTS[0].id
+  s.autoSowPlantId = null
   refillQuests(s)
   notify()
   return gain

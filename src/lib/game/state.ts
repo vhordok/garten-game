@@ -18,6 +18,7 @@ export function createDefaultState(now = Date.now()): GameState {
     plots: Array.from({ length: CONFIG.startPlots }, emptyPlot),
     inventory: {},
     selectedPlantId: PLANTS[0].id,
+    autoSowPlantId: null,
     upgrades: {},
     quests: [],
     questCounter: 0,

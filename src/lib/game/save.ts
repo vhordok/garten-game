@@ -11,7 +11,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState } from './types'
 
-export const SAVE_VERSION = 18
+export const SAVE_VERSION = 19
 
 interface SaveEnvelope {
   version: number
@@ -167,6 +167,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
     case 17:
       // v17 → v18: records + earnings history; defaults empty.
       return { ...envelope, version: 18 }
+    case 18:
+      // v18 → v19: separate auto-sow plant for the gnome; sanitize() defaults
+      // it to null (= keep following the manual selection, old behavior).
+      return { ...envelope, version: 19 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -224,6 +228,9 @@ function sanitize(raw: unknown): GameState {
 
   const selected = typeof r.selectedPlantId === 'string' ? plantById(r.selectedPlantId) : undefined
   state.selectedPlantId = selected ? selected.id : PLANTS[0].id
+
+  const autoSow = typeof r.autoSowPlantId === 'string' ? plantById(r.autoSowPlantId) : undefined
+  state.autoSowPlantId = autoSow ? autoSow.id : null
 
   const upgrades: Record<string, number> = {}
   if (typeof r.upgrades === 'object' && r.upgrades !== null) {

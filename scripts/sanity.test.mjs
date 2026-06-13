@@ -37,6 +37,7 @@ import {
   selectPlant,
   sellAll,
   sellPlant,
+  setAutoSowPlant,
   settleScratchCard,
   skipQuest,
   sowAllEmpty,
@@ -1019,11 +1020,60 @@ test('helpers: auto-harvest/sow/sell run through tick (and thus offline)', () =>
     assert.ok(s.money > moneyStart, `idle play must be profitable (${s.money} vs ${moneyStart})`)
     assert.ok(s.totalEarned > 0, 'auto sales count as earnings')
 
-    // helpers are sober: no crits, no combo, no tickets
+    // helpers never crit or build combo; basil's ticket rate sits far below
+    // the 0.5 boring-rng roll, so none drop here (PHASE 3 drops covered below)
     assert.equal(s.stats.crits, 0)
     assert.equal(s.combo.count, 0)
     assert.equal(s.scratchTickets, 0)
     assert.ok(basil.yield >= 1)
+  })
+})
+
+test('PHASE 3: live auto-harvest drops tickets, offline stays sober, gnome uses its pin', () => {
+  // live auto-harvest is as lucky as harvesting by hand
+  withRngQueue([0.0], () => {
+    const s = fresh()
+    assert.ok(sowPlot(0)) // basil, the default selection
+    tick(s, PLANTS[0].growTime) // ripen (no rng consumed by growth)
+    s.upgrades['erntehelfer'] = 10
+    tick(s, 1) // helper grabs the ready plot
+    assert.ok(s.stats.harvested > 0, 'helper must harvest')
+    assert.ok(s.scratchTickets > 0, 'live auto-harvest drops a ticket')
+  })
+
+  // the chunked offline pass never tops off the pocket
+  withRngQueue([0.0], () => {
+    const s = fresh()
+    assert.ok(sowPlot(0))
+    tick(s, PLANTS[0].growTime)
+    s.upgrades['erntehelfer'] = 10
+    tick(s, 1, { offline: true })
+    assert.ok(s.stats.harvested > 0)
+    assert.equal(s.scratchTickets, 0, 'offline auto-harvest stays ticket-free')
+  })
+
+  // the gnome sows its pinned plant, ignoring the live hand selection
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e15 // unlock everything
+    setAutoSowPlant('basilikum')
+    selectPlant('nachtrose') // hand selection moves to an ornamental
+    s.upgrades['saegnom'] = 10
+    for (const p of s.plots) p.plantId = null
+    tick(s, 10)
+    assert.ok(
+      s.plots.some((p) => p.plantId === 'basilikum'),
+      'gnome sows the pinned plant'
+    )
+    assert.ok(
+      !s.plots.some((p) => p.plantId === 'nachtrose'),
+      'gnome ignores the hand selection'
+    )
+
+    // unpinning makes it follow the selection again
+    setAutoSowPlant(null)
+    assert.equal(getState().autoSowPlantId, null)
   })
 })
 

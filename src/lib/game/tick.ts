@@ -4,10 +4,13 @@ import { plantById } from '../data/plants'
 import {
   autoHarvestRate,
   autoSellInterval,
+  autoSowChoice,
   autoSowRate,
   growthMultiplier,
+  maxScratchTickets,
   rollUnits,
   saleValue,
+  scratchDropChance,
   sellMultiplier,
   waterCharges,
   yieldMultiplier,
@@ -25,8 +28,11 @@ export function cycleTime(plot: PlotState, def: PlantDef): number {
  * Advance the simulation by dtSeconds. Single source of truth for time-based
  * progress — the live loop AND offline catch-up both run through here
  * (see CLAUDE.md rule 2). Returns true if anything changed.
+ *
+ * `opts.offline` marks the chunked catch-up: it keeps automation sober (no
+ * scratch-ticket drops) so a long absence can't flood the ticket pocket.
  */
-export function tick(state: GameState, dtSeconds: number): boolean {
+export function tick(state: GameState, dtSeconds: number, opts: { offline?: boolean } = {}): boolean {
   if (dtSeconds <= 0) return false
   const grownSeconds = dtSeconds * growthMultiplier(state)
   let changed = false
@@ -78,7 +84,7 @@ export function tick(state: GameState, dtSeconds: number): boolean {
   // the market never sleeps
   state.marketTime = (state.marketTime + dtSeconds) % (CONFIG.marketPeriodSeconds * 1e6)
   changed = true
-  if (processHelpers(state, dtSeconds)) changed = true
+  if (processHelpers(state, dtSeconds, opts.offline ?? false)) changed = true
   // earnings history: one bucket per 30 minutes, ring of 48 (≈ 24 h)
   state.historyAcc.seconds += dtSeconds
   while (state.historyAcc.seconds >= 1800) {
@@ -110,10 +116,12 @@ export function tick(state: GameState, dtSeconds: number): boolean {
 
 /**
  * Helper automation (GAME_DESIGN.md §4/§9.10) — lives in tick so the same
- * code runs live and offline. Deliberately sober compared to active play:
- * no crits, no combo, no ticket drops, no fertilizer consumption.
+ * code runs live and offline. Sober compared to active play: no crits, no
+ * combo, no fertilizer consumption. Live auto-harvest DOES drop scratch
+ * tickets at the normal time-based rate (PHASE 3 fairness), but the chunked
+ * offline pass never does — otherwise every return would top off the pocket.
  */
-function processHelpers(s: GameState, dt: number): boolean {
+function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
   let changed = false
 
   const harvestRate = autoHarvestRate(s)
@@ -124,6 +132,7 @@ function processHelpers(s: GameState, dt: number): boolean {
       if (index === -1) break
       const plot = s.plots[index]
       const def = plantById(plot.plantId!)!
+      const cycleSeconds = cycleTime(plot, def)
       const units = rollUnits(def.yield * yieldMultiplier(s))
       s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
       s.stats.harvested += units
@@ -137,6 +146,14 @@ function processHelpers(s: GameState, dt: number): boolean {
         plot.waterLeft = 0
         plot.regrowing = false
       }
+      // same lucky-ticket chance the player gets by hand — but only live
+      if (
+        !offline &&
+        s.scratchTickets < maxScratchTickets(s) &&
+        Math.random() < scratchDropChance(s, cycleSeconds)
+      ) {
+        s.scratchTickets += 1
+      }
       grantXp(s, units)
       s.helperAcc.harvest -= 1
       changed = true
@@ -146,7 +163,7 @@ function processHelpers(s: GameState, dt: number): boolean {
   const sowRate = autoSowRate(s)
   if (sowRate > 0) {
     s.helperAcc.sow = Math.min(s.helperAcc.sow + dt * sowRate, s.plots.length)
-    const def = plantById(s.selectedPlantId)
+    const def = plantById(autoSowChoice(s))
     while (s.helperAcc.sow >= 1) {
       if (!def || s.totalEarned < def.unlockAtTotalEarned || s.money < def.seedCost) break
       const index = s.plots.findIndex((p) => p.plantId === null)

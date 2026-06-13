@@ -145,6 +145,8 @@ export interface GameState {
   inventory: Record<string, number>
   /** plant sown when clicking an empty plot */
   selectedPlantId: string
+  /** plant the Sä-Gnom auto-sows; null = follow the manual selection (PHASE 3) */
+  autoSowPlantId: string | null
   /** upgrade levels keyed by UpgradeDef id (absent = level 0) */
   upgrades: Record<string, number>
   /** active delivery orders (slot count gated by level, see progression) */

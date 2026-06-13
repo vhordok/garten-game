@@ -138,6 +138,15 @@ export function autoSellInterval(state: GameState): number {
   return level > 0 ? 60 / level : Infinity
 }
 
+/**
+ * Plant the Sä-Gnom sows: its own pinned choice, or — when unset — whatever
+ * the player has currently selected by hand (PHASE 3). Shared by tick and UI
+ * so live, offline and the picker label always agree.
+ */
+export function autoSowChoice(state: GameState): string {
+  return state.autoSowPlantId ?? state.selectedPlantId
+}
+
 /** Single source for sale math — manual sales and the market cart agree. */
 export function saleValue(state: GameState, sellValue: number, count: number): number {
   return Math.round(count * sellValue * sellMultiplier(state))
