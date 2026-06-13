@@ -49,10 +49,13 @@
 <style>
   .banner {
     position: fixed;
-    top: 86px;
+    /* sit in the event zone right below the real topbar height (PHASE 4) */
+    top: calc(10px + var(--hud-h, 76px) + 8px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 18;
+    /* purely informational — never swallow a click meant for a button */
+    pointer-events: none;
     display: flex;
     flex-direction: column;
     gap: 4px;

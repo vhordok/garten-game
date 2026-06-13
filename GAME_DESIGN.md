@@ -439,3 +439,13 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   wie das Ernten von Hand (Taschen-Cap gilt), der gechunkte Offline-Pass
   bleibt los-frei (`tick(state, dt, { offline: true })`), damit kein
   Heimkommen die Tasche flutet. Kombo bleibt bewusst reine Aktiv-Belohnung.
+- **Phase 4 — Desktop-Topbar, Event-Feld & Overlays:** Die HUD misst ihre
+  echte Höhe und legt sie als CSS-Variable `--hud-h` ab. Content-Padding,
+  Wetter-Banner und Toasts richten sich daran aus — die Topbar darf jetzt
+  umbrechen, ohne Spielfeld oder Banner zu überlappen (statt hartem
+  `top: 86px`). Banner blockieren keine Buttons mehr: das Wetter-Banner ist
+  `pointer-events: none`, der Toast-Container ebenso (einzelne Toasts bleiben
+  klickbar). Das Settings-Zahnrad sitzt auf breiten Desktops (≥ 1100 px) als
+  eigener Knopf optisch außerhalb der Topbar in der Ecke; auf schmalen
+  Screens bleibt es — durch einen Trenner abgesetzt — in der HUD (kein
+  Mobile-Regress). Reine UI/CSS-Phase, kein Save-Format-Change.
