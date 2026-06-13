@@ -14,6 +14,9 @@ export type PlantCategory =
 export interface PlantDef {
   id: string
   name: string
+  /** harvested produce, plural (PHASE 8): quests/storage talk about the goods
+   * ("Äpfel"), not the plant ("Apfelbaum"). Defaults to name when omitted. */
+  produce?: string
   emoji: string
   category: PlantCategory
   description: string

@@ -11,7 +11,7 @@ globalThis.localStorage ??= {
   removeItem: () => {},
 }
 import { CONFIG } from '../src/lib/data/config.ts'
-import { PLANTS, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
+import { PLANTS, produceName, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
@@ -833,6 +833,18 @@ test('plant data: ascending unlocks, doubling profit curve, ROI ≥ 3', () => {
     }
     lastUnlock = plant.unlockAtTotalEarned
     lastProfit = profit
+  }
+})
+
+test('PHASE 8: produce names — deliver goods, not the plant', () => {
+  const apple = PLANTS.find((p) => p.id === 'apfelbaum')
+  const basil = PLANTS.find((p) => p.id === 'basilikum')
+  assert.equal(produceName(apple), 'Äpfel') // not "Apfelbaum"
+  assert.equal(produceName(basil), 'Basilikum') // falls back to the name
+  // every harvestable plant (the only ones quests ask for) has a label
+  for (const p of PLANTS) {
+    if (p.beautyBonus || p.passiveIncome) continue
+    assert.ok(produceName(p).length > 0, `${p.id}: missing produce label`)
   }
 })
 
