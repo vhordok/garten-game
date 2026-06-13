@@ -281,8 +281,10 @@
     z-index: 5;
   }
 
+  /* :focus (not just :focus-visible) so a TAP on touch shows the info too — a
+     real tap-for-info without hover. Pointer-events:none keeps it click-through. */
   .slot:hover .tip,
-  .slot:focus-visible .tip {
+  .slot:focus .tip {
     display: flex;
   }
 

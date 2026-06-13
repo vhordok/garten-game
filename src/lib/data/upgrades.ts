@@ -46,7 +46,8 @@ export const UPGRADES: UpgradeDef[] = [
     id: 'wasserfass',
     name: 'Wasserfass',
     sprite: 'wasserfass',
-    description: 'Mehr Gieß-Ladungen pro Aussaat.',
+    description:
+      'Mehr Gieß-Ladungen plus Wasservorrat: +3 % Wachstum/Stufe (auch offline) und zählt zur Cannabis-Bewässerung.',
     effect: 'waterCharges',
     section: 'boost',
     perLevel: 1,
@@ -58,7 +59,7 @@ export const UPGRADES: UpgradeDef[] = [
     id: 'sternenuhr',
     name: 'Sternenuhr',
     sprite: 'sternenuhr',
-    description: 'Die Ernte-Kette reißt später ab.',
+    description: 'Die Ernte-Kette reißt später ab — und +1 h Offline-Wachstum pro Stufe.',
     effect: 'comboWindow',
     section: 'boost',
     perLevel: 0.5,

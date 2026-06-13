@@ -22,7 +22,9 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 60;
+    /* below the modal backdrop (z-50) so an open panel stays readable; still
+       above the HUD/scene so toasts show during normal play (PHASE 12) */
+    z-index: 45;
     align-items: center;
     width: max-content;
     max-width: 92vw;

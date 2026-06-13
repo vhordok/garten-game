@@ -27,7 +27,13 @@ export function effectiveCompost(state: GameState): number {
 
 /** Growth speed factor applied to tick deltas (upgrades × compost). */
 export function growthMultiplier(state: GameState): number {
-  return multiplierFor(state, 'growth') * (1 + CONFIG.compostGrowthPerPoint * effectiveCompost(state))
+  // Wasserfass adds a small passive growth bonus so it helps idle play too (PHASE 12)
+  const wasserfass = 1 + CONFIG.wasserfassGrowthPerLevel * (state.upgrades['wasserfass'] ?? 0)
+  return (
+    multiplierFor(state, 'growth') *
+    (1 + CONFIG.compostGrowthPerPoint * effectiveCompost(state)) *
+    wasserfass
+  )
 }
 
 /** Harvested-units factor: upgrades × compost × permanent level bonus. */
@@ -151,7 +157,12 @@ export function maxScratchTickets(state: GameState): number {
 
 /** Offline simulation cap in hours. */
 export function offlineCapHours(state: GameState): number {
-  return CONFIG.offlineCapHours + effectBonus(state, 'offlineCap')
+  // Sternenuhr stretches the offline cap a little so it earns its keep idle (PHASE 12)
+  return (
+    CONFIG.offlineCapHours +
+    effectBonus(state, 'offlineCap') +
+    (state.upgrades['sternenuhr'] ?? 0) * CONFIG.sternenuhrOfflinePerLevel
+  )
 }
 
 /** Auto-harvested plots per second (0 = no helper). */
