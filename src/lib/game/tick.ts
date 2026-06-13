@@ -94,15 +94,18 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
     if (state.history.length > 48) state.history.shift()
     changed = true
   }
-  // softlock guard: broke, nothing planted, nothing in storage → the
-  // neighbours lend the gardener fresh seed money (PHASE 1)
-  if (
-    state.money < CONFIG.startMoney &&
-    state.plots.every((p) => p.plantId === null) &&
-    Object.keys(state.inventory).length === 0
-  ) {
-    state.money = CONFIG.startMoney
-    changed = true
+  // softlock guard: broke and nothing growing → only the cheap checks run
+  // every tick; the stock scan happens just in that corner. Stock locked by
+  // open orders counts as unusable, so a garden whose entire inventory is
+  // reserved by quests still gets rescued (PHASE 1, hardened PHASE 11).
+  if (state.money < CONFIG.startMoney && state.plots.every((p) => p.plantId === null)) {
+    const hasFreeStock = Object.entries(state.inventory).some(
+      ([id, count]) => count - questReserved(state, id) > 0
+    )
+    if (!hasFreeStock) {
+      state.money = CONFIG.startMoney
+      changed = true
+    }
   }
   // achievements are cheap predicates — check once per tick, UI announces
   for (const def of ACHIEVEMENTS) {
@@ -164,7 +167,10 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
   if (sowRate > 0) {
     s.helperAcc.sow = Math.min(s.helperAcc.sow + dt * sowRate, s.plots.length)
     const def = plantById(autoSowChoice(s))
-    while (s.helperAcc.sow >= 1) {
+    // the gnome only auto-replants harvestable crops — ornamentals and timber
+    // are "plant once" and shouldn't drain money on autopilot (PHASE 11)
+    const autoSowable = def !== undefined && def.beautyBonus === undefined && def.passiveIncome === undefined
+    while (autoSowable && s.helperAcc.sow >= 1) {
       if (!def || s.totalEarned < def.unlockAtTotalEarned || s.money < def.seedCost) break
       const index = s.plots.findIndex((p) => p.plantId === null)
       if (index === -1) break

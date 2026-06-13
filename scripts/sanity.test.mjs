@@ -848,6 +848,37 @@ test('PHASE 8: produce names — deliver goods, not the plant', () => {
   }
 })
 
+test('PHASE 11: softlock guard sees reserved stock; gnome skips ornamentals', () => {
+  withBoringRng(() => {
+    // stock that open orders fully reserve is NOT freely sellable → rescue
+    const s = fresh()
+    s.money = 0
+    s.inventory['basilikum'] = 5
+    s.quests.push({
+      id: 1, plantId: 'basilikum', amount: 10, reward: 1, xp: 1, tier: 'bronze', client: 'X', skipCooldown: 0,
+    })
+    tick(s, 0.1)
+    assert.equal(s.money, CONFIG.startMoney, 'reserved-only stock still triggers the notgroschen')
+
+    // but genuinely free stock blocks the rescue (player can just sell it)
+    const t = fresh()
+    t.money = 0
+    t.inventory['basilikum'] = 5
+    tick(t, 0.1)
+    assert.equal(t.money, 0, 'free stock means no rescue')
+
+    // the Sä-Gnom never auto-sows ornamentals (no money-drain on autopilot)
+    const g = fresh()
+    g.money = 1e9
+    g.totalEarned = 1e15
+    selectPlant('nachtrose')
+    g.upgrades['saegnom'] = 10
+    for (const p of g.plots) p.plantId = null
+    tick(g, 10)
+    assert.ok(g.plots.every((p) => p.plantId === null), 'gnome leaves the field empty for ornamentals')
+  })
+})
+
 test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () => {
   withBoringRng(() => {
     const s = fresh()

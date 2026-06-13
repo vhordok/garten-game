@@ -518,3 +518,17 @@ Laufende Qualitätsrunde in kleinen, einzeln abgenommenen Phasen:
   character" statt alle gleich; Wiederernte-Pflanzen überspringen den Sprout
   (starten bei Stufe 1) wie bisher. Reine UI/Sprite-Phase, kein Save-Format-
   Change; das Sprite-Validierungsskript deckt auch die 8 neuen Sprouts ab.
+- **Phase 11 — Gesamt-Review & QA:** Vollständiger Durchgang (Core, UI,
+  Save/Migration, Balance über alle Phasen, Mobile). Befunde & Fixes:
+  (1) Der Langzeit-Audit der Sim stallte nach dem ersten Prestige — Ursache:
+  der Greedy erfüllt nie Aufträge, und der Phase-2-Auftragsschutz hielt das
+  gesamte Lager reserviert → `sellAll()` verkaufte nichts. **Fix:** der
+  Greedy verkauft per exakter Menge (umgeht die Reservierung); der Audit läuft
+  wieder bis Tag 14 und bestätigt gesunde Verteilung aller 42 Sorten.
+  (2) Dasselbe deckte ein latentes Softlock-Risiko auf: 0 Geld + leere Beete +
+  Lager komplett auftragsreserviert. **Fix:** der Notgroschen ist jetzt
+  reservierungs-bewusst (auftragsgebundenes Lager zählt als nicht frei
+  verfügbar). (3) Der Sä-Gnom sät keine Zier-/Passiv-Pflanzen mehr automatisch
+  (Geld-Drain-Foot-Gun). (4) UI-Politur: aria-labels auf allen HUD-Icon-Buttons,
+  Hotbar-Tooltip auf Mobil breitenbegrenzt. Regressionstest ergänzt (38 Tests).
+  Keine Save-Format-Änderung.
