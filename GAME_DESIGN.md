@@ -803,3 +803,35 @@ Keine Save-Format-Änderung (SAVE_VERSION bleibt 25): Rubbellos/Events/Softcap
 sind reine Logik, der Skilltree nutzt das vorhandene `skills`-Map. Tests 47/47,
 check/build grün, 14-d-Sim ohne Runaway/NaN. **Erfolge-Tier-System** (mehrstufige
 Achievements mit Belohnungen + Migration) → Phase 19.
+
+### 9.21 Phase 19 — Mehrstufiges Erfolge-Tier-System (Save v26)
+
+Das alte 22/22-System (jeder Badge +1 % Ertrag, schnell fertig) ist durch ein
+**mehrstufiges** ersetzt: 11 Tracks × 6 Stufen (Bronze → Legendär) =
+**66 Stufen** als Langzeitziele.
+
+- **Daten (`data/achievements.ts`):** jeder Track hat eine `metric(state)` und
+  sechs aufsteigende Schwellen mit Belohnungen. Metriken nutzen vorhandenen
+  State + drei neue Zähler (`stats.questsDone`, `stats.scratchesDone`,
+  `records.bestBeauty`). Werte an der Economy ausgerichtet (Gold 1K→1Qi,
+  Aufträge 1→5000, Parzellen 2→100, Schönheit 5 %→400 % …).
+- **Logik (`game/achievements.ts`):** `achievementTiers[id]` = höchste
+  **beanspruchte** Stufe. **Dauerhafte** Boni (Ertrag/Tempo/Auftrag/Los-Glück)
+  und Skillpunkte werden aus den beanspruchten Stufen **abgeleitet** (migrations-
+  sicher, kein Doppelzählen). **Einmal-Belohnungen** (Booster + Lose, bewusst
+  **kein Kompost** — das würde via `compostClaimed` den nächsten Prestige-Gewinn
+  drücken) werden in `claimAchievements()` im Tick **genau einmal** gezahlt.
+  Skillpunkte aus Erfolgen: +1 ab Gold, +1 ab Legendär pro Track (gedeckelt 2×).
+- **UI:** `AchievementsPanel` zeigt pro Track Stufe, Fortschrittsbalken, aktuelle
+  Metrik/Schwelle und die nächste Belohnung; Tier-Up-Toast (nicht blockierend);
+  das Ziel-Panel surft den nächstgelegenen Erfolg als Ziel an.
+- **Belohnungsvergabe:** automatisch bei Erreichen (kein Claim-Klickzwang), mit
+  Toast-Feedback.
+
+Save v25 → v26: das alte `achievements: string[]` entfällt; `achievementTiers`
+wird in `sanitize()` für Saves ohne das Feld **aus den geladenen Stats
+initialisiert** (beansprucht = erreicht, **ohne** Einmal-Belohnungen → kein
+retroaktiver Flut-Bug, aber dauerhafte Boni gelten sofort). Neue Stats/Records
+defaulten auf 0. Diagnose: ein Endgame-Stand erreicht 41/66 Stufen, **9 Tracks
+bleiben offen** (Erfolg-Ertragsbonus +37 %, vgl. alt fix +22 %). Tests 48/48,
+check/build grün, 14-d-Sim ohne Runaway/NaN (Prestige unbeeinträchtigt).

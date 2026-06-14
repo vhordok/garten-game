@@ -5,6 +5,8 @@
 // renders it. Adds no new persisted data.
 
 import { CONFIG } from '../data/config'
+import { ACHIEVEMENTS, TIER_NAMES } from '../data/achievements'
+import { claimedTier } from './achievements'
 import { nextBeautyMilestone } from '../data/beautyMilestones'
 import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
 import { nextMilestone } from '../data/milestones'
@@ -230,6 +232,32 @@ function masteryGoal(state: GameState): Goal | null {
   }
 }
 
+/** The achievement tier you're closest to reaching. */
+function achievementGoal(state: GameState): Goal | null {
+  let best: { def: (typeof ACHIEVEMENTS)[number]; frac: number; value: number; next: number; tier: number } | null = null
+  for (const def of ACHIEVEMENTS) {
+    const cur = claimedTier(state, def.id)
+    if (cur >= def.tiers.length) continue
+    const value = def.metric(state)
+    const prev = cur > 0 ? def.tiers[cur - 1].threshold : 0
+    const next = def.tiers[cur].threshold
+    const frac = clamp01((value - prev) / (next - prev))
+    if (!best || frac > best.frac) best = { def, frac, value, next, tier: cur }
+  }
+  if (!best) return null
+  return {
+    id: 'achievement',
+    tier: best.frac > 0.6 ? 'mittel' : 'lang',
+    icon: best.def.icon,
+    label: `${best.def.name}: ${TIER_NAMES[best.tier]}`,
+    reward: 'Erfolg-Belohnung',
+    current: Math.round(best.value),
+    target: Math.round(best.next),
+    fraction: best.frac,
+    ready: false,
+  }
+}
+
 /** Collection goal: unlock every plant. */
 function collectionGoal(state: GameState): Goal | null {
   const unlocked = PLANTS.filter((p) => isPlantUnlocked(p, state)).length
@@ -324,6 +352,7 @@ export function activeGoals(state: GameState): Goal[] {
     parcelMilestoneGoal(state),
     beautyGoal(state),
     masteryGoal(state),
+    achievementGoal(state),
     compostGoal(state),
     collectionGoal(state),
   ].filter((g): g is Goal => g !== null)

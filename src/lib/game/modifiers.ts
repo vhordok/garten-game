@@ -5,6 +5,7 @@
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
+import { achievementBonus } from './achievements'
 import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
 import { categorySpecById, type SpecKind } from '../data/specializations'
@@ -52,8 +53,10 @@ export function compostUpgradeBonus(state: GameState, effect: CompostEffect): nu
 export function growthMultiplier(state: GameState): number {
   // Wasserfass adds a small passive growth bonus so it helps idle play too (PHASE 12)
   const wasserfass = 1 + CONFIG.wasserfassGrowthPerLevel * (state.upgrades['wasserfass'] ?? 0)
-  // PHASE 13: parcel milestones + compost-garden upgrades add small growth boni
-  const perma = 1 + parcelBonus(state.parcels, 'growth') + compostUpgradeBonus(state, 'growth')
+  // PHASE 13: parcel milestones + compost-garden upgrades add small growth boni;
+  // PHASE 19: achievement-tier growth rewards
+  const perma =
+    1 + parcelBonus(state.parcels, 'growth') + compostUpgradeBonus(state, 'growth') + achievementBonus(state, 'growth')
   // PHASE 17: a beautiful garden (beauty milestone) speeds the whole garden up
   const aura = 1 + beautyMilestoneBonus(gardenBeauty(state), 'growth')
   return (
@@ -81,7 +84,7 @@ export function yieldMultiplier(state: GameState): number {
     multiplierFor(state, 'yield') *
     (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
     (1 + levelBonus) *
-    (1 + 0.01 * state.achievements.length) *
+    (1 + achievementBonus(state, 'yield')) *
     perma *
     meta *
     event
@@ -314,6 +317,7 @@ export function scratchDropChance(state: GameState, cycleSeconds: number, catego
     parcelBonus(state.parcels, 'ticketLuck') +
     beautyMilestoneBonus(gardenBeauty(state), 'ticketLuck') +
     skillBonus(state, 'scratchLuck') +
+    achievementBonus(state, 'ticketLuck') +
     (category ? specUniqueBonus(state, category, 'ticket') : 0)
   return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }

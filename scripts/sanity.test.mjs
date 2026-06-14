@@ -83,6 +83,8 @@ import {
   waterCharges,
   yieldMultiplier,
 } from '../src/lib/game/modifiers.ts'
+import { ACHIEVEMENTS } from '../src/lib/data/achievements.ts'
+import { achievementBonus, achievementSkillPoints, reachedTier } from '../src/lib/game/achievements.ts'
 import { activeGoals } from '../src/lib/game/goals.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
@@ -791,26 +793,34 @@ test('timber trees: mature trees trickle money through tick', () => {
   })
 })
 
-test('achievements: tick unlocks them, each grants +1 % yield', () => {
+test('achievements: tiers claim once, grant rewards, survive save (PHASE 19)', () => {
   withBoringRng(() => {
     const s = fresh()
-    assert.equal(s.achievements.length, 0)
-    s.stats.planted = 50
-    s.lifetimeEarned = 1000
+    assert.deepEqual(s.achievementTiers, {})
+    // reach two tiers of the gold track in one tick: 1K (Bronze) + 1M (Silber)
+    s.lifetimeEarned = 1e6
+    const fertBefore = s.fertilizerCharges
+    const ticketsBefore = s.scratchTickets
     tick(s, 0.1)
-    assert.ok(s.achievements.includes('gruener-daumen'))
-    assert.ok(s.achievements.includes('erster-tausender'))
-    const count = s.achievements.length
-    const expected = 1 + 0.01 * count
-    assert.ok(Math.abs(yieldMultiplier(s) - expected) < 1e-9)
-    tick(s, 0.1)
-    assert.equal(s.achievements.length, count, 'no duplicates')
+    assert.equal(s.achievementTiers['gold'], 2, 'reached Silber on the gold track')
+    // one-time rewards paid exactly once (Bronze 2 fertilizer + Silber 1 ticket)
+    assert.equal(s.fertilizerCharges, fertBefore + 2, 'Bronze booster paid')
+    assert.equal(s.scratchTickets, ticketsBefore + 1, 'Silber ticket paid')
+    // permanent yield from the two claimed tiers applies
+    assert.ok(yieldMultiplier(s) > 1, 'claimed tiers lift yield')
 
-    // survives a save roundtrip
+    // a second tick must NOT re-pay the one-time rewards
+    const fertAfter = s.fertilizerCharges
+    tick(s, 0.1)
+    assert.equal(s.fertilizerCharges, fertAfter, 'no double rewards on re-evaluation')
+    assert.equal(s.achievementTiers['gold'], 2)
+
+    // survives a save roundtrip without re-granting
     const code = exportSave()
     fresh()
     importSave(code)
-    assert.equal(getState().achievements.length, count)
+    assert.equal(getState().achievementTiers['gold'], 2, 'tiers survive save/load')
+    assert.equal(getState().fertilizerCharges, fertAfter, 'load does not re-pay rewards')
   })
 })
 
@@ -1169,9 +1179,9 @@ test('PHASE 17: skill tree (points from progress, gated, survives prestige)', ()
     // points come from parcels + achievements + level (never gold)
     assert.equal(totalSkillPoints(s), 0, 'fresh game has no skill points')
     s.parcels = 4 // +3
-    s.achievements = ['a', 'b'] // +2
+    s.achievementTiers = { ernte: 6 } // +2 (skill point at tier ≥3 and ≥6)
     s.level = 41 // +2 (floor(40/20))
-    assert.equal(totalSkillPoints(s), 7, '3 parcels + 2 achievements + 2 level points')
+    assert.equal(totalSkillPoints(s), 7, '3 parcels + 2 achievement + 2 level points')
     assert.equal(availableSkillPoints(s), 7)
 
     // gold does NOT buy skills; the branch skill needs the root first
@@ -1188,7 +1198,7 @@ test('PHASE 17: skill tree (points from progress, gated, survives prestige)', ()
     assert.equal(availableSkillPoints(s), 7 - spentPts)
     s.skills = {}
     s.parcels = 1
-    s.achievements = []
+    s.achievementTiers = {}
     s.level = 1
     assert.equal(availableSkillPoints(s), 0)
     assert.ok(!buySkill('gartenplanung'), 'no points → no buy')
@@ -1279,7 +1289,7 @@ test('PHASE 18: Zier softcap, scratch scaling, skill expansion + respec, events'
     // ── skill tree expansion + the luck branch are wired ──
     const s = fresh()
     s.parcels = 12
-    s.achievements = ['x', 'y', 'z', 'w'] // plenty of points
+    s.achievementTiers = { ernte: 6, gold: 6, level: 6 } // plenty of points
     s.level = 100
     assert.ok(buySkill('gartenplanung'))
     assert.ok(buySkill('gluecksklee'), 'new luck branch buyable after the root')
@@ -1303,6 +1313,53 @@ test('PHASE 18: Zier softcap, scratch scaling, skill expansion + respec, events'
     e.weather = { id: 'erntefest', remaining: 60 }
     const plain = fresh()
     assert.ok(yieldMultiplier(e) > yieldMultiplier(plain), 'Erntefest lifts yield')
+  })
+})
+
+test('PHASE 19: old saves migrate without a reward flood; late game stays open', () => {
+  withBoringRng(() => {
+    // a pre-v26 save (old achievements[] array, NO achievementTiers): a player
+    // deep into the game. Migration must set tiers from stats WITHOUT paying
+    // out the one-time rewards for every passed tier.
+    const old = JSON.stringify({
+      version: 25,
+      savedAt: Date.now(),
+      state: {
+        money: 1e9,
+        totalEarned: 1e9,
+        lifetimeEarned: 1e12, // gold track: Bronze..Platin reached
+        parcels: 10, // parcellen track: Bronze..Gold
+        compost: 500,
+        achievements: ['goldgrube', 'latifundium'], // old format, ignored
+        stats: { planted: 1, harvested: 1e5, sold: 1, crits: 0 },
+        selectedPlantId: 'basilikum',
+        createdAt: 1,
+      },
+    })
+    fresh()
+    assert.notEqual(importSave(old), null)
+    const m = getState()
+    // tiers initialised from stats
+    assert.equal(m.achievementTiers['gold'], 4, 'gold tier set from lifetimeEarned (1T → Platin)')
+    assert.equal(m.achievementTiers['parzellen'], 3, 'parcel tier set from parcels (10 → Gold)')
+    // NO retroactive one-time reward flood: compost stayed as saved (+0 from init)
+    assert.equal(m.compost, 500, 'migration did not re-pay one-time rewards')
+    // but permanent bonuses apply right away
+    assert.ok(achievementBonus(m, 'yield') > 0, 'claimed tiers give their permanent yield')
+    assert.ok(achievementSkillPoints(m) >= 2, 'high tiers grant achievement skill points')
+
+    // late-game state: not everything is done — legendary tiers remain open
+    const late = fresh()
+    late.lifetimeEarned = 1e15
+    late.parcels = 30
+    late.stats.harvested = 1e7
+    let openTracks = 0
+    for (const def of ACHIEVEMENTS) if (reachedTier(late, def) < def.tiers.length) openTracks++
+    assert.ok(openTracks >= 5, 'plenty of achievement tracks still have open tiers in the late game')
+
+    // the goal panel surfaces an achievement target
+    const goals = activeGoals(late)
+    assert.ok(goals.some((g) => g.id === 'achievement'), 'achievement appears as a goal')
   })
 })
 

@@ -1,4 +1,4 @@
-import { ACHIEVEMENTS } from '../data/achievements'
+import { claimAchievements } from './achievements'
 import { CONFIG } from '../data/config'
 import { plantById } from '../data/plants'
 import {
@@ -7,6 +7,7 @@ import {
   autoSowChoice,
   autoSowRate,
   compostUpgradeBonus,
+  gardenBeauty,
   growthMultiplier,
   masteryYieldBonus,
   maxScratchTickets,
@@ -128,13 +129,15 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
       changed = true
     }
   }
-  // achievements are cheap predicates — check once per tick, UI announces
-  for (const def of ACHIEVEMENTS) {
-    if (!state.achievements.includes(def.id) && def.check(state)) {
-      state.achievements.push(def.id)
-      changed = true
-    }
+  // PHASE 19: track the prettiest garden ever (a beauty achievement metric)
+  const beautyNow = gardenBeauty(state)
+  if (beautyNow > state.records.bestBeauty) {
+    state.records.bestBeauty = beautyNow
+    changed = true
   }
+  // achievements: claim any newly reached tiers (pays one-time rewards, the UI
+  // announces tier-ups by watching achievementTiers)
+  if (claimAchievements(state).length > 0) changed = true
   return changed
 }
 

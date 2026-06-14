@@ -2,6 +2,7 @@
 // state and calls notify() exactly once on success (see CLAUDE.md rule 5).
 
 import { CONFIG } from '../data/config'
+import { achievementBonus } from './achievements'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
 import { parcelBonus } from '../data/milestones'
@@ -648,12 +649,14 @@ export function fulfillQuest(questId: number): QuestReward | null {
     parcelBonus(s.parcels, 'questReward') +
     compostUpgradeBonus(s, 'questReward') +
     beautyMilestoneBonus(gardenBeauty(s), 'questReward') +
-    skillBonus(s, 'questReward')
+    skillBonus(s, 'questReward') +
+    achievementBonus(s, 'questReward')
   const payout = Math.round(quest.reward * (1 + questStreakBonus(s)) * rewardBonus)
   s.money += payout
   s.totalEarned += payout
   s.lifetimeEarned += payout
   s.stats.sold += delivered
+  s.stats.questsDone += 1
   s.questStreak += 1
 
   let tickets = 0
@@ -761,6 +764,7 @@ export function drawScratchCard(): ScratchCard | null {
  */
 export function settleScratchCard(card: ScratchCard, picked: string[]): ScratchOutcome {
   const s = getState()
+  s.stats.scratchesDone += 1 // PHASE 19 achievement metric
   const counts = new Map<string, number>()
   for (const sym of picked) counts.set(sym, (counts.get(sym) ?? 0) + 1)
   let matchedSymbol: string | null = null

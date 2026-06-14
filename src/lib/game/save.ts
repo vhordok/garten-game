@@ -1,7 +1,8 @@
 // Persistence: localStorage save/load with versioning, export/import as
 // base64 code. Bump SAVE_VERSION + add a migrate() step on format changes.
 
-import { achievementById } from '../data/achievements'
+import { ACHIEVEMENTS } from '../data/achievements'
+import { initAchievementTiers } from './achievements'
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES } from '../data/compostUpgrades'
 import { maxScratchTickets } from './modifiers'
@@ -13,7 +14,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 25
+export const SAVE_VERSION = 26
 
 interface SaveEnvelope {
   version: number
@@ -192,6 +193,12 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // flows through compost/compostSpent — so old saves carry over unchanged;
       // sanitize() still clamps specialisation levels to specMaxLevel.
       return { ...envelope, version: 23 }
+    case 25:
+      // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
+      // is dropped; `achievementTiers` is initialised from the loaded stats in
+      // sanitize() (claimed = reached, no retroactive one-time rewards). New
+      // stats (questsDone/scratchesDone) + records.bestBeauty default to 0.
+      return { ...envelope, version: 26 }
     case 24:
       // v24 → v25: PHASE 17 skill tree — new `skills` map. sanitize() defaults it
       // to {} (no skills taken), so old saves are unaffected; points are derived
@@ -349,15 +356,17 @@ function sanitize(raw: unknown): GameState {
   // weather is a live moment — never restored from a save
   state.weather = { id: null, remaining: 0 }
 
-  const achievements: string[] = []
-  if (Array.isArray(r.achievements)) {
-    for (const id of r.achievements) {
-      if (typeof id === 'string' && achievementById(id) && !achievements.includes(id)) {
-        achievements.push(id)
-      }
+  // PHASE 19 achievement tiers — keep only known tracks, clamp to the tier count
+  const achievementTiers: Record<string, number> = {}
+  const hasTiers = typeof r.achievementTiers === 'object' && r.achievementTiers !== null
+  if (hasTiers) {
+    const raw = r.achievementTiers as Record<string, unknown>
+    for (const def of ACHIEVEMENTS) {
+      const t = Math.floor(clampNumber(raw[def.id], 0, 0, def.tiers.length))
+      if (t > 0) achievementTiers[def.id] = t
     }
   }
-  state.achievements = achievements
+  state.achievementTiers = achievementTiers
   state.licenses = Math.floor(clampNumber(r.licenses, 0, 0, 3))
 
   const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
@@ -365,6 +374,7 @@ function sanitize(raw: unknown): GameState {
     bestHarvest: Math.floor(clampNumber(rec.bestHarvest, 0)),
     longestCombo: Math.floor(clampNumber(rec.longestCombo, 0)),
     biggestWin: Math.floor(clampNumber(rec.biggestWin, 0)),
+    bestBeauty: clampNumber(rec.bestBeauty, 0, 0, 1e6),
   }
   state.history = Array.isArray(r.history)
     ? r.history.slice(-48).map((v) => clampNumber(v, 0))
@@ -436,8 +446,15 @@ function sanitize(raw: unknown): GameState {
       harvested: Math.floor(clampNumber(stats.harvested, 0)),
       sold: Math.floor(clampNumber(stats.sold, 0)),
       crits: Math.floor(clampNumber(stats.crits, 0)),
+      questsDone: Math.floor(clampNumber(stats.questsDone, 0)),
+      scratchesDone: Math.floor(clampNumber(stats.scratchesDone, 0)),
     }
   }
+
+  // PHASE 19 migration: a save without achievementTiers (pre-v26) gets its tiers
+  // initialised from the now-loaded stats — claimed = reached, WITHOUT paying the
+  // one-time rewards (no retroactive flood, but permanent bonuses apply at once).
+  if (!hasTiers) initAchievementTiers(state)
 
   return state
 }

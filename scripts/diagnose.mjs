@@ -21,6 +21,8 @@ import {
   gardenBeauty,
 } from '../src/lib/game/modifiers.ts'
 import { BEAUTY_MILESTONES } from '../src/lib/data/beautyMilestones.ts'
+import { ACHIEVEMENTS, TIER_NAMES } from '../src/lib/data/achievements.ts'
+import { achievementBonus, initAchievementTiers, reachedTier, totalClaimedTiers } from '../src/lib/game/achievements.ts'
 import { SCRATCH_PRIZES, effectiveHarvestValue, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
 import { CONFIG as CFG } from '../src/lib/data/config.ts'
 import { compostGain } from '../src/lib/game/actions.ts'
@@ -235,5 +237,20 @@ for (const id of ['money-large', 'jackpot']) {
   console.log(`  ${id.padEnd(12)} Voll-Treffer ≈ ${fmtN(full).padStart(8)} Gold = ${(full / goldPerHour * 60).toFixed(1)} min Einkommen`)
 }
 console.log('  ⇒ Lose bleiben im Qi-Endgame relevant (skalieren mit Ertrag×Verkauf), kein fixer Kleinkram mehr.')
+
+console.log('\n── PHASE 19: Erfolg-Tiers im gemeldeten Endgame ──')
+s.stats = { ...s.stats, harvested: 5e9, questsDone: 1200, scratchesDone: 600 }
+s.records = { ...s.records, bestBeauty: 2.5 }
+initAchievementTiers(s)
+const totalTiers = ACHIEVEMENTS.length * TIER_NAMES.length
+console.log(`  erreichte Stufen: ${totalClaimedTiers(s)}/${totalTiers}`)
+let open = 0
+for (const def of ACHIEVEMENTS) {
+  const r = reachedTier(s, def)
+  if (r < def.tiers.length) open++
+  console.log(`  ${def.name.padEnd(18)} ${(r > 0 ? TIER_NAMES[r - 1] : '—').padEnd(9)} (${r}/${def.tiers.length})`)
+}
+console.log(`  noch offen: ${open} Tracks · Erfolg-Ertragsbonus: +${(achievementBonus(s, 'yield') * 100).toFixed(0)} %`)
+console.log('  ⇒ auch im Endgame bleiben Legendär-Stufen als Langzeitziele offen.')
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')

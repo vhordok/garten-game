@@ -35,13 +35,13 @@ export function createDefaultState(now = Date.now()): GameState {
     marketTime: 0,
     daily: { lastClaim: 0, streak: 0 },
     weather: { id: null, remaining: 0 },
-    achievements: [],
+    achievementTiers: {},
     licenses: 0,
-    records: { bestHarvest: 0, longestCombo: 0, biggestWin: 0 },
+    records: { bestHarvest: 0, longestCombo: 0, biggestWin: 0, bestBeauty: 0 },
     history: [],
     historyAcc: { seconds: 0, earnedStart: 0 },
     combo: { count: 0, remaining: 0 },
-    stats: { planted: 0, harvested: 0, sold: 0, crits: 0 },
+    stats: { planted: 0, harvested: 0, sold: 0, crits: 0, questsDone: 0, scratchesDone: 0 },
     createdAt: now,
   }
 }
