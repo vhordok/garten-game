@@ -94,4 +94,10 @@ Kompost-Garten (Kompost ausgebbar, compostSpent getrennt). Phase 14 (§9.16):
 Meisterschaft präzisiert (manuell+Helfer geben XP, Zier/Holz keine), Kategorie-
 Spezialisierung mit eigenem Zweitbonus pro Kategorie (data/specializations.ts),
 Gold+Kompost-Kosten ab Stufe 8 und Parzellen-/Level-Gates, kompakte Shop-
-Sektion. 42 Sorten in 8 Kategorien, Stand SAVE_VERSION 23.
+Sektion. Phase 15 (§9.17): Late-Game-Rebalance nach harter Diagnose
+(scripts/diagnose.mjs) — Spezialisierung eskaliert pro Tier + Meilensteine
+(specPerkMultiplier), Kompostkosten geometrisch; drei endlose, wiederholbare
+Kompost-Sinks (Urhumus/Tiefenkultur/Markt-Mykorrhiza, log-gedeckelt) ab
+Parzelle 12/14/16; Pflanzenleiter-Spitze gestreckt; Kategorie-Akzentfarben im
+Shop. Prestige-Skip-Fix (Unlock-Gating) → Phase 16. 42 Sorten in 8 Kategorien,
+Stand SAVE_VERSION 24.

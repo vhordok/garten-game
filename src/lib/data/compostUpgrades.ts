@@ -19,6 +19,10 @@ export interface CompostUpgradeDef {
   costFactor: number
   /** only buyable once this many parcels are leased (0 = from the start) */
   unlockParcel: number
+  /** PHASE 15: endless endgame sinks. Cost climbs geometrically so the EFFECT is
+   * log-bounded (no runaway), but compost always has a meaningful next step. The
+   * UI shows "Stufe N" without a cap. maxLevel stays finite (sanitize clamp). */
+  repeatable?: boolean
 }
 
 export const COMPOST_UPGRADES: CompostUpgradeDef[] = [
@@ -76,6 +80,47 @@ export const COMPOST_UPGRADES: CompostUpgradeDef[] = [
     baseCost: 8,
     costFactor: 2.2,
     unlockParcel: 10,
+  },
+  // ── PHASE 15: repeatable endgame compost sinks ───────────────────────────
+  // Diagnosis: the five upgrades above cap out at ~18k compost total, while a
+  // single prestige pays ~935k. These never max — the geometric cost makes each
+  // gives diminishing real value, so surplus compost always has a long-term home
+  // and the player chooses which path (Ertrag / Tempo / Aufträge) to deepen.
+  {
+    id: 'urhumus',
+    name: 'Urhumus',
+    desc: '+2,5 % Ertrag pro Stufe — endlos, Kosten steigen stetig',
+    effect: 'yield',
+    perLevel: 0.025,
+    maxLevel: 999,
+    baseCost: 40,
+    costFactor: 1.4,
+    unlockParcel: 12,
+    repeatable: true,
+  },
+  {
+    id: 'tiefenkultur',
+    name: 'Tiefenkultur',
+    desc: '+2 % Wachstumstempo pro Stufe — endlos, Kosten steigen stetig',
+    effect: 'growth',
+    perLevel: 0.02,
+    maxLevel: 999,
+    baseCost: 60,
+    costFactor: 1.42,
+    unlockParcel: 14,
+    repeatable: true,
+  },
+  {
+    id: 'marktmykorrhiza',
+    name: 'Markt-Mykorrhiza',
+    desc: '+8 % Auftragsbelohnung pro Stufe — endlos, Kosten steigen stetig',
+    effect: 'questReward',
+    perLevel: 0.08,
+    maxLevel: 999,
+    baseCost: 120,
+    costFactor: 1.5,
+    unlockParcel: 16,
+    repeatable: true,
   },
 ]
 

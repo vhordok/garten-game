@@ -69,6 +69,9 @@ import {
   scratchDropChance,
   growthMultiplier,
   offlineCapHours,
+  nextSpecMilestone,
+  specPerkMultiplier,
+  specYieldSum,
   specializationCompostCost,
   specializationCost,
   specializationLevel,
@@ -933,7 +936,7 @@ test('PHASE 11 endgame: mastery, specialisation, bulk-clear + undo, survive pres
     assert.ok(buySpecialization('kraeuter'))
     assert.equal(specializationLevel(s, 'kraeuter'), 1)
     assert.equal(s.money, moneyBefore - cost0)
-    assert.ok(Math.abs(specializationYieldBonus(s, 'kraeuter') - 1.08) < 1e-9)
+    assert.ok(Math.abs(specializationYieldBonus(s, 'kraeuter') - 1.05) < 1e-9, 'level 1 = +5 % (PHASE 15 base)')
     assert.equal(specializationYieldBonus(s, 'gemuese'), 1, 'specialisation is per-category')
     assert.ok(!buySpecialization('nichtskategorie'))
 
@@ -968,12 +971,13 @@ test('PHASE 14: unique category perks, compost cost, progression gate', () => {
     s.totalEarned = 1e18
 
     // each category has its own perk; it only reads on the matching kind/category
-    s.specializations['kraeuter'] = 4
+    s.specializations['kraeuter'] = 4 // below the first milestone → perk mult ×1
     assert.ok(Math.abs(specUniqueBonus(s, 'kraeuter', 'growth') - 0.2) < 1e-9, 'kraeuter perk = growth')
     assert.equal(specUniqueBonus(s, 'kraeuter', 'crit'), 0, 'kraeuter has no crit perk')
     assert.equal(specUniqueBonus(s, 'gemuese', 'growth'), 0, 'perk is per-category')
+    // PHASE 15: at level 5 the first milestone amplifies the unique perk (×1.5)
     s.specializations['gemuese'] = 5
-    assert.ok(Math.abs(specUniqueBonus(s, 'gemuese', 'crit') - 0.05) < 1e-9, 'gemuese perk = crit')
+    assert.ok(Math.abs(specUniqueBonus(s, 'gemuese', 'crit') - 0.075) < 1e-9, 'gemuese perk × milestone 1.5')
 
     // the growth perk actually speeds that category's plots in tick
     const a = fresh()
@@ -1031,6 +1035,64 @@ test('PHASE 14: unique category perks, compost cost, progression gate', () => {
     const reblocked = specializationPurchase(g, 'magie')
     assert.equal(reblocked.parcelsMet, false)
     assert.ok(blocked.gold > 0)
+  })
+})
+
+test('PHASE 15: escalating spec value, milestones, repeatable compost sinks', () => {
+  withBoringRng(() => {
+    // ── specialisation value ESCALATES per tier (no longer flat) ──
+    const inc1 = specYieldSum(1) - specYieldSum(0) // tier 0 per-level value
+    const inc6 = specYieldSum(6) - specYieldSum(5) // tier 1 per-level value
+    const inc21 = specYieldSum(21) - specYieldSum(20) // tier 4 per-level value
+    assert.ok(inc6 > inc1 + 1e-9, 'per-level yield grows after the first tier')
+    assert.ok(inc21 > inc6 + 1e-9, 'per-level yield keeps growing in late tiers')
+    assert.ok(specYieldSum(25) > 25 * inc1, 'level 25 beats the old flat curve')
+    assert.ok(Number.isFinite(specYieldSum(25)), 'no NaN/overflow at max')
+
+    // ── milestones amplify the unique perk ──
+    assert.equal(specPerkMultiplier(4), 1, 'no milestone before level 5')
+    assert.equal(specPerkMultiplier(5), 1.5, 'first milestone at 5')
+    assert.equal(specPerkMultiplier(25), 3.5, 'five milestones at 25')
+    assert.equal(nextSpecMilestone(3), 5)
+    assert.equal(nextSpecMilestone(5), 10)
+    assert.equal(nextSpecMilestone(25), null, 'no milestone past max')
+
+    // ── geometric compost cost is a real, finite sink ──
+    assert.equal(specializationCompostCost(0), 0)
+    assert.ok(
+      specializationCompostCost(20) > specializationCompostCost(10) * 4,
+      'compost cost climbs geometrically at high levels'
+    )
+    assert.ok(Number.isFinite(specializationCompostCost(24)), 'finite compost cost')
+
+    // ── repeatable compost upgrades exist, are parcel-gated, never trivially max ──
+    const urhumus = COMPOST_UPGRADES.find((u) => u.id === 'urhumus')
+    assert.ok(urhumus?.repeatable, 'urhumus is a repeatable endgame sink')
+    assert.ok(compostUpgradeCost(urhumus, 50) !== null, 'still buyable at level 50')
+    assert.ok(
+      compostUpgradeCost(urhumus, 30) > compostUpgradeCost(urhumus, 10),
+      'repeatable cost rises every level'
+    )
+    assert.ok(Number.isFinite(compostUpgradeCost(urhumus, 60)), 'finite repeatable cost')
+
+    // the compost sink is no longer tiny: maxing every CAPPED upgrade once is far
+    // more than one prestige's worth was before — and the repeatable ones go on.
+    const g = fresh()
+    g.parcels = 20
+    g.compost = 1e9
+    let bought = 0
+    for (let i = 0; i < 40; i++) if (buyCompostUpgrade('urhumus')) bought++
+    assert.ok(bought >= 30, 'urhumus keeps absorbing compost (no early MAX)')
+    assert.ok(g.compostSpent > 0 && g.compost < 1e9, 'compost actually spent')
+    assert.ok(Number.isFinite(yieldMultiplier(g)) && yieldMultiplier(g) > 1, 'urhumus lifts yield, no overflow')
+
+    // ── top-of-ladder unlocks were widened (endgame is a longer climb) ──
+    const ids = PLANTS.map((p) => p.id)
+    const weltenrose = PLANTS.find((p) => p.id === 'weltenrose')
+    const ewig = PLANTS.find((p) => p.id === 'ewigkeitsbluete')
+    assert.ok(weltenrose.unlockAtTotalEarned >= 8e15, 'final plant pushed further out')
+    assert.ok(weltenrose.unlockAtTotalEarned > ewig.unlockAtTotalEarned * 4, 'big top-end gap')
+    assert.equal(ids[ids.length - 1], 'weltenrose', 'weltenrose stays the finale')
   })
 })
 

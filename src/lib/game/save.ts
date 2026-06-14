@@ -12,7 +12,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 23
+export const SAVE_VERSION = 24
 
 interface SaveEnvelope {
   version: number
@@ -191,6 +191,14 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // flows through compost/compostSpent — so old saves carry over unchanged;
       // sanitize() still clamps specialisation levels to specMaxLevel.
       return { ...envelope, version: 23 }
+    case 23:
+      // v23 → v24: PHASE 15 late-game rebalance — escalating specialisation value
+      // + milestones, repeatable endgame compost sinks, wider top-of-ladder
+      // unlocks. No new persisted fields: specialisation levels and compost-upgrade
+      // levels keep the same Record<string,number> shape (new compost ids default
+      // to 0 for old saves), and re-priced future purchases don't touch stored
+      // values. compostSpent's sanitize ceiling is raised for the new sinks.
+      return { ...envelope, version: 24 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -212,7 +220,7 @@ function sanitize(raw: unknown): GameState {
   state.maxUnlockEarned = clampNumber(r.maxUnlockEarned, state.totalEarned, state.totalEarned)
   state.parcels = Math.floor(clampNumber(r.parcels, 1, 1, 1000))
   state.compost = Math.floor(clampNumber(r.compost, 0, 0, 1e9))
-  state.compostSpent = Math.floor(clampNumber(r.compostSpent, 0, 0, 1e12))
+  state.compostSpent = Math.floor(clampNumber(r.compostSpent, 0, 0, 1e15))
 
   // compost-garden upgrade levels — keep only known ids, clamp to maxLevel
   const compostUpgrades: Record<string, number> = {}

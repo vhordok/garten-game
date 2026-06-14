@@ -2,7 +2,7 @@
   import { LICENSES } from '../data/licenses'
   import { UPGRADES } from '../data/upgrades'
   import { buyLicense, buySpecialization, buyUpgrade, nextUpgradeCost, PLANT_CATEGORIES, upgradeLevel } from '../game/actions'
-  import { specializationPurchase } from '../game/modifiers'
+  import { nextSpecMilestone, specPerkMultiplier, specializationPurchase, specYieldSum } from '../game/modifiers'
   import { CONFIG } from '../data/config'
   import { categorySpecById } from '../data/specializations'
   import { gameStore } from '../game/state'
@@ -30,6 +30,19 @@
     zier: 'Zier',
     cannabis: 'Hanf',
     magie: 'Magie',
+  }
+
+  // PHASE 15 visual identity: a distinct palette accent per category so the
+  // specialisation list reads at a glance (sprites alone are too similar).
+  const CATEGORY_ACCENT: Record<PlantCategory, string> = {
+    kraeuter: 'var(--c-leaf3)',
+    gemuese: 'var(--c-gold1)',
+    beeren: 'var(--c-plum2)',
+    obst: 'var(--c-red1)',
+    baeume: 'var(--c-soil2)',
+    zier: 'var(--c-plum3)',
+    cannabis: 'var(--c-leaf4)',
+    magie: 'var(--c-blue2)',
   }
 
   function handleBuySpec(e: MouseEvent, category: string) {
@@ -156,29 +169,39 @@
 
   <h3 class="section">Spezialisierung — dauerhaft, übersteht Prestige</h3>
   <p class="hint spec-hint">
-    Pro Kategorie: jede Stufe gibt +{Math.round(CONFIG.specYieldPerLevel * 100)} % Ertrag <b>plus</b> einen
-    eigenen Bonus. Kosten steigen steil, ab Stufe {CONFIG.specCompostFromLevel} zusätzlich Kompost — entscheide,
-    worauf du dich spezialisierst.
+    Pro Kategorie: der Ertragsbonus <b>steigt mit jeder Stufe stärker</b>, und alle {CONFIG.specMilestoneEvery} Stufen
+    verstärkt ein <b>Meilenstein</b> den eigenen Bonus der Kategorie. Hohe Stufen kosten Gold <b>und</b> Kompost —
+    entscheide, worauf du dich spezialisierst.
   </p>
   <ul class="shop-list spec-list">
     {#each PLANT_CATEGORIES as category (category)}
       {@const p = specializationPurchase($gameStore, category)}
       {@const spec = categorySpecById(category)}
-      {@const yieldPct = Math.round(p.level * CONFIG.specYieldPerLevel * 100)}
-      <li class="row spec-row" class:dimmed={!p.maxed && (!p.parcelsMet || !p.gardenerMet)}>
+      {@const yieldPct = Math.round(specYieldSum(p.level) * 100)}
+      {@const nextPct = Math.round(specYieldSum(p.level + 1) * 100)}
+      {@const perkMult = specPerkMultiplier(p.level)}
+      {@const ms = nextSpecMilestone(p.level)}
+      <li
+        class="row spec-row"
+        class:dimmed={!p.maxed && (!p.parcelsMet || !p.gardenerMet)}
+        style="--cat-accent: {CATEGORY_ACCENT[category as PlantCategory] ?? 'var(--c-leaf3)'}"
+      >
         <span class="icon spec-icon num">+{yieldPct}%</span>
         <span class="info">
           <span class="name">
             {CATEGORY_LABEL[category as PlantCategory] ?? category}
             <span class="level num">Stufe {p.level}{p.maxed ? ' · MAX' : `/${CONFIG.specMaxLevel}`}</span>
           </span>
-          <span class="desc">
-            +{Math.round(CONFIG.specYieldPerLevel * 100)} % Ertrag/Stufe{#if spec} · {spec.unique.desc}{/if}
-          </span>
           {#if p.level > 0}
             <span class="effect num">
-              aktiv: <b>+{yieldPct} % Ertrag</b>{#if spec} · <b>{spec.unique.format(p.level)}</b>{/if}
+              aktiv: <b>+{yieldPct} % Ertrag</b>{#if spec} · <b>{spec.unique.format(p.level)}</b>{/if}{#if perkMult > 1}
+                <span class="ms-tag">★{perkMult.toFixed(1)}×</span>{/if}
             </span>
+          {:else if spec}
+            <span class="desc">Ertrag steigt je Stufe · {spec.unique.desc}</span>
+          {/if}
+          {#if !p.maxed}
+            <span class="desc next">nächste Stufe: +{nextPct - yieldPct} % Ertrag{#if ms} · Meilenstein bei Stufe {ms}{#if spec} ({spec.milestoneDesc}){/if}{/if}</span>
           {/if}
           {#if !p.maxed && (!p.parcelsMet || !p.gardenerMet)}
             <span class="req num">
@@ -320,15 +343,35 @@
     margin-top: 6px;
   }
 
+  .spec-row {
+    border-left: 3px solid var(--cat-accent, var(--c-leaf3));
+    padding-left: 7px;
+  }
+
   .spec-icon {
     font-size: 0.82rem;
     font-weight: 700;
-    color: var(--c-leaf4);
+    color: var(--cat-accent, var(--c-leaf4));
   }
 
   .req {
     font-size: 0.72rem;
     color: var(--c-gold2);
+  }
+
+  .desc.next {
+    color: var(--c-leaf4);
+    opacity: 0.85;
+  }
+
+  .ms-tag {
+    display: inline-block;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: var(--c-gold2);
+    color: var(--c-night1, #1a1830);
+    font-weight: 700;
+    font-size: 0.7rem;
   }
 
   .spec-buy {

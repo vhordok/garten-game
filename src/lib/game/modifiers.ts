@@ -98,9 +98,40 @@ export function specializationLevel(state: GameState, category: string): number 
   return state.specializations[category] ?? 0
 }
 
-/** Per-category yield factor from gold-bought specialisation (PHASE 11 sink). */
+/**
+ * Summed yield bonus for a category at the given level (PHASE 15). Each level i
+ * adds specYieldPerLevel × (1 + specTierStep × ⌊(i−1)/5⌋), so the per-level value
+ * escalates every 5-level tier instead of staying flat — high levels finally
+ * keep pace with the steep cost (diagnosis fix). Level 25 ≈ +225 % for one
+ * category. Monotonic, no breakpoints, ×1 at level 0.
+ */
+export function specYieldSum(level: number): number {
+  let sum = 0
+  for (let i = 1; i <= level; i++) {
+    sum += CONFIG.specYieldPerLevel * (1 + CONFIG.specTierStep * Math.floor((i - 1) / CONFIG.specMilestoneEvery))
+  }
+  return sum
+}
+
+/** Per-category yield factor from gold-bought specialisation (escalating). */
 export function specializationYieldBonus(state: GameState, category: string): number {
-  return 1 + CONFIG.specYieldPerLevel * specializationLevel(state, category)
+  return 1 + specYieldSum(specializationLevel(state, category))
+}
+
+/**
+ * Milestone multiplier on a category's UNIQUE perk (PHASE 15): every
+ * specMilestoneEvery levels reached adds specPerkMilestoneStep, so the perk is
+ * ×1 at level 0 and ×3.5 at level 25. Makes pushing toward the next milestone a
+ * real decision spike rather than another flat +%.
+ */
+export function specPerkMultiplier(level: number): number {
+  return 1 + CONFIG.specPerkMilestoneStep * Math.floor(level / CONFIG.specMilestoneEvery)
+}
+
+/** The next milestone level above `level` (UI goal hint), or null when maxed. */
+export function nextSpecMilestone(level: number): number | null {
+  const next = (Math.floor(level / CONFIG.specMilestoneEvery) + 1) * CONFIG.specMilestoneEvery
+  return next > CONFIG.specMaxLevel ? null : next
 }
 
 /** Gold cost of the next specialisation level, or null when maxed. */
@@ -109,10 +140,11 @@ export function specializationCost(level: number): number | null {
   return Math.floor(CONFIG.specBaseCost * Math.pow(CONFIG.specCostFactor, level))
 }
 
-/** Compost cost of the next specialisation level (0 below the threshold). */
+/** Compost cost of the next specialisation level (0 below the threshold) —
+ * geometric, so the top levels are a meaningful compost sink (PHASE 15). */
 export function specializationCompostCost(level: number): number {
   if (level < CONFIG.specCompostFromLevel) return 0
-  return CONFIG.specCompostBase + CONFIG.specCompostPerLevel * (level - CONFIG.specCompostFromLevel)
+  return Math.round(CONFIG.specCompostBase * Math.pow(CONFIG.specCompostFactor, level - CONFIG.specCompostFromLevel))
 }
 
 /** Progression gate for buying the next specialisation level (PHASE 14). */
@@ -170,7 +202,9 @@ export function specializationPurchase(state: GameState, category: string): Spec
 export function specUniqueBonus(state: GameState, category: string, kind: SpecKind): number {
   const def = categorySpecById(category)
   if (!def || def.unique.kind !== kind) return 0
-  return def.unique.perLevel * specializationLevel(state, category)
+  const level = specializationLevel(state, category)
+  // PHASE 15: milestones amplify the unique perk on top of the linear growth
+  return def.unique.perLevel * level * specPerkMultiplier(level)
 }
 
 /** Garden beauty: mature ornamental plots raise the global sell price. */
