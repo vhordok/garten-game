@@ -21,9 +21,9 @@ import {
   rollUnits,
   saleValue,
   scratchDropChance,
-  specializationCost,
-  specializationLevel,
+  specializationPurchase,
   specializationYieldBonus,
+  specUniqueBonus,
   waterCharges,
   yieldMultiplier,
 } from './modifiers'
@@ -239,8 +239,9 @@ export interface HarvestResult {
 const CRIT_RANK: Record<CritTier, number> = { none: 0, perfect: 1, legendary: 2 }
 
 /** Golden-harvest roll (GAME_DESIGN.md §9.4); Glücksklee raises the odds. */
-function rollCrit(s: GameState): { tier: CritTier; mult: number } {
-  const bonus = critChanceBonus(s)
+function rollCrit(s: GameState, category: string): { tier: CritTier; mult: number } {
+  // PHASE 14: the Gemüse specialisation lifts that category's golden-harvest odds
+  const bonus = critChanceBonus(s) + specUniqueBonus(s, category, 'crit')
   const weather = critWeatherMult(s)
   const legendary = Math.min((CONFIG.critLegendaryChance + bonus / 5) * weather, 0.12)
   const perfect = Math.min((CONFIG.critPerfectChance + bonus) * weather, 0.6)
@@ -256,7 +257,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   const def = plantById(plot.plantId!)
   if (!def) return { units: 0, crit: 'none', levelUps: [], tickets: 0 }
   const cycleSeconds = cycleTime(plot, def)
-  const crit = rollCrit(s)
+  const crit = rollCrit(s, def.category)
   // one turbo-fertilizer charge boosts exactly one harvest
   let fertilizerMult = 1
   if (s.fertilizerCharges > 0) {
@@ -274,7 +275,9 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   )
   if (units > s.records.bestHarvest) s.records.bestHarvest = units
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
-  s.mastery[def.id] = (s.mastery[def.id] ?? 0) + units
+  // PHASE 14: the Magie specialisation grows that category's mastery XP faster
+  s.mastery[def.id] =
+    (s.mastery[def.id] ?? 0) + Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery')))
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
   if (def.regrowTime) {
@@ -289,7 +292,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
     plot.regrowing = false
   }
   let tickets = 0
-  if (Math.random() < scratchDropChance(s, cycleSeconds) && s.scratchTickets < maxScratchTickets(s)) {
+  if (Math.random() < scratchDropChance(s, cycleSeconds, def.category) && s.scratchTickets < maxScratchTickets(s)) {
     s.scratchTickets += 1
     tickets = 1
   }
@@ -494,17 +497,24 @@ export function buyUpgrade(upgradeId: string): boolean {
 export const PLANT_CATEGORIES: string[] = [...new Set(PLANTS.map((p) => p.category))]
 
 /**
- * Buy one level of a category specialisation with gold (PHASE 11 gold sink).
- * Permanent, survives prestige; the steep cost curve forces a choice of which
- * categories to invest in. Returns true on success.
+ * Buy one level of a category specialisation (PHASE 11 gold sink, extended in
+ * PHASE 14). Each level adds the shared yield bonus plus the category's unique
+ * perk. Costs gold and — from a threshold level — compost, and later levels gate
+ * behind parcels/gardener level. Permanent, survives prestige. True on success.
  */
 export function buySpecialization(category: string): boolean {
   const s = getState()
   if (!PLANT_CATEGORIES.includes(category)) return false
-  const cost = specializationCost(specializationLevel(s, category))
-  if (cost === null || s.money < cost) return false
-  s.money -= cost
-  s.specializations[category] = specializationLevel(s, category) + 1
+  const p = specializationPurchase(s, category)
+  if (!p.canBuy) return false
+  s.money -= p.gold
+  if (p.compost > 0) {
+    // mirror compost-garden spending: the pool drops, compostSpent keeps the
+    // total-ever-earned intact so the flat prestige bonus stays untouched
+    s.compost -= p.compost
+    s.compostSpent += p.compost
+  }
+  s.specializations[category] = p.level + 1
   notify()
   return true
 }

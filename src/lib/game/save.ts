@@ -12,7 +12,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 22
+export const SAVE_VERSION = 23
 
 interface SaveEnvelope {
   version: number
@@ -184,6 +184,13 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v21 → v22: multi-line quests + compost garden; sanitize() converts old
       // single-plant orders to the new items[] shape and defaults the rest.
       return { ...envelope, version: 22 }
+    case 22:
+      // v22 → v23: PHASE 14 enriches category specialisations (unique per-category
+      // perks, gold+compost cost, progression gates). No new persisted fields —
+      // perks derive from the existing `specializations` levels and compost spend
+      // flows through compost/compostSpent — so old saves carry over unchanged;
+      // sanitize() still clamps specialisation levels to specMaxLevel.
+      return { ...envelope, version: 23 }
     case SAVE_VERSION:
       return envelope
     default:

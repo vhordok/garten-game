@@ -2,8 +2,9 @@
   import { LICENSES } from '../data/licenses'
   import { UPGRADES } from '../data/upgrades'
   import { buyLicense, buySpecialization, buyUpgrade, nextUpgradeCost, PLANT_CATEGORIES, upgradeLevel } from '../game/actions'
-  import { specializationCost, specializationLevel } from '../game/modifiers'
+  import { specializationPurchase } from '../game/modifiers'
   import { CONFIG } from '../data/config'
+  import { categorySpecById } from '../data/specializations'
   import { gameStore } from '../game/state'
   import type { PlantCategory, UpgradeDef, UpgradeSection } from '../game/types'
   import { formatDuration, formatNumber } from '../util/format'
@@ -155,32 +156,45 @@
 
   <h3 class="section">Spezialisierung — dauerhaft, übersteht Prestige</h3>
   <p class="hint spec-hint">
-    Gold-Investition pro Kategorie: jede Stufe gibt +{Math.round(CONFIG.specYieldPerLevel * 100)} % Ertrag
-    für alle Sorten dieser Kategorie. Die Kosten steigen steil — entscheide, worauf du dich spezialisierst.
+    Pro Kategorie: jede Stufe gibt +{Math.round(CONFIG.specYieldPerLevel * 100)} % Ertrag <b>plus</b> einen
+    eigenen Bonus. Kosten steigen steil, ab Stufe {CONFIG.specCompostFromLevel} zusätzlich Kompost — entscheide,
+    worauf du dich spezialisierst.
   </p>
-  <ul class="shop-list">
+  <ul class="shop-list spec-list">
     {#each PLANT_CATEGORIES as category (category)}
-      {@const level = specializationLevel($gameStore, category)}
-      {@const cost = specializationCost(level)}
-      {@const affordable = cost !== null && $gameStore.money >= cost}
-      <li class="row">
-        <span class="icon spec-icon num">+{Math.round(level * CONFIG.specYieldPerLevel * 100)}%</span>
+      {@const p = specializationPurchase($gameStore, category)}
+      {@const spec = categorySpecById(category)}
+      {@const yieldPct = Math.round(p.level * CONFIG.specYieldPerLevel * 100)}
+      <li class="row spec-row" class:dimmed={!p.maxed && (!p.parcelsMet || !p.gardenerMet)}>
+        <span class="icon spec-icon num">+{yieldPct}%</span>
         <span class="info">
           <span class="name">
             {CATEGORY_LABEL[category as PlantCategory] ?? category}
-            <span class="level num">Stufe {level}{cost === null ? ' (MAX)' : `/${CONFIG.specMaxLevel}`}</span>
+            <span class="level num">Stufe {p.level}{p.maxed ? ' · MAX' : `/${CONFIG.specMaxLevel}`}</span>
           </span>
-          <span class="desc">+{Math.round(CONFIG.specYieldPerLevel * 100)} % Ertrag pro Stufe für diese Kategorie</span>
-          {#if level > 0}
-            <span class="effect num">aktiv: <b>+{Math.round(level * CONFIG.specYieldPerLevel * 100)} % Ertrag</b></span>
+          <span class="desc">
+            +{Math.round(CONFIG.specYieldPerLevel * 100)} % Ertrag/Stufe{#if spec} · {spec.unique.desc}{/if}
+          </span>
+          {#if p.level > 0}
+            <span class="effect num">
+              aktiv: <b>+{yieldPct} % Ertrag</b>{#if spec} · <b>{spec.unique.format(p.level)}</b>{/if}
+            </span>
+          {/if}
+          {#if !p.maxed && (!p.parcelsMet || !p.gardenerMet)}
+            <span class="req num">
+              braucht{#if !p.parcelsMet} {p.req.parcels} Parzellen{/if}{#if !p.parcelsMet && !p.gardenerMet} ·{/if}{#if !p.gardenerMet}
+                Level {p.req.gardener}{/if}
+            </span>
           {/if}
         </span>
-        {#if cost === null}
+        {#if p.maxed}
           <span class="maxed">MAX</span>
         {:else}
-          <button class="pxbtn gold num buy" disabled={!affordable} onclick={(e) => handleBuySpec(e, category)}>
-            <PixelIcon name="coin" scale={1} />
-            {formatNumber(cost)}
+          <button class="pxbtn gold num buy spec-buy" disabled={!p.canBuy} onclick={(e) => handleBuySpec(e, category)}>
+            <span class="cost-line"><PixelIcon name="coin" scale={1} /> {formatNumber(p.gold)}</span>
+            {#if p.compost > 0}
+              <span class="cost-line compost" class:short={!p.affordableCompost}>🌱 {formatNumber(p.compost)}</span>
+            {/if}
           </button>
         {/if}
       </li>
@@ -310,5 +324,41 @@
     font-size: 0.82rem;
     font-weight: 700;
     color: var(--c-leaf4);
+  }
+
+  .req {
+    font-size: 0.72rem;
+    color: var(--c-gold2);
+  }
+
+  .spec-buy {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    line-height: 1.15;
+  }
+
+  .cost-line {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .cost-line.compost {
+    font-size: 0.72rem;
+    color: var(--c-leaf4);
+  }
+
+  .cost-line.compost.short {
+    color: var(--c-rose, #e06c75);
+  }
+
+  @media (max-width: 560px) {
+    .spec-row .desc {
+      font-size: 0.7rem;
+    }
   }
 </style>

@@ -630,3 +630,36 @@ Mehr Endgame-Entscheidungen ohne neue Pflanzen/Preise:
 Save v21 → v22: Aufträge aufs `items[]`-Modell migriert (alte Einzel-Aufträge
 konvertiert), `compostSpent`/`compostUpgrades` ergänzt. Sim-Audit: Level-,
 Parzellen-(5/10/20/40) und Endgame-Meilensteine, kein Runaway/NaN.
+
+### 9.16 Phase 14 — Meisterschaft & Kategorie-Spezialisierung vertieft (Save v23)
+
+Baut die Endgame-2.0-Systeme aus (keine neuen Pflanzen, keine Economy-
+Neufassung):
+
+- **Pflanzen-Meisterschaft (Bestand, präzisiert):** jede geerntete Einheit
+  zählt als Meister-XP der Sorte — manuell **und** per Helfer (`tick`). Nicht-
+  erntbare Sorten (Zier mit `yield 0`, passive Holz-Bäume) geben **keine** XP,
+  weil `units` dort 0 ist. Anzeige von Level + Bonus im Hotbar-Tooltip
+  („🏅 Meisterschaft Lv X/10 · +Y % Ertrag"). Übersteht Prestige.
+- **Kategorie-Spezialisierung mit eigenem Bonus pro Kategorie
+  (`data/specializations.ts`):** jede Stufe gibt weiterhin den geteilten
+  +8 % Ertrag — **plus** einen kleinen, kategorie-eigenen Zweitbonus:
+  Kräuter +5 % Wuchs, Gemüse +1 % Gold-Ernte, Beeren/Obst +6 % Nachreife,
+  Holz +8 % Holz-Gold, Zier +8 % Schönheit, Hanf +0,04 Lose/Min,
+  Magie +20 % Meister-XP. Jeder Bonus hängt an genau einem Core-Hook
+  (Wachstums-Tick, Nachreife, Crit-Roll, Los-Glück, Holz-Einkommen,
+  Schönheit, Meister-XP) → klein, additiv, offline-konsistent.
+- **Gold + Kompost als Kosten, Fortschritts-Gates:** Goldkurve ×3,4/Stufe wie
+  bisher; ab Stufe `specCompostFromLevel` (8) zusätzlich Kompost
+  (`compost`/`compostSpent` getrennt → Prestige-Bonus bleibt heil). Spätere
+  Stufen verlangen Parzellen (`1 + ⌊level/4⌋`) und Gärtner-Level
+  (`1 + level×2`). `specializationPurchase()` bündelt Kosten/Gates für die UI.
+- **Kompakte Shop-Sektion (Desktop/Mobile):** pro Kategorie Stufe, Zweitbonus-
+  Beschreibung + aktiver Wert, Gold- **und** Kompostkosten am Button, und eine
+  „braucht … Parzellen/Level"-Zeile bei nicht erfüllten Gates (abgedimmt).
+
+Save v22 → v23: keine neuen persistenten Felder — die Zweitboni leiten sich aus
+den vorhandenen `specializations`-Stufen ab, der Kompost-Abzug läuft über
+`compost`/`compostSpent`. Alte Saves laufen unverändert weiter; `sanitize()`
+deckelt Spezialisierungs-Stufen weiterhin auf `specMaxLevel`. Sim-Audit
+(14 d / 277 Prestiges): Spezialisierung kauft mit Gold+Kompost ohne Runaway.

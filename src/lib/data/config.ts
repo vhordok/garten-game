@@ -101,4 +101,14 @@ export const CONFIG = {
   specBaseCost: 5e6,
   specCostFactor: 3.4,
   specMaxLevel: 25,
+  /** PHASE 14: from this level on, a specialisation level also costs compost on
+   * top of gold — a second sink that ties endgame yield into prestige currency.
+   * Compost cost = base + perLevel × (level − fromLevel). */
+  specCompostFromLevel: 8,
+  specCompostBase: 3,
+  specCompostPerLevel: 2,
+  /** PHASE 14: later levels gate behind progression. Buying level L needs
+   * parcels ≥ 1 + floor(L / parcelsEvery) and gardener level ≥ 1 + L × levelPer. */
+  specParcelsEvery: 4,
+  specLevelPer: 2,
 } as const

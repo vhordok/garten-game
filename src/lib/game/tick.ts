@@ -15,6 +15,7 @@ import {
   scratchDropChance,
   sellMultiplier,
   specializationYieldBonus,
+  specUniqueBonus,
   waterCharges,
   yieldMultiplier,
 } from './modifiers'
@@ -50,7 +51,13 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
       // idle value for cannabis growers (PHASE 12).
       const watering = (state.upgrades['giesskanne'] ?? 0) + (state.upgrades['wasserfass'] ?? 0)
       const care = def.needsWateringLevel && watering < def.needsWateringLevel ? 0.5 : 1
-      plot.progress = Math.min(plot.progress + grownSeconds * care, target)
+      // PHASE 14: category specialisation can speed up growth (kraeuter) and
+      // the shorter regrow cycle (beeren/obst) — applied per plot, offline-safe.
+      const specSpeed =
+        1 +
+        specUniqueBonus(state, def.category, 'growth') +
+        (plot.regrowing ? specUniqueBonus(state, def.category, 'regrow') : 0)
+      plot.progress = Math.min(plot.progress + grownSeconds * care * specSpeed, target)
       changed = true
     }
   }
@@ -73,7 +80,11 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
     const def = plantById(plot.plantId)
     if (!def?.passiveIncome || plot.progress < def.growTime) continue
     const gain =
-      def.passiveIncome * dtSeconds * sellMultiplier(state) * (1 + compostUpgradeBonus(state, 'passive'))
+      def.passiveIncome *
+      dtSeconds *
+      sellMultiplier(state) *
+      (1 + compostUpgradeBonus(state, 'passive')) *
+      (1 + specUniqueBonus(state, def.category, 'wood'))
     state.money += gain
     state.totalEarned += gain
     state.lifetimeEarned += gain
@@ -149,7 +160,8 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
         def.yield * yieldMultiplier(s) * masteryYieldBonus(s, def.id) * specializationYieldBonus(s, def.category)
       )
       s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
-      s.mastery[def.id] = (s.mastery[def.id] ?? 0) + units
+      s.mastery[def.id] =
+        (s.mastery[def.id] ?? 0) + Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery')))
       s.stats.harvested += units
       if (def.regrowTime) {
         plot.progress = 0
@@ -165,7 +177,7 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
       if (
         !offline &&
         s.scratchTickets < maxScratchTickets(s) &&
-        Math.random() < scratchDropChance(s, cycleSeconds)
+        Math.random() < scratchDropChance(s, cycleSeconds, def.category)
       ) {
         s.scratchTickets += 1
       }
