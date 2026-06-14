@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
   import { BRANCH_LABEL, skillById, SKILLS, type SkillDef } from '../data/skills'
-  import { buySkill } from '../game/actions'
+  import { buySkill, respecSkills } from '../game/actions'
   import { availableSkillPoints, skillStatus, totalSkillPoints } from '../game/skills'
   import { gameStore } from '../game/state'
   import { playSound } from './fx/audio'
@@ -24,6 +24,14 @@
       playSound('error')
     }
   }
+
+  const hasSkills = $derived(Object.keys($gameStore.skills).length > 0)
+  const canRespec = $derived(hasSkills && $gameStore.compost >= CONFIG.skillRespecCompost)
+
+  function handleRespec() {
+    if (respecSkills()) playSound('sell')
+    else playSound('error')
+  }
 </script>
 
 <Overlay title="Fähigkeiten — dein langfristiger Build" {onClose}>
@@ -34,6 +42,11 @@
   </p>
   <div class="points num">
     <span class="pts-badge">{available}</span> frei · {total} insgesamt verdient
+    {#if hasSkills}
+      <button class="pxbtn small respec num" disabled={!canRespec} onclick={handleRespec} title="Alle Skills zurücksetzen — Punkte werden frei">
+        ↺ Respec 🌱 {CONFIG.skillRespecCompost}
+      </button>
+    {/if}
   </div>
 
   {#each BRANCHES as branch (branch)}
@@ -79,6 +92,14 @@
     font-size: 0.8rem;
     color: var(--c-mist);
     margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .respec {
+    margin-left: auto;
   }
 
   .pts-badge {

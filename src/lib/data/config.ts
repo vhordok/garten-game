@@ -123,4 +123,12 @@ export const CONFIG = {
   /** PHASE 17 skill tree: one skill point per this many gardener levels (plus one
    * per parcel and per achievement). Points come from progress, never gold. */
   skillPointPerLevels: 20,
+  /** PHASE 18 Zier softcap: beauty below the cap is linear; above it, extra
+   * beauty is compressed (^exp) so a Zier build stays strong but can't dominate
+   * outright (diminishing returns, no hard wall, no devaluation). */
+  beautySoftcap: 0.8,
+  beautySoftcapExp: 0.5,
+  /** PHASE 18 skill respec: clearing all skills costs this much compost (so it
+   * isn't free-spammable, but new players are never locked in). */
+  skillRespecCompost: 100,
 } as const

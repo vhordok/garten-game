@@ -21,6 +21,8 @@ import {
   gardenBeauty,
 } from '../src/lib/game/modifiers.ts'
 import { BEAUTY_MILESTONES } from '../src/lib/data/beautyMilestones.ts'
+import { SCRATCH_PRIZES, effectiveHarvestValue, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
+import { CONFIG as CFG } from '../src/lib/data/config.ts'
 import { compostGain } from '../src/lib/game/actions.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
 
@@ -58,6 +60,7 @@ for (const c of CATEGORY_SPECS) s.specializations[c.id] = 18
 // lifetime that yields the reported next gain (~935k): gain = sqrt(life/1e6) − claimed
 // 935k + 344k = sqrt(life/1e6) ⇒ life ≈ (1.279e6)^2 × 1e6 ≈ 1.636e18
 s.lifetimeEarned = 1.636e18
+s.totalEarned = 2.88e17 // gemeldetes Rundengold ~288 Qa → alle Sorten freigeschaltet
 
 const yM = yieldMultiplier(s)
 const gM = growthMultiplier(s)
@@ -222,5 +225,15 @@ for (const z of [0, 6, 12, 20]) {
   )
 }
 console.log('  ⇒ Zier ist sinnvoll, wenn die Aura (Sell-% + Meilenstein-Boni) den Verlust der Gold-Beete schlägt.')
+
+console.log('\n── PHASE 18: Rubbellos-Gewinne skalieren mit Einkommen (Voll-Treffer) ──')
+const eff = effectiveHarvestValue(s)
+console.log(`  effektiver Ernte-Wert (mit Multis): ${fmtN(eff)} Gold (roh ×${fmtN(yieldMultiplier(s) * sellMultiplier(s))})`)
+for (const id of ['money-large', 'jackpot']) {
+  const def = SCRATCH_PRIZES.find((p) => p.type === id)
+  const full = scratchPrizeAmount(def, s) * CFG.scratchFullMult
+  console.log(`  ${id.padEnd(12)} Voll-Treffer ≈ ${fmtN(full).padStart(8)} Gold = ${(full / goldPerHour * 60).toFixed(1)} min Einkommen`)
+}
+console.log('  ⇒ Lose bleiben im Qi-Endgame relevant (skalieren mit Ertrag×Verkauf), kein fixer Kleinkram mehr.')
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')

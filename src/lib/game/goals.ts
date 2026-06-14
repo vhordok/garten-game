@@ -264,6 +264,23 @@ function skillGoal(state: GameState): Goal | null {
   }
 }
 
+/** Cash in pending scratch tickets (short-term, ready when you hold some). */
+function scratchGoal(state: GameState): Goal | null {
+  const t = state.scratchTickets
+  if (t <= 0) return null
+  return {
+    id: 'scratch',
+    tier: 'kurz',
+    icon: '🎟️',
+    label: 'Rubbellose einlösen',
+    reward: 'Gold, Kompost, Booster & mehr',
+    current: t,
+    target: t,
+    fraction: 1,
+    ready: true,
+  }
+}
+
 /** Push the garden toward its next beauty (Zier) milestone aura. */
 function beautyGoal(state: GameState): Goal | null {
   const beauty = gardenBeauty(state)
@@ -299,6 +316,7 @@ export function activeGoals(state: GameState): Goal[] {
   const goals = [
     plantGoal(state),
     upgradeGoal(state),
+    scratchGoal(state),
     questGoal(state),
     specGoal(state),
     skillGoal(state),

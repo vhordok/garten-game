@@ -108,5 +108,9 @@ Schönheit schaltet gartenweite Aura-Perks frei, solange gehalten; sichtbarer
 ✿-Chip + Ziel) macht Zier zu einem echten Build; erster Skill-Tree-Vertical-Slice
 (data/skills.ts + game/skills.ts + ui/SkillsPanel.svelte: 5 Knoten, Skillpunkte
 aus Parzellen/Erfolgen/Level statt Gold, Prereq-Gating, übersteht Prestige,
-HUD-Button 🌱). Achievements-Tiers/Rubbellos/Events weiterhin offen. 42 Sorten
-in 8 Kategorien, Stand SAVE_VERSION 25.
+HUD-Button 🌱). Phase 18 (§9.20): Rubbellos-Rework (Gold-Preise skalieren mit
+effektivem Ernte-Wert, neue Kompost-/Mastery-Preise), 4 Kategorie-Events
+(Erntefest/Komposttag/Meistertag/Gartenschau via weather.ts), Skilltree-Ausbau
+(4 Knoten + Glück-Pfad + Respec gegen Kompost), Zier-Softcap (beautySoftcap,
+abnehmender Grenznutzen). Keine Save-Änderung. Achievements-Tiers → Phase 19.
+42 Sorten in 8 Kategorien, Stand SAVE_VERSION 25.
