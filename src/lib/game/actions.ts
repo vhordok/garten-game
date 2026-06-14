@@ -7,7 +7,7 @@ import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
 import { parcelBonus } from '../data/milestones'
 import { skillById } from '../data/skills'
 import { PLANTS, plantById } from '../data/plants'
-import { bestHarvestValue, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
+import { bestHarvestValue, masteryPrizePlant, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
 import { LICENSES } from '../data/licenses'
 import { weatherById } from '../data/weather'
@@ -18,6 +18,7 @@ import {
   compostUpgradeBonus,
   critChanceBonus,
   critWeatherMult,
+  eventMasteryMult,
   gardenBeauty,
   masteryYieldBonus,
   maxScratchTickets,
@@ -279,9 +280,11 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   )
   if (units > s.records.bestHarvest) s.records.bestHarvest = units
   s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
-  // PHASE 14: the Magie specialisation grows that category's mastery XP faster
+  // PHASE 14: the Magie specialisation grows that category's mastery XP faster;
+  // PHASE 18: a Meistertag event doubles it
   s.mastery[def.id] =
-    (s.mastery[def.id] ?? 0) + Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery')))
+    (s.mastery[def.id] ?? 0) +
+    Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery')) * eventMasteryMult(s))
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
   if (def.regrowTime) {
@@ -426,8 +429,10 @@ export function maxPlots(state: GameState): number {
  */
 export function compostGain(state: GameState): number {
   // PHASE 17: the Tiefwurzel skill boosts the raw lifetime-based gain
+  // PHASE 18: a Komposttag event adds +50 % to the next parcel's compost
+  const event = state.weather.id === 'komposttag' ? 1.5 : 1
   const fromLifetime = Math.floor(
-    Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase) * (1 + skillBonus(state, 'compostGain'))
+    Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase) * (1 + skillBonus(state, 'compostGain')) * event
   )
   // subtract compost already CLAIMED (pool + spent) so spending on the compost
   // garden can't double-dip into a bigger next gain (PHASE 13)
@@ -540,6 +545,22 @@ export function buySkill(id: string): boolean {
   if (def.prereq !== null && skillLevel(s, def.prereq) <= 0) return false
   if (availableSkillPoints(s) < def.cost) return false
   s.skills[id] = level + 1
+  notify()
+  return true
+}
+
+/**
+ * Reset all skills (PHASE 18) for a compost fee — points return to the pool
+ * (they're derived from progress, so clearing `skills` frees them). Costs
+ * compost so it can't be spammed, but never locks a player in. True on success.
+ */
+export function respecSkills(): boolean {
+  const s = getState()
+  if (Object.keys(s.skills).length === 0) return false
+  if (s.compost < CONFIG.skillRespecCompost) return false
+  s.compost -= CONFIG.skillRespecCompost
+  s.compostSpent += CONFIG.skillRespecCompost
+  s.skills = {}
   notify()
   return true
 }
@@ -771,6 +792,17 @@ export function settleScratchCard(card: ScratchCard, picked: string[]): ScratchO
     levelUps = grantXp(s, amount)
   } else if (prize.type === 'fertilizer') {
     s.fertilizerCharges += amount
+  } else if (prize.type === 'compost') {
+    // a compost prize feeds the prestige economy; tracked as claimed so it can't
+    // be double-dipped, but added to the spendable pool (PHASE 18)
+    s.compost += amount
+  } else if (prize.type === 'mastery') {
+    const id = masteryPrizePlant(s)
+    if (id) s.mastery[id] = (s.mastery[id] ?? 0) + amount
+    else {
+      // no harvestable plant selected → fall back to a small money win
+      s.money += amount
+    }
   } else {
     s.money += amount
     if (amount > s.records.biggestWin) s.records.biggestWin = amount

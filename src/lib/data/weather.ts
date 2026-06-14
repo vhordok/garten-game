@@ -32,6 +32,35 @@ export const WEATHER_EVENTS: WeatherDef[] = [
     durationSeconds: 120,
     weight: 25,
   },
+  // ── PHASE 18: category/chance events — never punishing, always an opportunity ──
+  {
+    id: 'erntefest',
+    name: 'Erntefest',
+    text: 'Erntefest! Alle Ernten bringen +50 % Ertrag.',
+    durationSeconds: 90,
+    weight: 22,
+  },
+  {
+    id: 'komposttag',
+    name: 'Komposttag',
+    text: 'Komposttag! Der nächste Parzellen-Kompost fällt +50 % höher aus.',
+    durationSeconds: 120,
+    weight: 16,
+  },
+  {
+    id: 'meistertag',
+    name: 'Meistertag',
+    text: 'Meistertag! Ernten geben doppelte Meisterschafts-XP.',
+    durationSeconds: 90,
+    weight: 16,
+  },
+  {
+    id: 'gartenschau',
+    name: 'Gartenschau',
+    text: 'Gartenschau! Besucher strömen — Schönheit wirkt +50 % stärker.',
+    durationSeconds: 90,
+    weight: 14,
+  },
 ]
 
 export function weatherById(id: string): WeatherDef | undefined {

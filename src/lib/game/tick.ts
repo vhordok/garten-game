@@ -11,6 +11,7 @@ import {
   masteryYieldBonus,
   maxScratchTickets,
   rollUnits,
+  eventMasteryMult,
   saleValue,
   scratchDropChance,
   sellMultiplier,
@@ -161,7 +162,8 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
       )
       s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
       s.mastery[def.id] =
-        (s.mastery[def.id] ?? 0) + Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery')))
+        (s.mastery[def.id] ?? 0) +
+        Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery')) * eventMasteryMult(s))
       s.stats.harvested += units
       if (def.regrowTime) {
         plot.progress = 0

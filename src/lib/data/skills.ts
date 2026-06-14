@@ -4,14 +4,14 @@
 // game*, and you can't max everything: you pick a build. Starts with one root +
 // four branch skills; the data shape scales to more nodes later.
 
-export type SkillEffect = 'yield' | 'crit' | 'questReward' | 'beauty' | 'compostGain'
+export type SkillEffect = 'yield' | 'crit' | 'questReward' | 'beauty' | 'compostGain' | 'scratchLuck'
 
 export interface SkillDef {
   id: string
   name: string
   desc: string
   /** UI grouping / flavour */
-  branch: 'wurzel' | 'ernte' | 'markt' | 'zier' | 'kompost'
+  branch: 'wurzel' | 'ernte' | 'markt' | 'zier' | 'kompost' | 'glueck'
   effect: SkillEffect
   perLevel: number
   maxLevel: number
@@ -77,6 +77,51 @@ export const SKILLS: SkillDef[] = [
     cost: 2,
     prereq: 'gartenplanung',
   },
+  // ── PHASE 18: deeper nodes per path + a luck branch ──────────────────────
+  {
+    id: 'ueppige_ernte',
+    name: 'Üppige Ernte',
+    desc: '+4 % Ertrag pro Stufe — vertieft den Ernte-Pfad.',
+    branch: 'ernte',
+    effect: 'yield',
+    perLevel: 0.04,
+    maxLevel: 2,
+    cost: 2,
+    prereq: 'erntefokus',
+  },
+  {
+    id: 'grosshandel',
+    name: 'Großhandel',
+    desc: '+8 % Auftragsbelohnung pro Stufe — für Auftrags-Builds.',
+    branch: 'markt',
+    effect: 'questReward',
+    perLevel: 0.08,
+    maxLevel: 2,
+    cost: 2,
+    prereq: 'haendlerblick',
+  },
+  {
+    id: 'parkanlage',
+    name: 'Parkanlage',
+    desc: '+20 % Schönheits-Wirkung pro Stufe — krönt den Zier-Build.',
+    branch: 'zier',
+    effect: 'beauty',
+    perLevel: 0.2,
+    maxLevel: 2,
+    cost: 3,
+    prereq: 'schaugarten',
+  },
+  {
+    id: 'gluecksklee',
+    name: 'Glücksklee',
+    desc: '+0,03 Los-Chance pro Stufe — mehr Rubbellose aus der Ernte.',
+    branch: 'glueck',
+    effect: 'scratchLuck',
+    perLevel: 0.03,
+    maxLevel: 3,
+    cost: 2,
+    prereq: 'gartenplanung',
+  },
 ]
 
 const byId = new Map(SKILLS.map((s) => [s.id, s]))
@@ -91,4 +136,5 @@ export const BRANCH_LABEL: Record<SkillDef['branch'], string> = {
   markt: 'Markt',
   zier: 'Zier',
   kompost: 'Kompost',
+  glueck: 'Glück',
 }

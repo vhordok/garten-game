@@ -85,7 +85,9 @@ import {
 } from '../src/lib/game/modifiers.ts'
 import { activeGoals } from '../src/lib/game/goals.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
-import { gardenBeauty } from '../src/lib/game/modifiers.ts'
+import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
+import { eventMasteryMult, gardenBeauty } from '../src/lib/game/modifiers.ts'
+import { respecSkills } from '../src/lib/game/actions.ts'
 import { availableSkillPoints, skillBonus, skillLevel, totalSkillPoints } from '../src/lib/game/skills.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
@@ -577,12 +579,31 @@ test('scratch cards 2.0: draw pays nothing, settle grades the picks', () => {
     )
     assert.equal(s.money, moneyBefore + 80 * hv * CONFIG.scratchFullMult)
   })
-  withRngQueue([0.9], () => {
+  withRngQueue([0.78], () => {
     const card = drawScratchCard()
     assert.equal(card.prizeType, 'fertilizer')
     const before = s.fertilizerCharges
     const won = settleScratchCard(card, [card.symbol, card.symbol, card.symbol])
     assert.equal(s.fertilizerCharges, before + won.amount)
+  })
+  // PHASE 18: non-gold prizes — compost feeds the prestige economy …
+  withRngQueue([0.85], () => {
+    s.scratchTickets = 2
+    const card = drawScratchCard()
+    assert.equal(card.prizeType, 'compost')
+    const before = s.compost
+    const won = settleScratchCard(card, [card.symbol, card.symbol, card.symbol])
+    assert.equal(s.compost, before + won.amount, 'compost prize lands in the pool')
+  })
+  // … and a mastery prize feeds the selected plant's mastery
+  withRngQueue([0.93], () => {
+    s.scratchTickets = 1
+    s.selectedPlantId = 'basilikum'
+    const card = drawScratchCard()
+    assert.equal(card.prizeType, 'mastery')
+    const before = s.mastery['basilikum'] ?? 0
+    const won = settleScratchCard(card, [card.symbol, card.symbol, card.symbol])
+    assert.equal(s.mastery['basilikum'], before + won.amount, 'mastery prize lifts the plant')
   })
 
   assert.equal(drawScratchCard(), null, 'no ticket, no card')
@@ -1223,6 +1244,65 @@ test('PHASE 17: beauty milestones turn Zier into a real aura build', () => {
     for (const m of BEAUTY_MILESTONES) if (m.effect === 'yield') totalYield += m.value
     assert.ok(Math.abs(beautyMilestoneBonus(top, 'yield') - totalYield) < 1e-9, 'sums active yield perks')
     assert.ok(Number.isFinite(beautyMilestoneBonus(top, 'yield')))
+  })
+})
+
+test('PHASE 18: Zier softcap, scratch scaling, skill expansion + respec, events', () => {
+  withBoringRng(() => {
+    // ── Zier softcap: high beauty is compressed, the build keeps value ──
+    const z = fresh()
+    z.totalEarned = 1e18
+    const ornamentals = PLANTS.filter((p) => p.beautyBonus).sort((a, b) => b.beautyBonus - a.beautyBonus)
+    let rawSum = 0
+    z.plots = Array.from({ length: 30 }, (_, i) => {
+      const p = ornamentals[i % ornamentals.length]
+      rawSum += p.beautyBonus
+      return { plantId: p.id, progress: p.growTime, waterLeft: 0, regrowing: false }
+    })
+    const beauty = gardenBeauty(z)
+    assert.ok(beauty > CONFIG.beautySoftcap, 'beauty still strong above the cap')
+    assert.ok(beauty < rawSum, 'but compressed below the raw sum (softcap, not a wall)')
+    assert.ok(Number.isFinite(beauty))
+
+    // ── scratch gold scales with REAL income (yield × sell), not raw ──
+    const a = fresh()
+    a.totalEarned = 1e9
+    const baseEff = effectiveHarvestValue(a)
+    const b = fresh()
+    b.totalEarned = 1e9
+    b.skills = { gartenplanung: 1 } // +3 % yield
+    b.parcels = 6
+    b.compost = 1e6 // compost yield bonus
+    assert.ok(effectiveHarvestValue(b) > baseEff, 'effective prize value follows the multipliers')
+    assert.ok(Number.isFinite(effectiveHarvestValue(b)))
+
+    // ── skill tree expansion + the luck branch are wired ──
+    const s = fresh()
+    s.parcels = 12
+    s.achievements = ['x', 'y', 'z', 'w'] // plenty of points
+    s.level = 100
+    assert.ok(buySkill('gartenplanung'))
+    assert.ok(buySkill('gluecksklee'), 'new luck branch buyable after the root')
+    assert.ok(skillBonus(s, 'scratchLuck') > 0, 'gluecksklee feeds scratch luck')
+    assert.ok(buySkill('erntefokus') && buySkill('ueppige_ernte'), 'deeper ernte node behind erntefokus')
+
+    // ── respec clears skills for a compost fee, frees the points again ──
+    const beforePts = availableSkillPoints(s)
+    s.compost = CONFIG.skillRespecCompost
+    assert.ok(respecSkills())
+    assert.deepEqual(getState().skills, {}, 'respec clears all skills')
+    assert.equal(getState().compost, 0, 'respec charged the compost fee')
+    assert.ok(availableSkillPoints(getState()) > beforePts, 'points returned to the pool')
+    assert.ok(!respecSkills(), 'nothing to respec / no compost → refused')
+
+    // ── events are opportunities, wired & bounded ──
+    const e = fresh()
+    assert.equal(eventMasteryMult(e), 1)
+    e.weather = { id: 'meistertag', remaining: 60 }
+    assert.equal(eventMasteryMult(e), 2, 'Meistertag doubles mastery XP')
+    e.weather = { id: 'erntefest', remaining: 60 }
+    const plain = fresh()
+    assert.ok(yieldMultiplier(e) > yieldMultiplier(plain), 'Erntefest lifts yield')
   })
 })
 

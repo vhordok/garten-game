@@ -75,13 +75,16 @@ export function yieldMultiplier(state: GameState): number {
   const perma = 1 + parcelBonus(state.parcels, 'yield') + compostUpgradeBonus(state, 'yield')
   // PHASE 17: beauty-milestone aura + skill-tree (Gartenplanung) yield
   const meta = 1 + beautyMilestoneBonus(gardenBeauty(state), 'yield') + skillBonus(state, 'yield')
+  // PHASE 18: Erntefest event lifts every harvest while it lasts
+  const event = state.weather.id === 'erntefest' ? 1.5 : 1
   return (
     multiplierFor(state, 'yield') *
     (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
     (1 + levelBonus) *
     (1 + 0.01 * state.achievements.length) *
     perma *
-    meta
+    meta *
+    event
   )
 }
 
@@ -231,7 +234,14 @@ export function gardenBeauty(state: GameState): number {
     }
   }
   // PHASE 17: the Schaugarten skill amplifies the whole beauty stat
-  return bonus * (1 + skillBonus(state, 'beauty'))
+  // PHASE 18: the Gartenschau event boosts beauty's pull while it lasts
+  const event = state.weather.id === 'gartenschau' ? 1.5 : 1
+  const raw = bonus * (1 + skillBonus(state, 'beauty')) * event
+  // PHASE 18 softcap: linear up to the cap, compressed above → a Zier build
+  // stays strong but stops being the automatic best strategy (diminishing
+  // returns, never a hard wall, the build keeps its value)
+  if (raw <= CONFIG.beautySoftcap) return raw
+  return CONFIG.beautySoftcap + Math.pow(raw - CONFIG.beautySoftcap, CONFIG.beautySoftcapExp)
 }
 
 /** Garden beauty raises the global sell price (Zier's baseline aura). */
@@ -287,6 +297,11 @@ export function critWeatherMult(state: GameState): number {
   return state.weather.id === 'sternschnuppen' ? 3 : 1
 }
 
+/** Meistertag doubles mastery XP gained from harvests while it lasts (PHASE 18). */
+export function eventMasteryMult(state: GameState): number {
+  return state.weather.id === 'meistertag' ? 2 : 1
+}
+
 /**
  * Chance to find a scratch ticket when harvesting a crop with the given
  * cycle time — proportional to time invested, so quick herbs barely drop
@@ -298,6 +313,7 @@ export function scratchDropChance(state: GameState, cycleSeconds: number, catego
     effectBonus(state, 'scratchLuck') +
     parcelBonus(state.parcels, 'ticketLuck') +
     beautyMilestoneBonus(gardenBeauty(state), 'ticketLuck') +
+    skillBonus(state, 'scratchLuck') +
     (category ? specUniqueBonus(state, category, 'ticket') : 0)
   return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }

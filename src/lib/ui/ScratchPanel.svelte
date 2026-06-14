@@ -33,6 +33,8 @@
     'money-large': 'Gold',
     xp: 'XP',
     fertilizer: 'Turbo-Dünger (nächste Ernten ×2)',
+    compost: 'Kompost',
+    mastery: 'Meisterschafts-XP',
     jackpot: 'JACKPOT-Gold',
   }
 

@@ -769,3 +769,37 @@ auf {} → alte Saves unbetroffen, Punkte werden aus vorhandenem Fortschritt
 abgeleitet. Beauty-Milestones leiten sich aus den Beeten ab (keine Persistenz).
 Tests 46/46, check/build grün, 14-d-Sim ohne Runaway/NaN. Tiefere Pflanzen-
 rollen-Retunings, Kategorie-Events/Aufträge und ein größerer Skill-Tree → Phase 18.
+
+### 9.20 Phase 18 — Belohnungen: Rubbellos-Rework, Events, Skilltree-Ausbau, Zier-Softcap (Save v25, kompatibel)
+
+Fokus auf Belohnungsgefühl; zwei Systeme gezielt ausgebaut, zwei justiert. Das
+schwere Erfolge-Tier-System bewusst auf Phase 19 verschoben (nicht halbgar).
+
+- **Zier-Softcap (Balance-Check):** Diagnose zeigte, dass der Zier-Build bei
+  hohem Zier-Spec dominierte (497 % Schönheit aus 6 Zier). `gardenBeauty` ist
+  jetzt **weich gedeckelt** (linear bis `beautySoftcap` 0,8, darüber `^0,5`):
+  6 Zier → 284 %, 12 ≈ 20 Zier (abnehmender Grenznutzen). Keine Bestrafung,
+  keine Entwertung — Zier bleibt ein starker Build, ist aber nicht mehr
+  automatisch beste Strategie.
+- **Rubbellos-Rework (`data/scratch.ts`):** Gold-Preise skalieren jetzt mit dem
+  **effektiven** Ernte-Wert (roh × Ertrags- × Verkaufs-Multiplikator) statt mit
+  dem rohen Pflanzenwert → ein Jackpot ist im Qi-Endgame ~5–6 min Einkommen
+  statt Sekundenkleinkram, früh unverändert. Zwei neue Nicht-Gold-Preise:
+  **Kompost** (skaliert mit Parzellen) und **Meisterschafts-XP** (für die
+  gewählte Sorte). Weights ausbalanciert, kein Runaway (Lose sind knapp/zeit-
+  gedeckelt).
+- **Kategorie-Events (`data/weather.ts`):** vier neue Chancen-Events über das
+  bestehende (in-flow, nicht verdeckende) Banner-System — **Erntefest** (+50 %
+  Ertrag), **Komposttag** (+50 % nächster Kompost), **Meistertag** (×2 Meister-XP),
+  **Gartenschau** (+50 % Schönheits-Wirkung). Keine Strafen, mobil, sichtbar.
+- **Skilltree-Ausbau (`data/skills.ts`):** vier weitere Knoten + neuer **Glück**-
+  Pfad — Üppige Ernte (Ernte), Großhandel (Markt), Parkanlage (Zier), Glücksklee
+  (Los-Chance, koppelt an das Rubbellos-Rework). **Respec** (`respecSkills`) gegen
+  eine Kompost-Gebühr (`skillRespecCompost` 100) → kein Lock-in, nicht spammbar.
+- **Ziel-Panel-Anbindung:** neues „Rubbellose einlösen"-Ziel (wenn Lose offen);
+  Skill-/Schönheits-Ziele aus Phase 16/17 bleiben.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 25): Rubbellos/Events/Softcap
+sind reine Logik, der Skilltree nutzt das vorhandene `skills`-Map. Tests 47/47,
+check/build grün, 14-d-Sim ohne Runaway/NaN. **Erfolge-Tier-System** (mehrstufige
+Achievements mit Belohnungen + Migration) → Phase 19.
