@@ -179,11 +179,13 @@ test('save roundtrip keeps upgrades, v1 saves migrate, garbage is refused', () =
   const s = fresh()
   s.money = 1234
   s.upgrades['giesskanne'] = 3
+  s.mastery['basilikum'] = 50000 // mastery XP must survive save/load (PHASE 14)
   const code = exportSave()
   fresh()
   assert.notEqual(importSave(code), null)
   assert.equal(getState().money, 1234)
   assert.equal(getState().upgrades['giesskanne'], 3)
+  assert.equal(getState().mastery['basilikum'], 50000, 'mastery XP survives save roundtrip')
 
   const v1 = JSON.stringify({
     version: 1,
