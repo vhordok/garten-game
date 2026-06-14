@@ -2,8 +2,10 @@
 // state and calls notify() exactly once on success (see CLAUDE.md rule 5).
 
 import { CONFIG } from '../data/config'
+import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
 import { parcelBonus } from '../data/milestones'
+import { skillById } from '../data/skills'
 import { PLANTS, plantById } from '../data/plants'
 import { bestHarvestValue, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
@@ -16,6 +18,7 @@ import {
   compostUpgradeBonus,
   critChanceBonus,
   critWeatherMult,
+  gardenBeauty,
   masteryYieldBonus,
   maxScratchTickets,
   rollUnits,
@@ -28,6 +31,7 @@ import {
   yieldMultiplier,
 } from './modifiers'
 import { generateQuest, questReserved, questStreakBonus, refillQuests } from './quests'
+import { availableSkillPoints, skillBonus, skillLevel } from './skills'
 import { grantXp, type LevelUp } from './xp'
 
 export type { LevelUp } from './xp'
@@ -421,7 +425,10 @@ export function maxPlots(state: GameState): number {
  * tiny rounds gives nothing extra (balance audit).
  */
 export function compostGain(state: GameState): number {
-  const fromLifetime = Math.floor(Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase))
+  // PHASE 17: the Tiefwurzel skill boosts the raw lifetime-based gain
+  const fromLifetime = Math.floor(
+    Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase) * (1 + skillBonus(state, 'compostGain'))
+  )
   // subtract compost already CLAIMED (pool + spent) so spending on the compost
   // garden can't double-dip into a bigger next gain (PHASE 13)
   return Math.max(fromLifetime - compostClaimed(state), 0)
@@ -519,6 +526,24 @@ export function buySpecialization(category: string): boolean {
   return true
 }
 
+/**
+ * Buy one level of a skill (PHASE 17). Spends skill points (earned from parcels/
+ * achievements/level, never gold) and respects the prerequisite + max level.
+ * Survives prestige. Returns true on success.
+ */
+export function buySkill(id: string): boolean {
+  const s = getState()
+  const def = skillById(id)
+  if (!def) return false
+  const level = skillLevel(s, id)
+  if (level >= def.maxLevel) return false
+  if (def.prereq !== null && skillLevel(s, def.prereq) <= 0) return false
+  if (availableSkillPoints(s) < def.cost) return false
+  s.skills[id] = level + 1
+  notify()
+  return true
+}
+
 /** True if any upgrade level is currently affordable (HUD badge). */
 export function anyUpgradeAffordable(state: GameState): boolean {
   return UPGRADES.some((def) => {
@@ -595,8 +620,14 @@ export function fulfillQuest(questId: number): QuestReward | null {
   let delivered = 0
   for (const item of quest.items) delivered += consumeItem(s, item)
 
-  // streak bonus + permanent quest-reward boni (parcel milestone + compost garden)
-  const rewardBonus = 1 + parcelBonus(s.parcels, 'questReward') + compostUpgradeBonus(s, 'questReward')
+  // streak bonus + permanent quest-reward boni (parcel milestone + compost garden
+  // + PHASE 17 beauty-milestone aura + Händlerblick skill)
+  const rewardBonus =
+    1 +
+    parcelBonus(s.parcels, 'questReward') +
+    compostUpgradeBonus(s, 'questReward') +
+    beautyMilestoneBonus(gardenBeauty(s), 'questReward') +
+    skillBonus(s, 'questReward')
   const payout = Math.round(quest.reward * (1 + questStreakBonus(s)) * rewardBonus)
   s.money += payout
   s.totalEarned += payout

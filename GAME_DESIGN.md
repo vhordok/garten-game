@@ -733,5 +733,39 @@ Aktionsleiste.
 
 Keine Save-Format-Änderung (SAVE_VERSION bleibt 24): das Ziel-System leitet
 alles aus vorhandenem State ab, der Overlay-Fix ist reine UI/Layout-Änderung.
-Achievements-Tiers, Rubbellos-Spannung und ein Event-Ausbau sind als **Phase
-17** vorgemerkt (bewusst nicht halbgar mitgenommen).
+Achievements-Tiers, Rubbellos-Spannung und ein Event-Ausbau sind als spätere
+Phase vorgemerkt (bewusst nicht halbgar mitgenommen).
+
+### 9.19 Phase 17 — Kategorie-Identität, Zier-Rework & Skill-Tree-Vertical-Slice (Save v25)
+
+**Kategorie-Diagnose** (`scripts/diagnose.mjs`): die meisten Kategorien sind
+Direktertrag (aktiv ernten), Holz ist Passiv/Offline, **Zier ist Aura** — kein
+Direktertrag, dafür globale Boni. Problem: die Aura war stark, aber unsichtbar
+und ohne Identität, daher fühlte sie sich wie Beetverlust an.
+
+- **Zier-Rework — Schönheit als Build (`data/beautyMilestones.ts`):** reife
+  Zierpflanzen erzeugen „Schönheit"; Schwellen schalten **garten­weite Aura-
+  Perks** frei, die aktiv bleiben *solange die Schönheit gehalten wird* —
+  +Auftragsbelohnung (0,15), +Los-Glück (0,4), +Wuchs (0,8), +Gold-Ernte (1,5),
+  +12 % Ertrag (3,0). Damit wird Zier eine echte Strategie: Beete für Schönheit
+  opfern → den ganzen Garten auf neuen Achsen stärken. Boni sind nicht-Gold →
+  skalieren mit dem eigenen Output, kein Runaway. Sichtbar als „✿ Schönheit"-
+  Chip im Garten + als Ziel im Ziel-Panel. Diagnose: 6 Zier + 50 Gold schlägt
+  56 Gold deutlich (Aura > Beetverlust) → Build ist konkurrenzfähig.
+- **Skill-Tree-Vertical-Slice (`data/skills.ts` + `game/skills.ts` +
+  `ui/SkillsPanel.svelte`):** ein kleines **Meta-System**, kein zweiter Shop.
+  Skillpunkte kommen aus **Fortschritt** (1/Parzelle + 1/Erfolg + 1 je 20 Level),
+  nie aus Gold. Fünf Knoten: Gartenplanung (Wurzel, +Ertrag, öffnet die Pfade) →
+  Erntefokus (+Crit), Händlerblick (+Auftrag), Schaugarten (+Schönheits-Wirkung,
+  bindet den Zier-Build an), Tiefwurzel (+Kompost-Gewinn). Prereq-Gating, max-
+  Level, übersteht Prestige. HUD-Button 🌱 mit Punkte-Badge, Ziel-Panel zeigt
+  freie Punkte. Bewusst klein & datengetrieben erweiterbar.
+- **Spezialisierungen passen schon zur Kategorie** (Phase 14/15): Zier→Schönheit,
+  Holz→Holz-Gold, Kräuter→Wuchs, Beeren/Obst→Nachreife, Magie→Meister-XP,
+  Hanf→Lose, Gemüse→Gold-Ernte — der Zier-Spec verstärkt jetzt einen echten Build.
+
+Save v24 → v25: neues `skills`-Map (Record<string,number>), `sanitize()` defaultet
+auf {} → alte Saves unbetroffen, Punkte werden aus vorhandenem Fortschritt
+abgeleitet. Beauty-Milestones leiten sich aus den Beeten ab (keine Persistenz).
+Tests 46/46, check/build grün, 14-d-Sim ohne Runaway/NaN. Tiefere Pflanzen-
+rollen-Retunings, Kategorie-Events/Aufträge und ein größerer Skill-Tree → Phase 18.

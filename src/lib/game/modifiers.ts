@@ -4,10 +4,12 @@
 
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
+import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
 import { categorySpecById, type SpecKind } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
+import { skillBonus } from './skills'
 import type { GameState, UpgradeEffect } from './types'
 
 // NOTE: multiplierFor below only consumes the multiplicative effects
@@ -52,11 +54,14 @@ export function growthMultiplier(state: GameState): number {
   const wasserfass = 1 + CONFIG.wasserfassGrowthPerLevel * (state.upgrades['wasserfass'] ?? 0)
   // PHASE 13: parcel milestones + compost-garden upgrades add small growth boni
   const perma = 1 + parcelBonus(state.parcels, 'growth') + compostUpgradeBonus(state, 'growth')
+  // PHASE 17: a beautiful garden (beauty milestone) speeds the whole garden up
+  const aura = 1 + beautyMilestoneBonus(gardenBeauty(state), 'growth')
   return (
     multiplierFor(state, 'growth') *
     (1 + CONFIG.compostGrowthPerPoint * effectiveCompost(state)) *
     wasserfass *
-    perma
+    perma *
+    aura
   )
 }
 
@@ -68,12 +73,15 @@ export function yieldMultiplier(state: GameState): number {
   )
   // PHASE 13: parcel milestones + compost-garden upgrades add small yield boni
   const perma = 1 + parcelBonus(state.parcels, 'yield') + compostUpgradeBonus(state, 'yield')
+  // PHASE 17: beauty-milestone aura + skill-tree (Gartenplanung) yield
+  const meta = 1 + beautyMilestoneBonus(gardenBeauty(state), 'yield') + skillBonus(state, 'yield')
   return (
     multiplierFor(state, 'yield') *
     (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
     (1 + levelBonus) *
     (1 + 0.01 * state.achievements.length) *
-    perma
+    perma *
+    meta
   )
 }
 
@@ -207,8 +215,12 @@ export function specUniqueBonus(state: GameState, category: string, kind: SpecKi
   return def.unique.perLevel * level * specPerkMultiplier(level)
 }
 
-/** Garden beauty: mature ornamental plots raise the global sell price. */
-export function beautyMultiplier(state: GameState): number {
+/**
+ * Garden beauty (PHASE 17): summed beauty of mature ornamentals, lifted by the
+ * Zier specialisation AND the Schaugarten skill. This is the Zier build's core
+ * stat — it drives both the sell-price aura and the beauty milestones.
+ */
+export function gardenBeauty(state: GameState): number {
   let bonus = 0
   for (const plot of state.plots) {
     if (!plot.plantId) continue
@@ -218,7 +230,13 @@ export function beautyMultiplier(state: GameState): number {
       bonus += def.beautyBonus * (1 + specUniqueBonus(state, def.category, 'beauty'))
     }
   }
-  return 1 + bonus
+  // PHASE 17: the Schaugarten skill amplifies the whole beauty stat
+  return bonus * (1 + skillBonus(state, 'beauty'))
+}
+
+/** Garden beauty raises the global sell price (Zier's baseline aura). */
+export function beautyMultiplier(state: GameState): number {
+  return 1 + gardenBeauty(state)
 }
 
 /**
@@ -260,7 +278,8 @@ export function comboWindowSeconds(state: GameState): number {
 
 /** Additive bonus on the perfect-crit chance (legendary gets a fifth of it). */
 export function critChanceBonus(state: GameState): number {
-  return effectBonus(state, 'critChance')
+  // PHASE 17: beauty-milestone aura + skill-tree (Erntefokus) raise crit odds
+  return effectBonus(state, 'critChance') + beautyMilestoneBonus(gardenBeauty(state), 'crit') + skillBonus(state, 'crit')
 }
 
 /** Shooting-star nights triple every crit chance. */
@@ -278,6 +297,7 @@ export function scratchDropChance(state: GameState, cycleSeconds: number, catego
     CONFIG.scratchDropPerMinute +
     effectBonus(state, 'scratchLuck') +
     parcelBonus(state.parcels, 'ticketLuck') +
+    beautyMilestoneBonus(gardenBeauty(state), 'ticketLuck') +
     (category ? specUniqueBonus(state, category, 'ticket') : 0)
   return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }

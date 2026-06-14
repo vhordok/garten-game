@@ -5,13 +5,15 @@
 // renders it. Adds no new persisted data.
 
 import { CONFIG } from '../data/config'
+import { nextBeautyMilestone } from '../data/beautyMilestones'
 import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
 import { nextMilestone } from '../data/milestones'
 import { PLANTS, plantById, produceName } from '../data/plants'
 import { CATEGORY_SPECS } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
 import { compostGain, isPlantUnlocked, leaseRequirement, nextUpgradeCost, upgradeLevel } from './actions'
-import { masteryLevel, masteryThreshold, nextSpecMilestone, specializationLevel } from './modifiers'
+import { gardenBeauty, masteryLevel, masteryThreshold, nextSpecMilestone, specializationLevel } from './modifiers'
+import { availableSkillPoints } from './skills'
 import type { GameState } from './types'
 
 export type GoalTier = 'kurz' | 'mittel' | 'lang' | 'endgame'
@@ -245,6 +247,47 @@ function collectionGoal(state: GameState): Goal | null {
   }
 }
 
+/** Spend unspent skill points (mid-term, only when you have some). */
+function skillGoal(state: GameState): Goal | null {
+  const pts = availableSkillPoints(state)
+  if (pts <= 0) return null
+  return {
+    id: 'skill',
+    tier: 'mittel',
+    icon: '✦',
+    label: 'Fähigkeit freischalten',
+    reward: `${pts} Skillpunkt${pts === 1 ? '' : 'e'} frei`,
+    current: pts,
+    target: pts,
+    fraction: 1,
+    ready: true,
+  }
+}
+
+/** Push the garden toward its next beauty (Zier) milestone aura. */
+function beautyGoal(state: GameState): Goal | null {
+  const beauty = gardenBeauty(state)
+  const m = nextBeautyMilestone(beauty)
+  if (!m) return null
+  // only surface this once the player has started a beauty garden, or owns zier
+  const hasOrnamental = state.plots.some((p) => {
+    const def = p.plantId ? plantById(p.plantId) : null
+    return def?.beautyBonus
+  })
+  if (beauty <= 0 && !hasOrnamental) return null
+  return {
+    id: 'beauty',
+    tier: 'lang',
+    icon: '✿',
+    label: `Schönheit: ${m.label}`,
+    reward: m.desc,
+    current: Math.round(beauty * 100),
+    target: Math.round(m.beauty * 100),
+    fraction: clamp01(beauty / m.beauty),
+    ready: false,
+  }
+}
+
 const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endgame: 3 }
 
 /**
@@ -258,8 +301,10 @@ export function activeGoals(state: GameState): Goal[] {
     upgradeGoal(state),
     questGoal(state),
     specGoal(state),
+    skillGoal(state),
     parcelGoal(state),
     parcelMilestoneGoal(state),
+    beautyGoal(state),
     masteryGoal(state),
     compostGoal(state),
     collectionGoal(state),

@@ -8,11 +8,12 @@ import { maxScratchTickets } from './modifiers'
 import { PLANTS, plantById } from '../data/plants'
 import { QUEST_CLIENTS, QUEST_TIERS } from '../data/questFlavor'
 import { questSlotCount } from './quests'
+import { SKILLS } from '../data/skills'
 import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 24
+export const SAVE_VERSION = 25
 
 interface SaveEnvelope {
   version: number
@@ -191,6 +192,11 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // flows through compost/compostSpent — so old saves carry over unchanged;
       // sanitize() still clamps specialisation levels to specMaxLevel.
       return { ...envelope, version: 23 }
+    case 24:
+      // v24 → v25: PHASE 17 skill tree — new `skills` map. sanitize() defaults it
+      // to {} (no skills taken), so old saves are unaffected; points are derived
+      // from existing progress (parcels/achievements/level).
+      return { ...envelope, version: 25 }
     case 23:
       // v23 → v24: PHASE 15 late-game rebalance — escalating specialisation value
       // + milestones, repeatable endgame compost sinks, wider top-of-ladder
@@ -255,6 +261,17 @@ function sanitize(raw: unknown): GameState {
     }
   }
   state.specializations = specializations
+
+  // PHASE 17 skill-tree levels — keep only known skills, clamp to maxLevel
+  const skills: Record<string, number> = {}
+  if (typeof r.skills === 'object' && r.skills !== null) {
+    const raw = r.skills as Record<string, unknown>
+    for (const def of SKILLS) {
+      const level = Math.floor(clampNumber(raw[def.id], 0, 0, def.maxLevel))
+      if (level > 0) skills[def.id] = level
+    }
+  }
+  state.skills = skills
 
   state.level = Math.floor(clampNumber(r.level, 1, 1, 9999))
   state.xp = clampNumber(r.xp, 0)

@@ -169,6 +169,9 @@ export interface GameState {
   /** per-category specialisation level, bought with gold; survives prestige,
    * drives a permanent per-category yield bonus (PHASE 11 gold sink) */
   specializations: Record<string, number>
+  /** skill-tree levels keyed by SkillDef id; survives prestige. Points are
+   * earned from parcels/achievements/level, not gold (PHASE 17). */
+  skills: Record<string, number>
   /** gardener level (starts at 1); gates quest slots and future QoL */
   level: number
   /** progress within the current level (resets each level-up) */
