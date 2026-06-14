@@ -94,19 +94,28 @@ export const CONFIG = {
   masteryBase: 120,
   masteryMaxLevel: 10,
   masteryYieldPerLevel: 0.1,
-  /** category specialisation (PHASE 11 gold sink): permanent per-category yield
-   * bonus, bought with gold. Cost grows ×specCostFactor per level so you must
-   * choose which categories to invest in rather than maxing everything. */
-  specYieldPerLevel: 0.08,
+  /** category specialisation (PHASE 11 gold sink, reworked PHASE 15): each level
+   * adds an ESCALATING per-category yield bonus, and every specMilestoneEvery
+   * levels is a milestone that amplifies the category's unique perk. The base
+   * per-level value grows by specTierStep every 5-level tier, so high levels
+   * keep pace with the steep cost (diagnosis: flat +8 %/level died vs ×3.4 cost). */
+  specYieldPerLevel: 0.05,
+  /** each completed 5-level tier raises the per-level yield value by this much */
+  specTierStep: 0.4,
+  /** a milestone every N levels; each reached milestone adds specPerkMilestoneStep
+   * to the category's unique-perk multiplier (×1 at 0, ×3.5 at level 25) */
+  specMilestoneEvery: 5,
+  specPerkMilestoneStep: 0.5,
   specBaseCost: 5e6,
-  specCostFactor: 3.4,
+  /** lowered from 3.4 so high levels are actually reachable as an endgame sink */
+  specCostFactor: 2.5,
   specMaxLevel: 25,
-  /** PHASE 14: from this level on, a specialisation level also costs compost on
-   * top of gold — a second sink that ties endgame yield into prestige currency.
-   * Compost cost = base + perLevel × (level − fromLevel). */
+  /** PHASE 14/15: from this level a specialisation level also costs compost —
+   * geometric, so the top levels are a real compost sink (compost/compostSpent
+   * stay separate → prestige bonus untouched). */
   specCompostFromLevel: 8,
-  specCompostBase: 3,
-  specCompostPerLevel: 2,
+  specCompostBase: 40,
+  specCompostFactor: 1.6,
   /** PHASE 14: later levels gate behind progression. Buying level L needs
    * parcels ≥ 1 + floor(L / parcelsEvery) and gardener level ≥ 1 + L × levelPer. */
   specParcelsEvery: 4,

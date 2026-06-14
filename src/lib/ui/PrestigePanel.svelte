@@ -137,9 +137,13 @@
       {@const locked = $gameStore.parcels < u.unlockParcel}
       {@const cost = compostUpgradeCost(u, level)}
       {@const affordable = !locked && cost !== null && $gameStore.compost >= cost}
-      <li class="cu" class:dimmed={locked}>
+      <li class="cu" class:dimmed={locked} class:endless={u.repeatable}>
         <span class="cu-body">
-          <span class="cu-head"><b>{u.name}</b> <span class="cu-lvl num">Stufe {level}/{u.maxLevel}</span></span>
+          <span class="cu-head">
+            <b>{u.name}</b>
+            <span class="cu-lvl num">Stufe {level}{u.repeatable ? '' : `/${u.maxLevel}`}</span>
+            {#if u.repeatable}<span class="cu-endless">∞</span>{/if}
+          </span>
           <span class="cu-desc">
             {u.desc}{level > 0 ? ` · aktiv: ${compostActive(u.effect, u.perLevel, level)}` : ''}
           </span>
@@ -331,5 +335,15 @@
     flex: none;
     font-size: 0.72rem;
     color: var(--c-mist);
+  }
+
+  .cu-endless {
+    margin-left: 4px;
+    color: var(--c-gold2);
+    font-weight: 700;
+  }
+
+  .cu.endless .cu-head b {
+    color: var(--c-gold2);
   }
 </style>

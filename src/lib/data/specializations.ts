@@ -1,8 +1,14 @@
-// Category specialisation definitions (PHASE 14). Each plant category can be
-// upgraded with gold (and, from a threshold level, compost). Every level adds a
-// shared primary yield bonus (CONFIG.specYieldPerLevel) PLUS a small UNIQUE
-// secondary perk that fits the category's flavour. Data only — the bonus math
-// lives in game/modifiers.ts, so new balance = editing this table, not code.
+// Category specialisation definitions (PHASE 14, reworked PHASE 15). Each plant
+// category can be upgraded with gold (and, from a threshold level, compost).
+//
+// PHASE 15 fixes the late-game ROI collapse (diagnosis: cost grew ×3.4/level
+// while value stayed flat +8 %/level). Now:
+//  - the per-level yield bonus ESCALATES every 5-level tier, so high levels add
+//    more, not the same (keeps pace with the steep cost),
+//  - every 5 levels is a MILESTONE that amplifies the category's unique perk —
+//    a real decision spike ("push gemüse to 15 for the next milestone"),
+//  - compost cost on high levels grows geometrically → a genuine compost sink.
+// Data only — the curves live in game/modifiers.ts.
 
 import type { PlantCategory } from '../game/types'
 
@@ -23,6 +29,8 @@ export interface CategorySpecDef {
     /** render the *active* secondary value at the given level for the UI */
     format: (level: number) => string
   }
+  /** what reaching a milestone (every 5 levels) does, in German, for the UI */
+  milestoneDesc: string
 }
 
 const pct = (v: number) => `${Math.round(v * 100)} %`
@@ -37,6 +45,7 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       desc: 'Kräuter wachsen schneller',
       format: (l) => `+${pct(0.05 * l)} Wuchs`,
     },
+    milestoneDesc: 'Meilenstein verstärkt den Wuchs-Schub',
   },
   {
     id: 'gemuese',
@@ -47,6 +56,7 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       desc: 'höhere Gold-Ernte-Chance',
       format: (l) => `+${pct(0.01 * l)} Gold-Ernte`,
     },
+    milestoneDesc: 'Meilenstein verstärkt die Gold-Ernte',
   },
   {
     id: 'beeren',
@@ -57,6 +67,7 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       desc: 'Beeren reifen schneller nach',
       format: (l) => `+${pct(0.06 * l)} Nachreife`,
     },
+    milestoneDesc: 'Meilenstein verstärkt die Nachreife',
   },
   {
     id: 'obst',
@@ -67,6 +78,7 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       desc: 'Obst reift schneller nach',
       format: (l) => `+${pct(0.06 * l)} Nachreife`,
     },
+    milestoneDesc: 'Meilenstein verstärkt die Nachreife',
   },
   {
     id: 'baeume',
@@ -77,6 +89,7 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       desc: 'mehr Holz-Einnahmen',
       format: (l) => `+${pct(0.08 * l)} Holz-Gold`,
     },
+    milestoneDesc: 'Meilenstein verstärkt die Holz-Einnahmen',
   },
   {
     id: 'zier',
@@ -87,6 +100,7 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       desc: 'Zierpflanzen wirken schöner',
       format: (l) => `+${pct(0.08 * l)} Schönheit`,
     },
+    milestoneDesc: 'Meilenstein verstärkt die Schönheit',
   },
   {
     id: 'cannabis',
@@ -97,6 +111,7 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       desc: 'häufiger Glücks-Lose',
       format: (l) => `+${(0.04 * l).toFixed(2)} Lose/Min`,
     },
+    milestoneDesc: 'Meilenstein verstärkt das Los-Glück',
   },
   {
     id: 'magie',
@@ -107,6 +122,7 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       desc: 'schnellere Meisterschaft',
       format: (l) => `+${pct(0.2 * l)} Meister-XP`,
     },
+    milestoneDesc: 'Meilenstein verstärkt die Meister-XP',
   },
 ]
 

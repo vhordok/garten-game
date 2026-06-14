@@ -542,7 +542,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 23400,
     yield: 30,
     sellValue: 450e6,
-    unlockAtTotalEarned: 120e12,
+    unlockAtTotalEarned: 150e12,
   },
   {
     id: 'ewigkeitsbluete',
@@ -556,7 +556,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 27000,
     yield: 34,
     sellValue: 930e6,
-    unlockAtTotalEarned: 500e12,
+    unlockAtTotalEarned: 1e15,
   },
   {
     id: 'weltenrose',
@@ -570,7 +570,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 30600,
     yield: 40,
     sellValue: 1.85e9,
-    unlockAtTotalEarned: 2e15,
+    unlockAtTotalEarned: 8e15,
   },
 ]
 

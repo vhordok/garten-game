@@ -663,3 +663,45 @@ den vorhandenen `specializations`-Stufen ab, der Kompost-Abzug läuft über
 `compost`/`compostSpent`. Alte Saves laufen unverändert weiter; `sanitize()`
 deckelt Spezialisierungs-Stufen weiterhin auf `specMaxLevel`. Sim-Audit
 (14 d / 277 Prestiges): Spezialisierung kauft mit Gold+Kompost ohne Runaway.
+
+### 9.17 Phase 15 — Late-Game-Rebalance: Spezialisierung, Kompost-Sinks, Pflanzenleiter (Save v24)
+
+**Harte Diagnose zuerst** (`scripts/diagnose.mjs`, modelliert den gemeldeten
+Spielstand Lvl 886 / 326K Kompost / +14664 % Ertrag): drei kaputte Verhältnisse
+gefunden — (1) **Kompost-Sink ~18× zu klein**: alle gedeckelten Kompost-Upgrades
+zusammen kosten 18,2K Kompost, ein Prestige zahlt ~935K → riesiger Überschuss
+ohne Ziel; (2) **Spezialisierung Kosten×3,4/Stufe vs. Nutzen flach +8 %/Stufe**
+→ ab ~Stufe 15 sinnloser Kauf; (3) **Prestige überspringt die Leiter** — mit dem
+persistenten ×416-Ertragsmultiplikator sind nach 5 min 36/42 Sorten wieder frei.
+
+Behoben (zwei Systeme gezielt + Leiter-Kosmetik):
+
+- **Spezialisierung eskaliert + Meilensteine (`data/specializations.ts`,
+  `modifiers.ts`):** der Ertragsbonus wächst pro 5er-Stufe (`specTierStep`),
+  Stufe 25 ≈ +225 % statt linear +200 % bei viel besserer Spät-ROI; alle
+  5 Stufen ein **Meilenstein**, der den kategorieeigenen Zweitbonus verstärkt
+  (`specPerkMultiplier`: ×1 → ×3,5 bei Stufe 25). Kostenfaktor 3,4 → 2,5
+  (hohe Stufen erreichbar), Kompostkosten ab Stufe 8 jetzt **geometrisch**
+  (Stufe 24 ≈ 74K Kompost) → echter Kompost-Sink + Entscheidung.
+- **Endlose Kompost-Sinks (`data/compostUpgrades.ts`):** drei **wiederholbare**
+  Upgrades (Urhumus/Ertrag, Tiefenkultur/Tempo, Markt-Mykorrhiza/Aufträge),
+  freigeschaltet ab Parzelle 12/14/16. Geometrische Kosten ⇒ **log-gedeckelter
+  Effekt** (kein Runaway), aber Kompost hat dauerhaft ein sinnvolles nächstes
+  Ziel und einen Pfad-Entscheid. Die fünf gedeckelten Upgrades bleiben der
+  Frühphasen-Sink.
+- **Pflanzenleiter-Spitze gestreckt:** die letzten Unlocks weiter auseinander
+  (Phönixfrucht 120T→150T, Ewigkeitsblüte 500T→1Qa, Weltenrose 2Qa→8Qa) →
+  längerer End-Climb. Nur Unlock-Schwellen, Erträge/ROI unangetastet (Invarianten-
+  Test grün). Die echte Prestige-Skip-Reparatur (Unlock-Gating skaliert mit dem
+  Kompost-Multiplikator) ist als **Phase 16** vorgemerkt — zu risikoreich für
+  einen blinden Schnellschuss.
+- **UI:** Shop-Spezialisierung zeigt eskalierenden Ertrag, nächste-Stufe-Vorschau,
+  Meilenstein-Ziel + ★-Multiplikator-Tag und Kategorie-Akzentfarben (visuelle
+  Identität trotz ähnlicher Sprites); Prestige-Panel markiert endlose Sinks mit ∞.
+
+Save v23 → v24: keine neuen persistenten Felder — Spezialisierungs- und Kompost-
+Upgrade-Stufen behalten die `Record<string,number>`-Form (neue Kompost-IDs
+defaulten auf 0), umpreiste künftige Käufe berühren gespeicherte Werte nicht;
+`compostSpent`-Sanitize-Deckel auf 1e15 angehoben. Sim-Audit (14 d): kein
+Runaway/NaN, Kompost wird jetzt **ausgegeben** (Sink wirkt), Spezialisierung
+geht tiefer (magie 17→21).
