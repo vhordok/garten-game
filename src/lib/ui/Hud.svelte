@@ -3,6 +3,7 @@
   import { Tween } from 'svelte/motion'
   import { xpToNext } from '../data/progression'
   import { anyUpgradeAffordable, compostGain, dailyClaimable, leaseRequirement, questFulfillable, sellableValue, sellAll } from '../game/actions'
+  import { activeGoals } from '../game/goals'
   import { comboMultiplier, comboWindowSeconds, marketFactor, maxScratchTickets } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -19,6 +20,7 @@
     onOpenPrestige,
     onOpenDaily,
     onOpenAchievements,
+    onOpenGoals,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
@@ -28,7 +30,10 @@
     onOpenPrestige: () => void
     onOpenDaily: () => void
     onOpenAchievements: () => void
+    onOpenGoals: () => void
   } = $props()
+
+  const goalsReady = $derived(activeGoals($gameStore).filter((g) => g.ready).length)
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
   const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
@@ -168,6 +173,11 @@
       {#if prestigeReady}<span class="dot prestige" aria-hidden="true"></span>{/if}
     </button>
   {/if}
+
+  <button class="pxbtn" onclick={onOpenGoals} aria-label="Ziele" title="Ziele — woran du als Nächstes arbeitest">
+    <PixelIcon name="sparkle" scale={1} />
+    {#if goalsReady > 0}<span class="badge num">{goalsReady}</span>{/if}
+  </button>
 
   <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">
     <PixelIcon name="pokal" scale={1} />

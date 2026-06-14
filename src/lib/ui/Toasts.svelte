@@ -15,12 +15,14 @@
 <style>
   .toasts {
     position: fixed;
-    /* below the real topbar height so toasts never cover HUD buttons (PHASE 4/5) */
-    top: calc(var(--safe-top, 0px) + 10px + var(--hud-h, 76px) + 8px);
+    /* PHASE 16: anchored just ABOVE the bottom hotbar (and clear of the top
+       topbar + garden toolbar), so transient toasts never cover any main button.
+       The app reserves ~130px at the bottom for the hotbar; sit above that. */
+    bottom: calc(var(--safe-bottom, 0px) + 134px);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     gap: 8px;
     /* below the modal backdrop (z-50) so an open panel stays readable; still
        above the HUD/scene so toasts show during normal play (PHASE 12) */
