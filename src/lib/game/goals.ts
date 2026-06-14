@@ -1,0 +1,276 @@
+// Goal engine (PHASE 16): derives a handful of always-visible "next targets"
+// from the live state — short / mid / long / endgame — so the player always has
+// several meaningful things to work toward ("nur noch dieses Ziel"). Pure TS, no
+// Svelte: a read-only projection of state, so it is unit-testable and the UI just
+// renders it. Adds no new persisted data.
+
+import { CONFIG } from '../data/config'
+import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
+import { nextMilestone } from '../data/milestones'
+import { PLANTS, plantById, produceName } from '../data/plants'
+import { CATEGORY_SPECS } from '../data/specializations'
+import { UPGRADES } from '../data/upgrades'
+import { compostGain, isPlantUnlocked, leaseRequirement, nextUpgradeCost, upgradeLevel } from './actions'
+import { masteryLevel, masteryThreshold, nextSpecMilestone, specializationLevel } from './modifiers'
+import type { GameState } from './types'
+
+export type GoalTier = 'kurz' | 'mittel' | 'lang' | 'endgame'
+
+export interface Goal {
+  id: string
+  tier: GoalTier
+  icon: string
+  /** short German headline, e.g. "Nächste Sorte: Tomate" */
+  label: string
+  /** what completing it gives, e.g. "schaltet Tomaten frei" */
+  reward: string
+  current: number
+  target: number
+  /** 0..1 progress for the bar */
+  fraction: number
+  /** true once the goal is reachable/affordable right now */
+  ready: boolean
+}
+
+const clamp01 = (v: number) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0)
+
+/** Held units that count toward a quest line (a plant, or a whole category). */
+function heldFor(state: GameState, item: { plantId?: string; category?: string }): number {
+  if (item.plantId) return state.inventory[item.plantId] ?? 0
+  let sum = 0
+  for (const [id, n] of Object.entries(state.inventory)) {
+    if (plantById(id)?.category === item.category) sum += n
+  }
+  return sum
+}
+
+/** Next plant to unlock — the clearest short-term carrot. */
+function plantGoal(state: GameState): Goal | null {
+  for (const p of PLANTS) {
+    if (isPlantUnlocked(p, state)) continue
+    // only surface plants gated purely by earnings (license gates are their own UI)
+    if (p.requiresLicense && state.licenses < p.requiresLicense) continue
+    return {
+      id: 'plant',
+      tier: 'kurz',
+      icon: p.emoji,
+      label: `Nächste Sorte: ${p.name}`,
+      reward: `schaltet ${produceName(p)} frei`,
+      current: state.totalEarned,
+      target: p.unlockAtTotalEarned,
+      fraction: clamp01(state.totalEarned / p.unlockAtTotalEarned),
+      ready: false,
+    }
+  }
+  return null
+}
+
+/** Cheapest upgrade you are closest to affording. */
+function upgradeGoal(state: GameState): Goal | null {
+  let best: { def: (typeof UPGRADES)[number]; cost: number } | null = null
+  for (const def of UPGRADES) {
+    const cost = nextUpgradeCost(def, state)
+    if (cost === null) continue
+    if (!best || cost < best.cost) best = { def, cost }
+  }
+  if (!best) return null
+  return {
+    id: 'upgrade',
+    tier: 'kurz',
+    icon: '🛠️',
+    label: `Nächstes Upgrade: ${best.def.name}`,
+    reward: `Stufe ${upgradeLevel(state, best.def.id) + 1}`,
+    current: Math.min(state.money, best.cost),
+    target: best.cost,
+    fraction: clamp01(state.money / best.cost),
+    ready: state.money >= best.cost,
+  }
+}
+
+/** The delivery order closest to completion. */
+function questGoal(state: GameState): Goal | null {
+  let best: { q: GameState['quests'][number]; frac: number; have: number; need: number } | null = null
+  for (const q of state.quests) {
+    let have = 0
+    let need = 0
+    for (const it of q.items) {
+      have += Math.min(heldFor(state, it), it.amount)
+      need += it.amount
+    }
+    if (need <= 0) continue
+    const frac = have / need
+    if (!best || frac > best.frac) best = { q, frac, have, need }
+  }
+  if (!best) return null
+  return {
+    id: 'quest',
+    tier: 'mittel',
+    icon: '📜',
+    label: 'Auftrag erfüllen',
+    reward: 'Gold, XP & Lose',
+    current: best.have,
+    target: best.need,
+    fraction: clamp01(best.frac),
+    ready: best.frac >= 1,
+  }
+}
+
+/** Push the most-invested category to its next specialisation milestone. */
+function specGoal(state: GameState): Goal | null {
+  let best: { cat: (typeof CATEGORY_SPECS)[number]; level: number } | null = null
+  for (const c of CATEGORY_SPECS) {
+    const level = specializationLevel(state, c.id)
+    if (level <= 0 || level >= CONFIG.specMaxLevel) continue
+    if (!best || level > best.level) best = { cat: c, level }
+  }
+  if (!best) return null
+  const ms = nextSpecMilestone(best.level)
+  if (ms === null) return null
+  const prev = ms - CONFIG.specMilestoneEvery
+  return {
+    id: 'spec',
+    tier: 'mittel',
+    icon: '⭐',
+    label: `${best.cat.label}-Meilenstein: Stufe ${ms}`,
+    reward: best.cat.milestoneDesc,
+    current: best.level - prev,
+    target: ms - prev,
+    fraction: clamp01((best.level - prev) / (ms - prev)),
+    ready: false,
+  }
+}
+
+/** Next leasable parcel (prestige) — mid/long bridge. */
+function parcelGoal(state: GameState): Goal | null {
+  const need = leaseRequirement(state)
+  const gain = compostGain(state)
+  return {
+    id: 'parcel',
+    tier: 'lang',
+    icon: '🌱',
+    label: `Parzelle ${state.parcels + 1} pachten`,
+    reward: `+${gain > 0 ? gain : '?'} Kompost · +${CONFIG.parcelExtraPlots} Beete`,
+    current: Math.min(gain, need),
+    target: need,
+    fraction: clamp01(gain / Math.max(need, 1)),
+    ready: gain >= need,
+  }
+}
+
+/** Next parcel milestone (permanent perk). */
+function parcelMilestoneGoal(state: GameState): Goal | null {
+  const m = nextMilestone(state.parcels)
+  if (!m) return null
+  return {
+    id: 'parcelMilestone',
+    tier: 'lang',
+    icon: '🏞️',
+    label: `Parzellen-Meilenstein: ${m.label}`,
+    reward: m.desc,
+    current: state.parcels,
+    target: m.parcel,
+    fraction: clamp01(state.parcels / m.parcel),
+    ready: false,
+  }
+}
+
+/** A repeatable compost sink the player can already start (endgame goal). */
+function compostGoal(state: GameState): Goal | null {
+  const repeatable = COMPOST_UPGRADES.filter((u) => u.repeatable && state.parcels >= u.unlockParcel)
+  if (repeatable.length === 0) return null
+  // the one with the cheapest next level → the immediate compost target
+  let best: { def: (typeof COMPOST_UPGRADES)[number]; cost: number } | null = null
+  for (const u of repeatable) {
+    const cost = compostUpgradeCost(u, state.compostUpgrades[u.id] ?? 0)
+    if (cost === null) continue
+    if (!best || cost < best.cost) best = { def: u, cost }
+  }
+  if (!best) return null
+  return {
+    id: 'compost',
+    tier: 'endgame',
+    icon: '♻️',
+    label: `Kompost-Sink: ${best.def.name}`,
+    reward: best.def.desc,
+    current: Math.min(state.compost, best.cost),
+    target: best.cost,
+    fraction: clamp01(state.compost / best.cost),
+    ready: state.compost >= best.cost,
+  }
+}
+
+/** Master the plant you're already closest to levelling up. */
+function masteryGoal(state: GameState): Goal | null {
+  let best: { id: string; xp: number; level: number; frac: number } | null = null
+  for (const [id, xp] of Object.entries(state.mastery)) {
+    if (!plantById(id) || xp <= 0) continue
+    const level = masteryLevel(xp)
+    if (level >= CONFIG.masteryMaxLevel) continue
+    const lo = masteryThreshold(level)
+    const hi = masteryThreshold(level + 1)
+    const frac = (xp - lo) / Math.max(hi - lo, 1)
+    if (!best || frac > best.frac) best = { id, xp, level, frac }
+  }
+  if (!best) return null
+  const def = plantById(best.id)!
+  const lo = masteryThreshold(best.level)
+  const hi = masteryThreshold(best.level + 1)
+  return {
+    id: 'mastery',
+    tier: 'lang',
+    icon: '🏅',
+    label: `${def.name} meistern: Lv ${best.level + 1}`,
+    reward: `+${Math.round(CONFIG.masteryYieldPerLevel * 100)} % Ertrag der Sorte`,
+    current: best.xp - lo,
+    target: hi - lo,
+    fraction: clamp01(best.frac),
+    ready: false,
+  }
+}
+
+/** Collection goal: unlock every plant. */
+function collectionGoal(state: GameState): Goal | null {
+  const unlocked = PLANTS.filter((p) => isPlantUnlocked(p, state)).length
+  if (unlocked >= PLANTS.length) return null
+  return {
+    id: 'collection',
+    tier: 'endgame',
+    icon: '🗂️',
+    label: 'Alle Sorten freischalten',
+    reward: `${PLANTS.length - unlocked} fehlen noch`,
+    current: unlocked,
+    target: PLANTS.length,
+    fraction: clamp01(unlocked / PLANTS.length),
+    ready: false,
+  }
+}
+
+const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endgame: 3 }
+
+/**
+ * The active goal board: one representative goal per generator, filtered to what
+ * applies, sorted short → endgame. Always returns several goals across tiers so
+ * the player can pick what to chase.
+ */
+export function activeGoals(state: GameState): Goal[] {
+  const goals = [
+    plantGoal(state),
+    upgradeGoal(state),
+    questGoal(state),
+    specGoal(state),
+    parcelGoal(state),
+    parcelMilestoneGoal(state),
+    masteryGoal(state),
+    compostGoal(state),
+    collectionGoal(state),
+  ].filter((g): g is Goal => g !== null)
+  goals.sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || b.fraction - a.fraction)
+  return goals
+}
+
+export const TIER_LABEL: Record<GoalTier, string> = {
+  kurz: 'Kurzfristig',
+  mittel: 'Mittelfristig',
+  lang: 'Langfristig',
+  endgame: 'Endgame',
+}

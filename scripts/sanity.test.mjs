@@ -82,6 +82,7 @@ import {
   waterCharges,
   yieldMultiplier,
 } from '../src/lib/game/modifiers.ts'
+import { activeGoals } from '../src/lib/game/goals.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
@@ -1093,6 +1094,47 @@ test('PHASE 15: escalating spec value, milestones, repeatable compost sinks', ()
     assert.ok(weltenrose.unlockAtTotalEarned >= 8e15, 'final plant pushed further out')
     assert.ok(weltenrose.unlockAtTotalEarned > ewig.unlockAtTotalEarned * 4, 'big top-end gap')
     assert.equal(ids[ids.length - 1], 'weltenrose', 'weltenrose stays the finale')
+  })
+})
+
+test('PHASE 16: goal engine always offers several well-formed targets', () => {
+  withBoringRng(() => {
+    // fresh game: at least a next-plant and a next-upgrade goal, all well-formed
+    const s = fresh()
+    const early = activeGoals(s)
+    assert.ok(early.length >= 2, 'a new game already shows multiple goals')
+    for (const g of early) {
+      assert.ok(g.fraction >= 0 && g.fraction <= 1, `${g.id}: fraction in [0,1]`)
+      assert.ok(Number.isFinite(g.current) && Number.isFinite(g.target), `${g.id}: finite numbers`)
+      assert.ok(g.label.length > 0 && g.reward.length > 0, `${g.id}: has label + reward`)
+    }
+    assert.ok(early.some((g) => g.id === 'plant'), 'next plant is a goal early on')
+
+    // the next-plant goal points at the lowest still-locked plant and tracks earnings
+    const plantGoal = early.find((g) => g.id === 'plant')
+    assert.equal(plantGoal.target, PLANTS.find((p) => p.unlockAtTotalEarned > 0).unlockAtTotalEarned)
+    s.totalEarned = plantGoal.target / 2
+    const mid = activeGoals(s).find((g) => g.id === 'plant')
+    assert.ok(Math.abs(mid.fraction - 0.5) < 0.01, 'plant goal fraction tracks totalEarned')
+
+    // a richer state spans multiple tiers (short → endgame) and marks ready goals
+    const r = fresh()
+    r.money = 1e15
+    r.totalEarned = 1e15
+    r.parcels = 6
+    r.compost = 1e6
+    r.specializations['magie'] = 7
+    r.mastery['basilikum'] = 200
+    r.compostUpgrades = {}
+    const rich = activeGoals(r)
+    const tiers = new Set(rich.map((g) => g.tier))
+    assert.ok(tiers.size >= 3, 'goals span at least three time horizons')
+    assert.ok(rich.some((g) => g.id === 'spec'), 'specialisation milestone is a goal once invested')
+    // sorted short → endgame
+    const order = { kurz: 0, mittel: 1, lang: 2, endgame: 3 }
+    for (let i = 1; i < rich.length; i++) {
+      assert.ok(order[rich[i].tier] >= order[rich[i - 1].tier], 'goals sorted by horizon')
+    }
   })
 })
 

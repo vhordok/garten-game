@@ -99,5 +99,9 @@ Sektion. Phase 15 (§9.17): Late-Game-Rebalance nach harter Diagnose
 (specPerkMultiplier), Kompostkosten geometrisch; drei endlose, wiederholbare
 Kompost-Sinks (Urhumus/Tiefenkultur/Markt-Mykorrhiza, log-gedeckelt) ab
 Parzelle 12/14/16; Pflanzenleiter-Spitze gestreckt; Kategorie-Akzentfarben im
-Shop. Prestige-Skip-Fix (Unlock-Gating) → Phase 16. 42 Sorten in 8 Kategorien,
-Stand SAVE_VERSION 24.
+Shop. Phase 16 (§9.18): UI-Overlay-Regel (Wetter-Banner in-flow in .notify-zone,
+Toasts ans untere Ende über die Hotbar → keine verdeckten Hauptbuttons) und
+Ziel-System (game/goals.ts + ui/GoalsPanel.svelte: mehrere gleichzeitige Ziele
+über vier Horizonte mit Fortschritt/Belohnung, HUD-Button ✨ mit Ready-Badge,
+keine Save-Änderung). Achievements-Tiers/Rubbellos/Events → Phase 17. 42 Sorten
+in 8 Kategorien, Stand SAVE_VERSION 24.
