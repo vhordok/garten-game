@@ -4,6 +4,7 @@
 
 import { SKILLS, skillById, type SkillEffect } from '../data/skills'
 import { CONFIG } from '../data/config'
+import { achievementSkillPoints } from './achievements'
 import type { GameState } from './types'
 
 /** Owned level of a skill (0 = not taken). */
@@ -19,7 +20,7 @@ export function skillLevel(state: GameState, id: string): number {
 export function totalSkillPoints(state: GameState): number {
   return (
     Math.max(state.parcels - 1, 0) +
-    state.achievements.length +
+    achievementSkillPoints(state) +
     Math.floor(Math.max(state.level - 1, 0) / CONFIG.skillPointPerLevels)
   )
 }

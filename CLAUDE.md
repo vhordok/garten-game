@@ -112,5 +112,9 @@ HUD-Button 🌱). Phase 18 (§9.20): Rubbellos-Rework (Gold-Preise skalieren mit
 effektivem Ernte-Wert, neue Kompost-/Mastery-Preise), 4 Kategorie-Events
 (Erntefest/Komposttag/Meistertag/Gartenschau via weather.ts), Skilltree-Ausbau
 (4 Knoten + Glück-Pfad + Respec gegen Kompost), Zier-Softcap (beautySoftcap,
-abnehmender Grenznutzen). Keine Save-Änderung. Achievements-Tiers → Phase 19.
-42 Sorten in 8 Kategorien, Stand SAVE_VERSION 25.
+abnehmender Grenznutzen). Keine Save-Änderung. Phase 19 (§9.21): mehrstufiges
+Erfolge-Tier-System (data/achievements.ts + game/achievements.ts — 11 Tracks ×
+6 Stufen Bronze→Legendär; dauerhafte Boni + Skillpunkte aus beanspruchten Stufen
+abgeleitet, Einmal-Belohnungen Booster/Lose ohne Kompost; achievementTiers ersetzt
+achievements[], Migration initialisiert aus Stats ohne Reward-Flut). 42 Sorten in
+8 Kategorien, Stand SAVE_VERSION 26.

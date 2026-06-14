@@ -5,7 +5,7 @@
   import { gameStore } from './lib/game/state'
   import { playSound, startAtmosphere } from './lib/ui/fx/audio'
   import AchievementsPanel from './lib/ui/AchievementsPanel.svelte'
-  import { achievementById } from './lib/data/achievements'
+  import { ACHIEVEMENTS, TIER_NAMES } from './lib/data/achievements'
   import DailyPanel from './lib/ui/DailyPanel.svelte'
   import FxLayer from './lib/ui/fx/FxLayer.svelte'
   import GoalsPanel from './lib/ui/GoalsPanel.svelte'
@@ -74,22 +74,22 @@
     }
   })
 
-  // Announce freshly earned achievements (state change drives the toast).
-  let knownAchievements: string[] | null = null
+  // Announce freshly reached achievement TIERS (state change drives the toast).
+  let knownTiers: Record<string, number> | null = null
   $effect(() => {
-    const current = $gameStore.achievements
-    if (knownAchievements !== null) {
-      for (const id of current) {
-        if (!knownAchievements.includes(id)) {
-          const def = achievementById(id)
-          if (def) {
-            pushToast(`Erfolg freigeschaltet: ${def.name}! (+1 % Ertrag)`, '🏆', 8000)
-            playSound('levelup')
-          }
+    const current = $gameStore.achievementTiers
+    if (knownTiers !== null) {
+      for (const def of ACHIEVEMENTS) {
+        const now = current[def.id] ?? 0
+        const before = knownTiers[def.id] ?? 0
+        if (now > before) {
+          const tier = TIER_NAMES[now - 1]
+          pushToast(`${def.icon} ${def.name} — ${tier} erreicht!`, '🏆', 8000)
+          playSound('levelup')
         }
       }
     }
-    knownAchievements = [...current]
+    knownTiers = { ...current }
   })
 
   // Announce newly unlocked plants (transition detection, not game logic).

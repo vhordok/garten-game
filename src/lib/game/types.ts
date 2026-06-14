@@ -96,6 +96,10 @@ export interface GameStats {
   sold: number
   /** golden harvests (perfect + legendary) */
   crits: number
+  /** delivery orders fulfilled (PHASE 19 achievement metric) */
+  questsDone: number
+  /** scratch cards scratched (PHASE 19 achievement metric) */
+  scratchesDone: number
 }
 
 /**
@@ -204,12 +208,13 @@ export interface GameState {
   daily: { lastClaim: number; streak: number }
   /** active weather event (transient; ticks drain it, loading clears it) */
   weather: { id: string | null; remaining: number }
-  /** unlocked achievement ids — each grants +1 % permanent yield */
-  achievements: string[]
+  /** highest CLAIMED achievement tier per track (0 = none); survives prestige.
+   * Permanent rewards + skill points derive from this (PHASE 19). */
+  achievementTiers: Record<string, number>
   /** cannabis license level owned (0–3), survives prestige */
   licenses: number
   /** personal records (survive prestige) */
-  records: { bestHarvest: number; longestCombo: number; biggestWin: number }
+  records: { bestHarvest: number; longestCombo: number; biggestWin: number; bestBeauty: number }
   /** earnings per 30-min bucket, newest last (ring of 48 ≈ 24 h) */
   history: number[]
   /** current history bucket: elapsed seconds + lifetime earnings at start */
