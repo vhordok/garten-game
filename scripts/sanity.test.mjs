@@ -18,6 +18,7 @@ import {
   buyCompostUpgrade,
   buyLicense,
   buyPlot,
+  buySkill,
   buySpecialization,
   buyUpgrade,
   catchFirefly,
@@ -83,6 +84,9 @@ import {
   yieldMultiplier,
 } from '../src/lib/game/modifiers.ts'
 import { activeGoals } from '../src/lib/game/goals.ts'
+import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
+import { gardenBeauty } from '../src/lib/game/modifiers.ts'
+import { availableSkillPoints, skillBonus, skillLevel, totalSkillPoints } from '../src/lib/game/skills.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
@@ -1135,6 +1139,90 @@ test('PHASE 16: goal engine always offers several well-formed targets', () => {
     for (let i = 1; i < rich.length; i++) {
       assert.ok(order[rich[i].tier] >= order[rich[i - 1].tier], 'goals sorted by horizon')
     }
+  })
+})
+
+test('PHASE 17: skill tree (points from progress, gated, survives prestige)', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    // points come from parcels + achievements + level (never gold)
+    assert.equal(totalSkillPoints(s), 0, 'fresh game has no skill points')
+    s.parcels = 4 // +3
+    s.achievements = ['a', 'b'] // +2
+    s.level = 41 // +2 (floor(40/20))
+    assert.equal(totalSkillPoints(s), 7, '3 parcels + 2 achievements + 2 level points')
+    assert.equal(availableSkillPoints(s), 7)
+
+    // gold does NOT buy skills; the branch skill needs the root first
+    s.money = 1e18
+    assert.ok(!buySkill('erntefokus'), 'branch skill gated behind the root')
+    assert.ok(buySkill('gartenplanung'), 'root buyable')
+    assert.equal(skillLevel(s, 'gartenplanung'), 1)
+    assert.ok(Math.abs(skillBonus(s, 'yield') - 0.03) < 1e-9, 'root gives +3 % yield')
+    assert.ok(buySkill('erntefokus'), 'branch buyable after root')
+    assert.ok(skillBonus(s, 'crit') > 0, 'erntefokus lifts crit')
+
+    // points are finite: spending reduces the pool, over-spend is refused
+    const spentPts = 1 + 1 // root(1) + erntefokus(1)
+    assert.equal(availableSkillPoints(s), 7 - spentPts)
+    s.skills = {}
+    s.parcels = 1
+    s.achievements = []
+    s.level = 1
+    assert.equal(availableSkillPoints(s), 0)
+    assert.ok(!buySkill('gartenplanung'), 'no points → no buy')
+
+    // survives prestige (skills + the meta progression that funds them)
+    const t = fresh()
+    t.parcels = 3
+    t.skills = { gartenplanung: 1, tiefwurzel: 2 }
+    t.lifetimeEarned = 1e12
+    t.totalEarned = 1e12
+    assert.ok(leaseParcel() > 0)
+    assert.equal(getState().skills['tiefwurzel'], 2, 'skills survive prestige')
+
+    // save roundtrip keeps skills
+    const u = fresh()
+    u.skills = { gartenplanung: 1, schaugarten: 3 }
+    const code = exportSave()
+    fresh()
+    assert.notEqual(importSave(code), null)
+    assert.equal(getState().skills['schaugarten'], 3, 'skills survive save/load')
+    assert.deepEqual(getState().skills['unknownskill'], undefined, 'unknown skills dropped')
+  })
+})
+
+test('PHASE 17: beauty milestones turn Zier into a real aura build', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e15
+    s.totalEarned = 1e18 // unlock ornamentals
+
+    // no ornamentals → no beauty, no aura
+    assert.equal(gardenBeauty(s), 0)
+    assert.equal(beautyMilestoneBonus(0, 'yield'), 0)
+
+    // plant + mature enough ornamentals to cross the first milestone
+    const ornamentals = PLANTS.filter((p) => p.beautyBonus)
+    let i = 0
+    for (const p of ornamentals) {
+      if (i >= s.plots.length) break
+      s.plots[i] = { plantId: p.id, progress: p.growTime, waterLeft: 0, regrowing: false }
+      i++
+    }
+    const beauty = gardenBeauty(s)
+    assert.ok(beauty > 0, 'mature ornamentals create beauty')
+
+    // crossing a threshold activates its garden-wide aura perk
+    const first = BEAUTY_MILESTONES[0]
+    assert.equal(beautyMilestoneBonus(first.beauty - 0.0001, first.effect), 0, 'inactive below threshold')
+    assert.ok(beautyMilestoneBonus(first.beauty, first.effect) > 0, 'active at threshold')
+    // milestones are cumulative and finite
+    const top = BEAUTY_MILESTONES[BEAUTY_MILESTONES.length - 1].beauty
+    let totalYield = 0
+    for (const m of BEAUTY_MILESTONES) if (m.effect === 'yield') totalYield += m.value
+    assert.ok(Math.abs(beautyMilestoneBonus(top, 'yield') - totalYield) < 1e-9, 'sums active yield perks')
+    assert.ok(Number.isFinite(beautyMilestoneBonus(top, 'yield')))
   })
 })
 

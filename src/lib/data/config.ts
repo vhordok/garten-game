@@ -120,4 +120,7 @@ export const CONFIG = {
    * parcels ≥ 1 + floor(L / parcelsEvery) and gardener level ≥ 1 + L × levelPer. */
   specParcelsEvery: 4,
   specLevelPer: 2,
+  /** PHASE 17 skill tree: one skill point per this many gardener levels (plus one
+   * per parcel and per achievement). Points come from progress, never gold. */
+  skillPointPerLevels: 20,
 } as const

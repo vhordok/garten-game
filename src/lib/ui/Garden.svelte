@@ -1,6 +1,7 @@
 <script lang="ts">
   import { buyPlot, clearAllPlots, harvestAllReady, maxPlots, nextPlotCost, restorePlots, setAutoSowPlant, sowAllEmpty, waterAllGrowing } from '../game/actions'
-  import { autoSowRate } from '../game/modifiers'
+  import { autoSowRate, gardenBeauty } from '../game/modifiers'
+  import { nextBeautyMilestone } from '../data/beautyMilestones'
   import { plantById } from '../data/plants'
   import { gameStore } from '../game/state'
   import { plotReady } from '../game/tick'
@@ -32,6 +33,7 @@
   // PHASE 3: the Sä-Gnom can sow a pinned plant instead of the hand selection,
   // so manual picking never hijacks the automation. Control only shows once
   // the gnome exists.
+  const beauty = $derived(gardenBeauty($gameStore))
   const gnomeOwned = $derived(autoSowRate($gameStore) > 0)
   const autoSowPinned = $derived($gameStore.autoSowPlantId)
   const autoSowLabel = $derived(
@@ -133,6 +135,15 @@
 <section class="garden" aria-label="Dein Garten">
   <div class="garden-head">
     <span class="chip num">Beete {$gameStore.plots.length}/{maxPlots($gameStore)}</span>
+    {#if beauty > 0}
+      {@const nextM = nextBeautyMilestone(beauty)}
+      <span
+        class="chip num beauty"
+        title={`Schönheit ${Math.round(beauty * 100)} % → +${Math.round(beauty * 100)} % Verkaufspreis (Zier-Aura).${nextM ? ` Nächster Bonus bei ${Math.round(nextM.beauty * 100)} %: ${nextM.desc}.` : ' Alle Schönheits-Boni aktiv!'}`}
+      >
+        ✿ {Math.round(beauty * 100)} %{nextM ? ` → ${Math.round(nextM.beauty * 100)} %` : ' · MAX'}
+      </span>
+    {/if}
     <button class="pxbtn small" disabled={emptyCount === 0} onclick={handleSowAll} title="Gewählte Sorte auf alle leeren Beete säen">
       Alle säen{emptyCount > 0 ? ` (${emptyCount})` : ''}
     </button>
@@ -237,6 +248,11 @@
     letter-spacing: 0.06em;
     color: var(--c-mist);
     padding: 2px 8px;
+  }
+
+  .garden-head .chip.beauty {
+    color: var(--c-plum3);
+    cursor: help;
   }
 
   .attention {

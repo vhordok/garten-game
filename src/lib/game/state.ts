@@ -18,6 +18,7 @@ export function createDefaultState(now = Date.now()): GameState {
     compostUpgrades: {},
     mastery: {},
     specializations: {},
+    skills: {},
     level: 1,
     xp: 0,
     plots: Array.from({ length: CONFIG.startPlots }, emptyPlot),

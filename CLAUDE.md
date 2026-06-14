@@ -103,5 +103,10 @@ Shop. Phase 16 (§9.18): UI-Overlay-Regel (Wetter-Banner in-flow in .notify-zone
 Toasts ans untere Ende über die Hotbar → keine verdeckten Hauptbuttons) und
 Ziel-System (game/goals.ts + ui/GoalsPanel.svelte: mehrere gleichzeitige Ziele
 über vier Horizonte mit Fortschritt/Belohnung, HUD-Button ✨ mit Ready-Badge,
-keine Save-Änderung). Achievements-Tiers/Rubbellos/Events → Phase 17. 42 Sorten
-in 8 Kategorien, Stand SAVE_VERSION 24.
+keine Save-Änderung). Phase 17 (§9.19): Zier-Rework (data/beautyMilestones.ts —
+Schönheit schaltet gartenweite Aura-Perks frei, solange gehalten; sichtbarer
+✿-Chip + Ziel) macht Zier zu einem echten Build; erster Skill-Tree-Vertical-Slice
+(data/skills.ts + game/skills.ts + ui/SkillsPanel.svelte: 5 Knoten, Skillpunkte
+aus Parzellen/Erfolgen/Level statt Gold, Prereq-Gating, übersteht Prestige,
+HUD-Button 🌱). Achievements-Tiers/Rubbellos/Events weiterhin offen. 42 Sorten
+in 8 Kategorien, Stand SAVE_VERSION 25.

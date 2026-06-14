@@ -4,6 +4,7 @@
   import { xpToNext } from '../data/progression'
   import { anyUpgradeAffordable, compostGain, dailyClaimable, leaseRequirement, questFulfillable, sellableValue, sellAll } from '../game/actions'
   import { activeGoals } from '../game/goals'
+  import { availableSkillPoints } from '../game/skills'
   import { comboMultiplier, comboWindowSeconds, marketFactor, maxScratchTickets } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -21,6 +22,7 @@
     onOpenDaily,
     onOpenAchievements,
     onOpenGoals,
+    onOpenSkills,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
@@ -31,9 +33,11 @@
     onOpenDaily: () => void
     onOpenAchievements: () => void
     onOpenGoals: () => void
+    onOpenSkills: () => void
   } = $props()
 
   const goalsReady = $derived(activeGoals($gameStore).filter((g) => g.ready).length)
+  const skillPoints = $derived(availableSkillPoints($gameStore))
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
   const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
@@ -177,6 +181,11 @@
   <button class="pxbtn" onclick={onOpenGoals} aria-label="Ziele" title="Ziele — woran du als Nächstes arbeitest">
     <PixelIcon name="sparkle" scale={1} />
     {#if goalsReady > 0}<span class="badge num">{goalsReady}</span>{/if}
+  </button>
+
+  <button class="pxbtn" onclick={onOpenSkills} aria-label="Fähigkeiten" title="Fähigkeiten — dein langfristiger Build">
+    <PixelIcon name="seedling" scale={1} />
+    {#if skillPoints > 0}<span class="badge num">{skillPoints}</span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">

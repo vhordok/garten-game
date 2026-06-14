@@ -18,7 +18,9 @@ import {
   specYieldSum,
   compostClaimed,
   effectiveCompost,
+  gardenBeauty,
 } from '../src/lib/game/modifiers.ts'
+import { BEAUTY_MILESTONES } from '../src/lib/data/beautyMilestones.ts'
 import { compostGain } from '../src/lib/game/actions.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
 
@@ -166,5 +168,59 @@ for (const mins of [5, 15, 30, 60]) {
   console.log(`  nach ${String(mins).padStart(3)} min: ${reachableUnlocksIn(mins * 60)}/${PLANTS.length} Sorten freigeschaltet`)
 }
 console.log(`  (persistenter Multiplikator nach Reset: ×${persistMult.toFixed(0)} Ertrag×Verkauf)`)
+
+// ── PHASE 17: Kategorie-Rollen & Zier-Build-Vergleich ──────────────────────
+console.log('\n════════ PHASE 17: KATEGORIE-DIAGNOSE ════════\n')
+const roleOf = (cat) => {
+  const ps = PLANTS.filter((p) => p.category === cat)
+  const harvest = ps.some((p) => p.yield > 0)
+  const passive = ps.some((p) => p.passiveIncome)
+  const aura = ps.some((p) => p.beautyBonus)
+  if (aura) return 'Aura/Schönheit — globale Boni, kein Direktertrag (Build)'
+  if (passive) return 'Passiv/Offline — Holz tröpfelt ohne Klicks'
+  if (harvest) return 'Direktertrag — aktiv ernten & verkaufen'
+  return '—'
+}
+const cats = [...new Set(PLANTS.map((p) => p.category))]
+for (const c of cats) {
+  console.log(`  ${c.padEnd(10)} → ${roleOf(c)}`)
+}
+
+console.log('\n── Zier-Build: lohnt es, Beete für Schönheit zu opfern? ──')
+function gardenGoldPerHour(state) {
+  let gps = 0
+  const ym = yieldMultiplier(state)
+  const sm = sellMultiplier(state)
+  const gm = growthMultiplier(state)
+  for (const plot of state.plots) {
+    if (!plot.plantId) continue
+    const def = PLANTS.find((p) => p.id === plot.plantId)
+    if (!def || def.yield <= 0) continue // ornamentals/passive add 0 direct
+    const cycle = (def.regrowTime ?? def.growTime) / gm
+    gps += (def.yield * ym * def.sellValue * sm) / cycle
+  }
+  return gps * 3600
+}
+const bestGold = PLANTS.filter((p) => p.yield > 0 && !p.requiresLicense).sort(
+  (a, b) => plantGoldPerSec(b) - plantGoldPerSec(a)
+)[0]
+const orn = PLANTS.filter((p) => p.beautyBonus).sort((a, b) => b.beautyBonus - a.beautyBonus)[0]
+const N = s.plots.length
+for (const z of [0, 6, 12, 20]) {
+  const g = { ...s, plots: [] }
+  g.plots = Array.from({ length: N }, (_, i) =>
+    i < z
+      ? { plantId: orn.id, progress: orn.growTime, waterLeft: 0, regrowing: false }
+      : { plantId: bestGold.id, progress: 0, waterLeft: 0, regrowing: false }
+  )
+  const beauty = gardenBeauty(g)
+  const activeMs = BEAUTY_MILESTONES.filter((m) => beauty >= m.beauty).length
+  const goldH = gardenGoldPerHour(g)
+  console.log(
+    `  ${String(z).padStart(2)} Zier + ${String(N - z).padStart(2)} Gold : Schönheit ${(beauty * 100).toFixed(0).padStart(4)} % · ` +
+      `${activeMs} Aura-Boni aktiv · Gold/h ${fmtN(goldH).padStart(8)}`
+  )
+}
+console.log('  ⇒ Zier ist sinnvoll, wenn die Aura (Sell-% + Meilenstein-Boni) den Verlust der Gold-Beete schlägt.')
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')
