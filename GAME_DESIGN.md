@@ -705,3 +705,33 @@ defaulten auf 0), umpreiste künftige Käufe berühren gespeicherte Werte nicht;
 `compostSpent`-Sanitize-Deckel auf 1e15 angehoben. Sim-Audit (14 d): kein
 Runaway/NaN, Kompost wird jetzt **ausgegeben** (Sink wirkt), Spezialisierung
 geht tiefer (magie 17→21).
+
+### 9.18 Phase 16 — Core Loop, Motivation & UI-Overlay-Regel (keine Save-Änderung)
+
+Fokus auf Spielgefühl statt Zahlen: zwei Systeme gezielt, plus die harte
+Overlay-Regel. **Loop-Diagnose:** das Spiel hat viele Systeme, aber kein
+sichtbares „nächstes Ziel" — der Spieler sieht Multiplikatoren, aber nicht,
+*worauf* er hinarbeitet. Event-Banner und Toasts lagen zudem über der Garten-
+Aktionsleiste.
+
+- **UI-Grundregel „nichts verdeckt Hauptaktionen" (B):** der Wetter-Event-Banner
+  rendert jetzt **im Layout-Fluss** in einer Notification-Zone oben im Stage
+  (`App.svelte` `.notify-zone`), oberhalb der Garten-Toolbar — er **reserviert
+  Platz** statt zu überlagern, kann also „Alle säen/gießen/ernten/roden" nie
+  verdecken (bleibt `pointer-events: none`). Toasts sind ans **untere Ende über
+  die Hotbar** verschoben (`bottom: safe-bottom + 134px`), weg von der oberen
+  Toolbar; Z-Index unter dem Modal-Backdrop bleibt (Phase 12). Damit blockiert
+  keine temporäre Meldung mehr einen Hauptbutton — Desktop wie Mobile.
+- **Ziel-System (C, `game/goals.ts` + `ui/GoalsPanel.svelte`):** ein reiner,
+  testbarer Generator projiziert aus dem State mehrere **gleichzeitige Ziele**
+  über vier Horizonte — kurz (nächste Sorte, nächstes Upgrade), mittel (Auftrag,
+  Spezialisierungs-Meilenstein), lang (Parzelle, Parzellen-Meilenstein,
+  Meisterschaft) und Endgame (Kompost-Sink, alle Sorten). Jedes Ziel hat
+  Fortschrittsbalken, klare Belohnung und „✓ bereit"-Markierung. Erreichbar
+  über einen HUD-Button (✨) mit Badge = Anzahl sofort einlösbarer Ziele.
+  Keine neuen persistenten Daten — read-only Sicht auf den State.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 24): das Ziel-System leitet
+alles aus vorhandenem State ab, der Overlay-Fix ist reine UI/Layout-Änderung.
+Achievements-Tiers, Rubbellos-Spannung und ein Event-Ausbau sind als **Phase
+17** vorgemerkt (bewusst nicht halbgar mitgenommen).

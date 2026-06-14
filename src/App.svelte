@@ -8,6 +8,7 @@
   import { achievementById } from './lib/data/achievements'
   import DailyPanel from './lib/ui/DailyPanel.svelte'
   import FxLayer from './lib/ui/fx/FxLayer.svelte'
+  import GoalsPanel from './lib/ui/GoalsPanel.svelte'
   import GoldenFirefly from './lib/ui/GoldenFirefly.svelte'
   import { registerShakeTarget } from './lib/ui/fx/shake'
   import Garden from './lib/ui/Garden.svelte'
@@ -30,7 +31,7 @@
   let { offline }: { offline: OfflineReport | null } = $props()
 
   let openPanel = $state<
-    'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'tutorial' | null
+    | 'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'goals' | 'tutorial' | null
   >(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
@@ -118,8 +119,12 @@
     onOpenPrestige={() => (openPanel = 'prestige')}
     onOpenDaily={() => (openPanel = 'daily')}
     onOpenAchievements={() => (openPanel = 'achievements')}
+    onOpenGoals={() => (openPanel = 'goals')}
   />
   <main bind:this={stageEl}>
+    <!-- PHASE 16: in-flow notification zone — event banners reserve space here,
+         above the garden toolbar, so they can never overlap the main buttons -->
+    <div class="notify-zone"><WeatherEvents /></div>
     <Garden />
   </main>
   <Hotbar />
@@ -135,7 +140,6 @@
   <PixelIcon name="gear" scale={2} />
 </button>
 <GoldenFirefly />
-<WeatherEvents />
 <FxLayer />
 
 {#if openPanel === 'inventory'}
@@ -154,6 +158,8 @@
   <DailyPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'achievements'}
   <AchievementsPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'goals'}
+  <GoalsPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'tutorial'}
   <TutorialPanel onClose={closeTutorial} />
 {/if}
@@ -197,8 +203,21 @@
     flex: 1;
     width: 100%;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
     padding-top: 3vh;
+  }
+
+  /* reserves vertical space only while an event banner is present; empty = 0px */
+  .notify-zone {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .notify-zone:not(:empty) {
+    margin-bottom: 12px;
   }
 </style>

@@ -48,20 +48,18 @@
 
 <style>
   .banner {
-    position: fixed;
-    /* sit in the event zone right below the real topbar height (PHASE 4/5) */
-    top: calc(var(--safe-top, 0px) + 10px + var(--hud-h, 76px) + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 18;
-    /* purely informational — never swallow a click meant for a button */
+    /* PHASE 16: in-flow inside the stage's notification zone — it RESERVES
+       layout space above the garden toolbar instead of floating over it, so an
+       event banner can never cover the bulk-action buttons (Alle säen/gießen/
+       ernten/roden). Purely informational, so it also never swallows a click. */
     pointer-events: none;
     display: flex;
     flex-direction: column;
     gap: 4px;
     padding: 4px 12px;
-    max-width: 92vw;
+    max-width: min(92vw, 460px);
     text-align: center;
+    align-self: center;
   }
 
   .text {
