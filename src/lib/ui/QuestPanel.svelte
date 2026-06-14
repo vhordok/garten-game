@@ -1,11 +1,14 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
-  import { plantById, produceName } from '../data/plants'
+  import { PLANTS, plantById, produceName } from '../data/plants'
   import { questSlots } from '../data/progression'
+  import { parcelBonus } from '../data/milestones'
   import { questTier } from '../data/questFlavor'
   import { fulfillQuest, questFulfillable, skipQuest } from '../game/actions'
+  import { compostUpgradeBonus } from '../game/modifiers'
   import { questStreakBonus } from '../game/quests'
   import { gameStore } from '../game/state'
+  import type { PlantCategory, QuestItem, QuestKind, QuestState } from '../game/types'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
   import { celebrateLevelUps } from './fx/celebrate'
@@ -19,6 +22,44 @@
 
   const slots = $derived(questSlots($gameStore.level))
   const streakBonus = $derived(questStreakBonus($gameStore))
+  // permanent quest-reward bonus (parcel milestone + compost garden)
+  const rewardBonus = $derived(
+    1 + parcelBonus($gameStore.parcels, 'questReward') + compostUpgradeBonus($gameStore, 'questReward')
+  )
+
+  const CATEGORY_LABEL: Record<PlantCategory, string> = {
+    kraeuter: 'Kräuter',
+    gemuese: 'Gemüse',
+    beeren: 'Beeren',
+    obst: 'Obst',
+    baeume: 'Holz',
+    zier: 'Zier',
+    cannabis: 'Hanf',
+    magie: 'Magie',
+  }
+  const KIND_LABEL: Partial<Record<QuestKind, string>> = {
+    combi: 'Kombi',
+    category: 'Kategorie',
+    big: 'Großauftrag',
+  }
+
+  function lineHave(item: QuestItem): number {
+    if (item.plantId) return $gameStore.inventory[item.plantId] ?? 0
+    let sum = 0
+    for (const p of PLANTS) if (p.category === item.category) sum += $gameStore.inventory[p.id] ?? 0
+    return sum
+  }
+  function lineLabel(item: QuestItem): string {
+    if (item.plantId) return produceName(plantById(item.plantId)!)
+    return `${CATEGORY_LABEL[item.category as PlantCategory]} (Kategorie)`
+  }
+  function questIcon(quest: QuestState): string {
+    const withPlant = quest.items.find((it) => it.plantId)
+    if (withPlant?.plantId) return `${withPlant.plantId}-3`
+    const cat = quest.items[0]?.category
+    const rep = PLANTS.find((p) => p.category === cat)
+    return rep ? `${rep.id}-3` : 'scroll'
+  }
 
   function handleDeliver(e: MouseEvent, questId: number) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -29,8 +70,14 @@
       coinBurst(cx, cy, 18)
       playSound('sell')
       celebrateLevelUps(result.levelUps, cx, cy)
-      if (result.bonusTicket) {
-        pushToast('Gold-Auftrag! Ein Rubbellos liegt als Dankeschön bei.', '🎟️', 7000)
+      if (result.tickets > 0) {
+        pushToast(
+          result.tickets === 1
+            ? 'Auftrag erfüllt! Ein Rubbellos liegt als Dankeschön bei.'
+            : `Großauftrag erfüllt! ${result.tickets} Rubbellose als Dankeschön!`,
+          '🎟️',
+          7000
+        )
         playSound('ticket')
       }
     } else {
@@ -52,43 +99,44 @@
   </div>
   <ul class="quest-list">
     {#each $gameStore.quests as quest (quest.id)}
-      {@const plant = plantById(quest.plantId)}
-      {@const have = $gameStore.inventory[quest.plantId] ?? 0}
       {@const fulfillable = questFulfillable($gameStore, quest.id)}
       {@const tier = questTier(quest.tier)}
-      {#if plant}
-        <li class="row">
-          <img class="px" src={spriteUrl(`${plant.id}-3`)} width="48" height="48" alt="" />
-          <span class="info">
-            <span class="client">
-              <span class="tier {quest.tier}">{tier.label}</span>
-              {quest.client}
-            </span>
-            <span class="name">Liefere {quest.amount}× {produceName(plant)}</span>
-            <span class="progress num" class:done={fulfillable}>
-              {formatNumber(Math.min(have, quest.amount))}/{formatNumber(quest.amount)} im Lager
-            </span>
-            <span class="reward num">
-              <PixelIcon name="coin" scale={1} /> +{formatNumber(Math.round(quest.reward * (1 + streakBonus)))}
-              <span class="xp">+{formatNumber(quest.xp)} XP</span>
-              {#if tier.bonusTicket}<span class="ticket">+ Los</span>{/if}
-            </span>
+      <li class="row">
+        <img class="px" src={spriteUrl(questIcon(quest))} width="48" height="48" alt="" />
+        <span class="info">
+          <span class="client">
+            <span class="tier {quest.tier}">{tier.label}</span>
+            {#if KIND_LABEL[quest.kind]}<span class="kind {quest.kind}">{KIND_LABEL[quest.kind]}</span>{/if}
+            {quest.client}
           </span>
-          <span class="buttons">
-            <button class="pxbtn primary small" disabled={!fulfillable} onclick={(e) => handleDeliver(e, quest.id)}>
-              Liefern
-            </button>
-            <button
-              class="pxbtn small"
-              disabled={quest.skipCooldown > 0}
-              onclick={() => handleSkip(quest.id)}
-              title="Auftrag neu auswürfeln"
-            >
-              {quest.skipCooldown > 0 ? `Neu (${Math.ceil(quest.skipCooldown)}s)` : 'Neu'}
-            </button>
+          <span class="name">Liefern:</span>
+          <span class="lines num" class:done={fulfillable}>
+            {#each quest.items as item (item.plantId ?? item.category)}
+              <span class="line" class:ok={lineHave(item) >= item.amount}>
+                {formatNumber(Math.min(lineHave(item), item.amount))}/{formatNumber(item.amount)} {lineLabel(item)}
+              </span>
+            {/each}
           </span>
-        </li>
-      {/if}
+          <span class="reward num">
+            <PixelIcon name="coin" scale={1} /> +{formatNumber(Math.round(quest.reward * (1 + streakBonus) * rewardBonus))}
+            <span class="xp">+{formatNumber(quest.xp)} XP</span>
+            {#if quest.rewardTickets > 0}<span class="ticket">+{quest.rewardTickets} Los</span>{/if}
+          </span>
+        </span>
+        <span class="buttons">
+          <button class="pxbtn primary small" disabled={!fulfillable} onclick={(e) => handleDeliver(e, quest.id)}>
+            Liefern
+          </button>
+          <button
+            class="pxbtn small"
+            disabled={quest.skipCooldown > 0}
+            onclick={() => handleSkip(quest.id)}
+            title="Auftrag neu auswürfeln"
+          >
+            {quest.skipCooldown > 0 ? `Neu (${Math.ceil(quest.skipCooldown)}s)` : 'Neu'}
+          </button>
+        </span>
+      </li>
     {/each}
     {#if slots < 3}
       <li class="row locked">
@@ -172,6 +220,36 @@
   .ticket {
     color: var(--c-gold2);
     margin-left: 6px;
+  }
+
+  .kind {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0 5px;
+    color: var(--c-night0);
+    background: var(--c-leaf4);
+  }
+
+  .kind.category {
+    background: var(--c-blue2);
+  }
+
+  .kind.big {
+    background: var(--c-plum3);
+  }
+
+  .lines {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: 0.74rem;
+    color: var(--c-mist);
+  }
+
+  .lines .line.ok {
+    color: var(--c-leaf4);
   }
 
   .name {

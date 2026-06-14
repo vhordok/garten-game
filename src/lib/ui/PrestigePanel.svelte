@@ -1,11 +1,13 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
-  import { compostGain, leaseParcel, leaseRequirement } from '../game/actions'
+  import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
+  import { PARCEL_MILESTONES, nextMilestone } from '../data/milestones'
+  import { buyCompostUpgrade, compostGain, leaseParcel, leaseRequirement } from '../game/actions'
   import { effectiveCompost } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
-  import { legendaryBurst } from './fx/particles'
+  import { coinBurst, legendaryBurst } from './fx/particles'
   import { screenShake } from './fx/shake'
   import Overlay from './Overlay.svelte'
   import PixelIcon from './PixelIcon.svelte'
@@ -18,6 +20,22 @@
   const nextAt = $derived(CONFIG.prestigeBase * Math.pow($gameStore.compost + gain + 1, 2))
   const yieldPct = $derived(Math.round(effectiveCompost($gameStore) * CONFIG.compostYieldPerPoint * 100))
   const growthPct = $derived(Math.round(effectiveCompost($gameStore) * CONFIG.compostGrowthPerPoint * 100))
+  const upcoming = $derived(nextMilestone($gameStore.parcels))
+
+  function compostActive(effect: string, perLevel: number, level: number): string {
+    if (level <= 0) return ''
+    return effect === 'offline' ? `+${perLevel * level} h` : `+${Math.round(perLevel * level * 100)} %`
+  }
+
+  function handleBuyCompost(e: MouseEvent, id: string) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    if (buyCompostUpgrade(id)) {
+      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 12)
+      playSound('buy')
+    } else {
+      playSound('error')
+    }
+  }
 
   function handleLease() {
     if (
@@ -93,6 +111,51 @@
       </ul>
     </div>
   </div>
+
+  <h3 class="sec">Parzellen-Meilensteine</h3>
+  <ul class="ms-list num">
+    {#each PARCEL_MILESTONES as m (m.parcel)}
+      {@const reached = $gameStore.parcels >= m.parcel}
+      <li class="ms" class:reached>
+        <span class="ms-icon">{reached ? '✓' : '🔒'}</span>
+        <span class="ms-body">
+          <span><b>Parzelle {m.parcel}</b> · {m.label}</span>
+          <span class="ms-desc">{m.desc}</span>
+        </span>
+      </li>
+    {/each}
+  </ul>
+  {#if upcoming}
+    <p class="hint">Nächstes Ziel: <b>Parzelle {upcoming.parcel}</b> — {upcoming.desc}.</p>
+  {/if}
+
+  <h3 class="sec">Kompost-Garten <span class="sec-note num">· {formatNumber($gameStore.compost)} Kompost frei</span></h3>
+  <p class="hint">Dauerhafte Boni für Kompost — das Ausgeben schwächt deinen Prestige-Bonus nicht.</p>
+  <ul class="cu-list">
+    {#each COMPOST_UPGRADES as u (u.id)}
+      {@const level = $gameStore.compostUpgrades[u.id] ?? 0}
+      {@const locked = $gameStore.parcels < u.unlockParcel}
+      {@const cost = compostUpgradeCost(u, level)}
+      {@const affordable = !locked && cost !== null && $gameStore.compost >= cost}
+      <li class="cu" class:dimmed={locked}>
+        <span class="cu-body">
+          <span class="cu-head"><b>{u.name}</b> <span class="cu-lvl num">Stufe {level}/{u.maxLevel}</span></span>
+          <span class="cu-desc">
+            {u.desc}{level > 0 ? ` · aktiv: ${compostActive(u.effect, u.perLevel, level)}` : ''}
+          </span>
+        </span>
+        {#if locked}
+          <span class="cu-lock">ab Parzelle {u.unlockParcel}</span>
+        {:else if cost === null}
+          <span class="cu-lock">MAX</span>
+        {:else}
+          <button class="pxbtn small num" disabled={!affordable} onclick={(e) => handleBuyCompost(e, u.id)}>
+            <PixelIcon name="duenger" scale={1} /> {formatNumber(cost)}
+          </button>
+        {/if}
+      </li>
+    {/each}
+  </ul>
 
   <button class="pxbtn gold full num" disabled={gain < required} onclick={handleLease}>
     Parzelle {$gameStore.parcels + 1} pachten — +{formatNumber(gain)} Kompost
@@ -177,5 +240,96 @@
 
   .lists > div:last-child ul {
     color: var(--c-leaf4);
+  }
+
+  .sec {
+    margin: 16px 0 4px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--c-mist);
+  }
+
+  .sec-note {
+    color: var(--c-gold2);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .ms-list,
+  .cu-list {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ms {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 0.8rem;
+    opacity: 0.5;
+  }
+
+  .ms.reached {
+    opacity: 1;
+  }
+
+  .ms-icon {
+    flex: none;
+    width: 16px;
+  }
+
+  .ms.reached .ms-icon {
+    color: var(--c-leaf4);
+  }
+
+  .ms-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ms-desc {
+    font-size: 0.72rem;
+    color: var(--c-mist);
+  }
+
+  .cu {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cu.dimmed {
+    opacity: 0.5;
+  }
+
+  .cu-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .cu-lvl {
+    color: var(--c-mist);
+    font-size: 0.7rem;
+    margin-left: 6px;
+  }
+
+  .cu-desc {
+    font-size: 0.72rem;
+    color: var(--c-cloud);
+    line-height: 1.35;
+  }
+
+  .cu-lock {
+    flex: none;
+    font-size: 0.72rem;
+    color: var(--c-mist);
   }
 </style>

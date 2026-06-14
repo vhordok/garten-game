@@ -44,6 +44,19 @@ export const CONFIG = {
    * after a prestige instead of dropping back to basil. */
   questReachFactor: 0.12,
   questBandWidth: 60,
+  /** PHASE 13: fair amounts — an order asks for what a (capped) full field
+   * produces in questEffort seconds, so slow plants get small amounts and fast
+   * plants larger ones. Plot count is capped so amounts don't scale absurdly. */
+  questEffortMin: 240,
+  questEffortMax: 720,
+  questEffortPlotsCap: 24,
+  questAmountCap: 2500,
+  /** order-type reward multipliers (combo/category/big carry a bonus) and the
+   * size multiplier + compost payout of a big haul */
+  questCombiBonus: 1.35,
+  questCategoryBonus: 1.45,
+  questBigBonus: 2.2,
+  questBigSizeMult: 4,
   /** payout bonus per consecutive delivery, and its cap */
   questStreakPerDelivery: 0.02,
   questStreakMaxBonus: 0.3,

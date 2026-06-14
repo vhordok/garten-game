@@ -3,6 +3,8 @@
 // and offline simulation automatically agree.
 
 import { CONFIG } from '../data/config'
+import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
+import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
 import { UPGRADES } from '../data/upgrades'
 import type { GameState, UpgradeEffect } from './types'
@@ -21,18 +23,39 @@ function multiplierFor(state: GameState, effect: UpgradeEffect): number {
 }
 
 /** Soft-capped compost points actually applied to the bonuses. */
+/** Total compost ever earned (spendable pool + what was spent on upgrades).
+ * Spending compost on the compost garden must NOT weaken the flat bonus or the
+ * next prestige gain, so both use this rather than the live pool (PHASE 13). */
+export function compostClaimed(state: GameState): number {
+  return Math.max(state.compost, 0) + Math.max(state.compostSpent, 0)
+}
+
 export function effectiveCompost(state: GameState): number {
-  return Math.pow(Math.max(state.compost, 0), CONFIG.compostSoftcapExp)
+  return Math.pow(compostClaimed(state), CONFIG.compostSoftcapExp)
+}
+
+/** Summed bonus from compost-garden upgrades for the given effect (PHASE 13). */
+export function compostUpgradeBonus(state: GameState, effect: CompostEffect): number {
+  let bonus = 0
+  for (const def of COMPOST_UPGRADES) {
+    if (def.effect !== effect) continue
+    const level = state.compostUpgrades[def.id] ?? 0
+    if (level > 0) bonus += def.perLevel * level
+  }
+  return bonus
 }
 
 /** Growth speed factor applied to tick deltas (upgrades × compost). */
 export function growthMultiplier(state: GameState): number {
   // Wasserfass adds a small passive growth bonus so it helps idle play too (PHASE 12)
   const wasserfass = 1 + CONFIG.wasserfassGrowthPerLevel * (state.upgrades['wasserfass'] ?? 0)
+  // PHASE 13: parcel milestones + compost-garden upgrades add small growth boni
+  const perma = 1 + parcelBonus(state.parcels, 'growth') + compostUpgradeBonus(state, 'growth')
   return (
     multiplierFor(state, 'growth') *
     (1 + CONFIG.compostGrowthPerPoint * effectiveCompost(state)) *
-    wasserfass
+    wasserfass *
+    perma
   )
 }
 
@@ -42,11 +65,14 @@ export function yieldMultiplier(state: GameState): number {
     CONFIG.levelYieldPerLevel * Math.max(state.level - 1, 0),
     CONFIG.levelYieldMaxBonus
   )
+  // PHASE 13: parcel milestones + compost-garden upgrades add small yield boni
+  const perma = 1 + parcelBonus(state.parcels, 'yield') + compostUpgradeBonus(state, 'yield')
   return (
     multiplierFor(state, 'yield') *
     (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
     (1 + levelBonus) *
-    (1 + 0.01 * state.achievements.length)
+    (1 + 0.01 * state.achievements.length) *
+    perma
   )
 }
 
@@ -146,7 +172,8 @@ export function critWeatherMult(state: GameState): number {
  * and slow trees feel lucky.
  */
 export function scratchDropChance(state: GameState, cycleSeconds: number): number {
-  const perMinute = CONFIG.scratchDropPerMinute + effectBonus(state, 'scratchLuck')
+  const perMinute =
+    CONFIG.scratchDropPerMinute + effectBonus(state, 'scratchLuck') + parcelBonus(state.parcels, 'ticketLuck')
   return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }
 
@@ -161,7 +188,9 @@ export function offlineCapHours(state: GameState): number {
   return (
     CONFIG.offlineCapHours +
     effectBonus(state, 'offlineCap') +
-    (state.upgrades['sternenuhr'] ?? 0) * CONFIG.sternenuhrOfflinePerLevel
+    (state.upgrades['sternenuhr'] ?? 0) * CONFIG.sternenuhrOfflinePerLevel +
+    parcelBonus(state.parcels, 'offline') +
+    compostUpgradeBonus(state, 'offline')
   )
 }
 

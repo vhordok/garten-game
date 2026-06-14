@@ -2,15 +2,18 @@
 // state and calls notify() exactly once on success (see CLAUDE.md rule 5).
 
 import { CONFIG } from '../data/config'
+import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
+import { parcelBonus } from '../data/milestones'
 import { PLANTS, plantById } from '../data/plants'
 import { bestHarvestValue, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
-import { questTier } from '../data/questFlavor'
 import { LICENSES } from '../data/licenses'
 import { weatherById } from '../data/weather'
 import {
   comboMultiplier,
   comboWindowSeconds,
+  compostClaimed,
+  compostUpgradeBonus,
   critChanceBonus,
   critWeatherMult,
   masteryYieldBonus,
@@ -416,7 +419,9 @@ export function maxPlots(state: GameState): number {
  */
 export function compostGain(state: GameState): number {
   const fromLifetime = Math.floor(Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase))
-  return Math.max(fromLifetime - state.compost, 0)
+  // subtract compost already CLAIMED (pool + spent) so spending on the compost
+  // garden can't double-dip into a bigger next gain (PHASE 13)
+  return Math.max(fromLifetime - compostClaimed(state), 0)
 }
 
 /**
@@ -518,53 +523,109 @@ export function ensureQuests(): void {
 }
 
 export interface QuestReward {
-  /** actual payout including the streak bonus */
+  /** actual payout including the streak/milestone bonuses */
   reward: number
   xp: number
   levelUps: LevelUp[]
-  /** gold orders drop a scratch ticket */
-  bonusTicket: boolean
+  /** scratch tickets paid (gold tier + big haul) */
+  tickets: number
   /** streak length after this delivery */
   streak: number
 }
 
-/** True if storage holds enough produce to deliver the quest. */
+/** Units of a quest line currently in storage (a plant or a whole category). */
+function itemHave(state: GameState, item: { plantId?: string; category?: string }): number {
+  if (item.plantId) return state.inventory[item.plantId] ?? 0
+  let sum = 0
+  for (const p of PLANTS) {
+    if (p.category === item.category) sum += state.inventory[p.id] ?? 0
+  }
+  return sum
+}
+
+/** Remove a quest line's produce from storage; returns units actually taken. */
+function consumeItem(state: GameState, item: { plantId?: string; category?: string; amount: number }): number {
+  const take = (id: string, want: number): number => {
+    const have = state.inventory[id] ?? 0
+    const used = Math.min(have, want)
+    if (used <= 0) return 0
+    if (have - used > 0) state.inventory[id] = have - used
+    else delete state.inventory[id]
+    return used
+  }
+  if (item.plantId) return take(item.plantId, item.amount)
+  let need = item.amount
+  for (const p of PLANTS) {
+    if (need <= 0) break
+    if (p.category !== item.category) continue
+    need -= take(p.id, need)
+  }
+  return item.amount - need
+}
+
+/** True if storage holds enough produce to deliver every line of the quest. */
 export function questFulfillable(state: GameState, questId: number): boolean {
   const quest = state.quests.find((q) => q.id === questId)
   if (!quest) return false
-  return (state.inventory[quest.plantId] ?? 0) >= quest.amount
+  return quest.items.every((item) => itemHave(state, item) >= item.amount)
 }
 
 /**
- * Deliver a quest from storage: pays money (counts as earnings), grants
- * bonus XP and rolls a fresh order into the slot.
+ * Deliver a quest from storage: pays money (counts as earnings), grants bonus
+ * XP and tickets, and rolls a fresh order into the slot (PHASE 13: multi-line
+ * orders, category lines, milestone/compost reward bonus).
  */
 export function fulfillQuest(questId: number): QuestReward | null {
   const s = getState()
   const index = s.quests.findIndex((q) => q.id === questId)
   if (index === -1) return null
   const quest = s.quests[index]
-  const have = s.inventory[quest.plantId] ?? 0
-  if (have < quest.amount) return null
-  const left = have - quest.amount
-  if (left > 0) s.inventory[quest.plantId] = left
-  else delete s.inventory[quest.plantId]
-  // streak bonus applies to this delivery, then the streak grows
-  const payout = Math.round(quest.reward * (1 + questStreakBonus(s)))
+  if (!quest.items.every((item) => itemHave(s, item) >= item.amount)) return null
+
+  let delivered = 0
+  for (const item of quest.items) delivered += consumeItem(s, item)
+
+  // streak bonus + permanent quest-reward boni (parcel milestone + compost garden)
+  const rewardBonus = 1 + parcelBonus(s.parcels, 'questReward') + compostUpgradeBonus(s, 'questReward')
+  const payout = Math.round(quest.reward * (1 + questStreakBonus(s)) * rewardBonus)
   s.money += payout
   s.totalEarned += payout
   s.lifetimeEarned += payout
-  s.stats.sold += quest.amount
+  s.stats.sold += delivered
   s.questStreak += 1
-  let bonusTicket = false
-  if (questTier(quest.tier).bonusTicket && s.scratchTickets < maxScratchTickets(s)) {
-    s.scratchTickets += 1
-    bonusTicket = true
+
+  let tickets = 0
+  for (let i = 0; i < quest.rewardTickets; i++) {
+    if (s.scratchTickets < maxScratchTickets(s)) {
+      s.scratchTickets += 1
+      tickets += 1
+    }
   }
+  if (quest.rewardCompost > 0) s.compost += quest.rewardCompost
+
   const levelUps = grantXp(s, quest.xp)
   s.quests[index] = generateQuest(s)
   notify()
-  return { reward: payout, xp: quest.xp, levelUps, bonusTicket, streak: s.questStreak }
+  return { reward: payout, xp: quest.xp, levelUps, tickets, streak: s.questStreak }
+}
+
+/**
+ * Buy one level of a compost-garden upgrade with compost (PHASE 13). Spent
+ * compost moves to compostSpent so the flat prestige bonus stays intact.
+ */
+export function buyCompostUpgrade(id: string): boolean {
+  const s = getState()
+  const def = compostUpgradeById(id)
+  if (!def) return false
+  if (s.parcels < def.unlockParcel) return false
+  const level = s.compostUpgrades[id] ?? 0
+  const cost = compostUpgradeCost(def, level)
+  if (cost === null || s.compost < cost) return false
+  s.compost -= cost
+  s.compostSpent += cost
+  s.compostUpgrades[id] = level + 1
+  notify()
+  return true
 }
 
 export interface ScratchCard {
