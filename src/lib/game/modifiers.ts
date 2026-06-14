@@ -6,6 +6,7 @@ import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
 import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
+import { categorySpecById, type SpecKind } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
 import type { GameState, UpgradeEffect } from './types'
 
@@ -108,13 +109,80 @@ export function specializationCost(level: number): number | null {
   return Math.floor(CONFIG.specBaseCost * Math.pow(CONFIG.specCostFactor, level))
 }
 
+/** Compost cost of the next specialisation level (0 below the threshold). */
+export function specializationCompostCost(level: number): number {
+  if (level < CONFIG.specCompostFromLevel) return 0
+  return CONFIG.specCompostBase + CONFIG.specCompostPerLevel * (level - CONFIG.specCompostFromLevel)
+}
+
+/** Progression gate for buying the next specialisation level (PHASE 14). */
+export function specializationRequirement(level: number): { parcels: number; gardener: number } {
+  return {
+    parcels: 1 + Math.floor(level / CONFIG.specParcelsEvery),
+    gardener: 1 + level * CONFIG.specLevelPer,
+  }
+}
+
+/** Why the next specialisation level can/can't be bought — drives the shop UI. */
+export interface SpecPurchase {
+  level: number
+  maxed: boolean
+  gold: number
+  compost: number
+  req: { parcels: number; gardener: number }
+  affordableGold: boolean
+  affordableCompost: boolean
+  parcelsMet: boolean
+  gardenerMet: boolean
+  canBuy: boolean
+}
+
+export function specializationPurchase(state: GameState, category: string): SpecPurchase {
+  const level = specializationLevel(state, category)
+  const gold = specializationCost(level)
+  const compost = specializationCompostCost(level)
+  const req = specializationRequirement(level)
+  const maxed = gold === null
+  const affordableGold = gold !== null && state.money >= gold
+  const affordableCompost = state.compost >= compost
+  const parcelsMet = state.parcels >= req.parcels
+  const gardenerMet = state.level >= req.gardener
+  return {
+    level,
+    maxed,
+    gold: gold ?? 0,
+    compost,
+    req,
+    affordableGold,
+    affordableCompost,
+    parcelsMet,
+    gardenerMet,
+    canBuy: !maxed && affordableGold && affordableCompost && parcelsMet && gardenerMet,
+  }
+}
+
+/**
+ * Per-category UNIQUE specialisation perk (PHASE 14): returns perLevel × level
+ * when the category's perk matches `kind`, else 0. Each kind is consumed at one
+ * hook in the core (growth tick, regrow, crit roll, scratch luck, wood income,
+ * beauty, mastery XP), so the perks stay small, additive and offline-safe.
+ */
+export function specUniqueBonus(state: GameState, category: string, kind: SpecKind): number {
+  const def = categorySpecById(category)
+  if (!def || def.unique.kind !== kind) return 0
+  return def.unique.perLevel * specializationLevel(state, category)
+}
+
 /** Garden beauty: mature ornamental plots raise the global sell price. */
 export function beautyMultiplier(state: GameState): number {
   let bonus = 0
   for (const plot of state.plots) {
     if (!plot.plantId) continue
     const def = plantById(plot.plantId)
-    if (def?.beautyBonus && plot.progress >= def.growTime) bonus += def.beautyBonus
+    if (def?.beautyBonus && plot.progress >= def.growTime) {
+      // PHASE 14: the Zier specialisation makes ornamentals worth more beauty
+      bonus += def.beautyBonus * (1 + specUniqueBonus(state, def.category, 'beauty'))
+    }
   }
   return 1 + bonus
 }
@@ -171,9 +239,12 @@ export function critWeatherMult(state: GameState): number {
  * cycle time — proportional to time invested, so quick herbs barely drop
  * and slow trees feel lucky.
  */
-export function scratchDropChance(state: GameState, cycleSeconds: number): number {
+export function scratchDropChance(state: GameState, cycleSeconds: number, category?: string): number {
   const perMinute =
-    CONFIG.scratchDropPerMinute + effectBonus(state, 'scratchLuck') + parcelBonus(state.parcels, 'ticketLuck')
+    CONFIG.scratchDropPerMinute +
+    effectBonus(state, 'scratchLuck') +
+    parcelBonus(state.parcels, 'ticketLuck') +
+    (category ? specUniqueBonus(state, category, 'ticket') : 0)
   return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }
 

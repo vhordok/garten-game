@@ -90,5 +90,8 @@ Phase 12 (§9.14): Post-Prestige-Aufträge via maxUnlockEarned, Lager
 reserviert/frei, Idle-Nutzen für Wasserfass/Sternenuhr, Touch-Tooltip,
 Toasts unter Modals. Phase 13 (§9.15): faire Auftragsmengen, Auftragstypen
 (Single/Kombi/Kategorie/Groß via items[]), Parzellen-Meilensteine und
-Kompost-Garten (Kompost ausgebbar, compostSpent getrennt). 42 Sorten in
-8 Kategorien, Stand SAVE_VERSION 22.
+Kompost-Garten (Kompost ausgebbar, compostSpent getrennt). Phase 14 (§9.16):
+Meisterschaft präzisiert (manuell+Helfer geben XP, Zier/Holz keine), Kategorie-
+Spezialisierung mit eigenem Zweitbonus pro Kategorie (data/specializations.ts),
+Gold+Kompost-Kosten ab Stufe 8 und Parzellen-/Level-Gates, kompakte Shop-
+Sektion. 42 Sorten in 8 Kategorien, Stand SAVE_VERSION 23.

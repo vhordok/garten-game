@@ -69,9 +69,13 @@ import {
   scratchDropChance,
   growthMultiplier,
   offlineCapHours,
+  specializationCompostCost,
   specializationCost,
   specializationLevel,
+  specializationPurchase,
+  specializationRequirement,
   specializationYieldBonus,
+  specUniqueBonus,
   waterCharges,
   yieldMultiplier,
 } from '../src/lib/game/modifiers.ts'
@@ -952,6 +956,79 @@ test('PHASE 11 endgame: mastery, specialisation, bulk-clear + undo, survive pres
     assert.ok(leaseParcel() > 0)
     assert.equal(getState().mastery['basilikum'], keptMastery, 'mastery survives prestige')
     assert.equal(specializationLevel(getState(), 'kraeuter'), 1, 'specialisation survives prestige')
+  })
+})
+
+test('PHASE 14: unique category perks, compost cost, progression gate', () => {
+  withBoringRng(() => {
+    const s = fresh()
+    s.money = 1e18
+    s.totalEarned = 1e18
+
+    // each category has its own perk; it only reads on the matching kind/category
+    s.specializations['kraeuter'] = 4
+    assert.ok(Math.abs(specUniqueBonus(s, 'kraeuter', 'growth') - 0.2) < 1e-9, 'kraeuter perk = growth')
+    assert.equal(specUniqueBonus(s, 'kraeuter', 'crit'), 0, 'kraeuter has no crit perk')
+    assert.equal(specUniqueBonus(s, 'gemuese', 'growth'), 0, 'perk is per-category')
+    s.specializations['gemuese'] = 5
+    assert.ok(Math.abs(specUniqueBonus(s, 'gemuese', 'crit') - 0.05) < 1e-9, 'gemuese perk = crit')
+
+    // the growth perk actually speeds that category's plots in tick
+    const a = fresh()
+    a.money = 1e18
+    a.totalEarned = 1e18
+    a.specializations['kraeuter'] = 10 // +50 % growth
+    selectPlant('basilikum')
+    assert.ok(sowPlot(0))
+    const b = fresh()
+    b.money = 1e18
+    b.totalEarned = 1e18
+    selectPlant('basilikum')
+    assert.ok(sowPlot(0))
+    const dt = PLANTS[0].growTime * 0.5
+    tick(a, dt)
+    tick(b, dt)
+    assert.ok(a.plots[0].progress > b.plots[0].progress, 'kraeuter perk grows faster')
+
+    // compost cost: free below threshold, scales above
+    assert.equal(specializationCompostCost(0), 0)
+    assert.equal(specializationCompostCost(CONFIG.specCompostFromLevel - 1), 0)
+    assert.equal(specializationCompostCost(CONFIG.specCompostFromLevel), CONFIG.specCompostBase)
+    assert.ok(
+      specializationCompostCost(CONFIG.specCompostFromLevel + 2) > CONFIG.specCompostBase,
+      'compost cost scales'
+    )
+
+    // progression gate rises with level
+    assert.equal(specializationRequirement(0).parcels, 1)
+    assert.ok(specializationRequirement(20).parcels > 1, 'high levels need more parcels')
+    assert.ok(specializationRequirement(20).gardener > 1, 'high levels need a higher gardener level')
+
+    // a gated level is refused until parcels/level are met, then deducts compost
+    const g = fresh()
+    g.money = 1e18
+    g.compost = 1e6
+    g.specializations['beeren'] = CONFIG.specCompostFromLevel // owes compost + a gate
+    g.parcels = 1
+    g.level = 1
+    assert.ok(!buySpecialization('beeren'), 'gated by parcels/level')
+    const need = specializationRequirement(CONFIG.specCompostFromLevel)
+    g.parcels = need.parcels
+    g.level = need.gardener
+    const compostBefore = g.compost
+    const spentBefore = g.compostSpent
+    const owed = specializationCompostCost(CONFIG.specCompostFromLevel)
+    assert.ok(buySpecialization('beeren'), 'buys once requirements are met')
+    assert.equal(g.specializations['beeren'], CONFIG.specCompostFromLevel + 1)
+    assert.equal(g.compost, compostBefore - owed, 'compost pool drops')
+    assert.equal(g.compostSpent, spentBefore + owed, 'compostSpent keeps total intact')
+
+    // the purchase descriptor mirrors the gate for the UI
+    const blocked = specializationPurchase(g, 'magie')
+    g.parcels = 0
+    const reblocked = specializationPurchase(g, 'magie')
+    assert.equal(reblocked.parcelsMet, false)
+    assert.ok(blocked.gold > 0)
   })
 })
 
