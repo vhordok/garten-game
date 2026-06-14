@@ -15,6 +15,7 @@ import { PLANTS, produceName, steadyProfitPerSecond } from '../src/lib/data/plan
 import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
+  buyCompostUpgrade,
   buyLicense,
   buyPlot,
   buySpecialization,
@@ -53,10 +54,13 @@ import {
 import { questTier } from '../src/lib/data/questFlavor.ts'
 import { SCRATCH_PRIZES, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
 import { bestHarvestValue } from '../src/lib/data/scratch.ts'
-import { generateQuest, questReserved } from '../src/lib/game/quests.ts'
+import { generateQuest, questReserved, questSlotCount } from '../src/lib/game/quests.ts'
+import { parcelBonus } from '../src/lib/data/milestones.ts'
+import { COMPOST_UPGRADES, compostUpgradeCost } from '../src/lib/data/compostUpgrades.ts'
 import {
   beautyMultiplier,
   comboWindowSeconds,
+  compostClaimed,
   marketFactor,
   masteryLevel,
   masteryThreshold,
@@ -312,33 +316,41 @@ test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', ()
     assert.equal(s.quests.length, 1)
 
     const quest = s.quests[0]
-    const plant = PLANTS.find((p) => p.id === quest.plantId)
+    assert.equal(quest.kind, 'single', 'a fresh garden only reaches basil → single order')
+    assert.equal(quest.items.length, 1)
+    const item = quest.items[0]
+    const plant = PLANTS.find((p) => p.id === item.plantId)
     assert.ok(plant, 'quest plant must exist')
-    assert.equal(quest.reward, Math.round(quest.amount * plant.sellValue * questTier(quest.tier).rewardFactor))
+    assert.equal(quest.reward, Math.round(item.amount * plant.sellValue * questTier(quest.tier).rewardFactor))
     assert.ok(quest.client.length > 0, 'every order has a client')
 
     // not enough in storage → refused, nothing changes
     assert.equal(fulfillQuest(quest.id), null)
 
     // stock up and deliver (streak 0 → payout = base reward, then streak 1)
-    s.inventory[quest.plantId] = quest.amount + 2
+    s.inventory[item.plantId] = item.amount + 2
     const moneyBefore = s.money
     const earnedBefore = s.totalEarned
     const result = fulfillQuest(quest.id)
     assert.ok(result)
-    assert.equal(s.money, moneyBefore + quest.reward)
+    // fair amounts give real XP → level-ups; their reward lands in money too
+    const levelReward = result.levelUps.reduce((sum, lu) => sum + lu.reward, 0)
+    assert.equal(s.money, moneyBefore + quest.reward + levelReward)
     assert.equal(s.totalEarned, earnedBefore + quest.reward)
     assert.equal(s.questStreak, 1)
-    assert.equal(s.inventory[quest.plantId], 2)
-    assert.equal(s.quests.length, 1, 'slot is refilled')
-    assert.notEqual(s.quests[0].id, quest.id, 'a fresh order replaces the delivered one')
+    assert.equal(s.inventory[item.plantId], 2)
+    // the delivered slot is refilled (a level-up here may also open a new slot)
+    assert.ok(s.quests.length >= 1, 'slot is refilled')
+    assert.ok(!s.quests.some((q) => q.id === quest.id), 'a fresh order replaces the delivered one')
 
     // a gold order pays the streak bonus and drops a ticket
     s.quests[0] = {
       id: 9999,
-      plantId: 'basilikum',
-      amount: 2,
+      kind: 'single',
+      items: [{ plantId: 'basilikum', amount: 2 }],
       reward: 100,
+      rewardTickets: 1,
+      rewardCompost: 0,
       xp: 2,
       tier: 'gold',
       client: 'Testhof',
@@ -349,7 +361,7 @@ test('quests: refill by level, deliver pays & rerolls, skip cooldown drains', ()
     const goldResult = fulfillQuest(9999)
     assert.ok(goldResult)
     assert.equal(goldResult.reward, Math.round(100 * (1 + CONFIG.questStreakPerDelivery)))
-    assert.equal(goldResult.bonusTicket, true)
+    assert.equal(goldResult.tickets, 1)
     assert.equal(s.scratchTickets, ticketsBefore + 1)
     assert.equal(s.questStreak, 2)
 
@@ -864,7 +876,8 @@ test('PHASE 11: softlock guard sees reserved stock; gnome skips ornamentals', ()
     s.money = 0
     s.inventory['basilikum'] = 5
     s.quests.push({
-      id: 1, plantId: 'basilikum', amount: 10, reward: 1, xp: 1, tier: 'bronze', client: 'X', skipCooldown: 0,
+      id: 1, kind: 'single', items: [{ plantId: 'basilikum', amount: 10 }],
+      reward: 1, rewardTickets: 0, rewardCompost: 0, xp: 1, tier: 'bronze', client: 'X', skipCooldown: 0,
     })
     tick(s, 0.1)
     assert.equal(s.money, CONFIG.startMoney, 'reserved-only stock still triggers the notgroschen')
@@ -1038,9 +1051,11 @@ test('PHASE 2: partial sales, quest reservation, market cart keeps order stock',
     s.inventory['basilikum'] = 10
     s.quests.push({
       id: 999,
-      plantId: 'basilikum',
-      amount: 6,
+      kind: 'single',
+      items: [{ plantId: 'basilikum', amount: 6 }],
       reward: 1,
+      rewardTickets: 0,
+      rewardCompost: 0,
       xp: 1,
       tier: 'bronze',
       client: 'Test',
@@ -1092,10 +1107,13 @@ test('prestige: compost payout, round reset, permanent perks stay', () => {
     assert.equal(s.quests.length >= 1, true, 'fresh quest board')
     assert.equal(maxPlots(s), CONFIG.maxPlots + CONFIG.parcelExtraPlots)
 
-    // compost beats the lost upgrades? not necessarily — but it must apply:
+    // compost beats the lost upgrades? not necessarily — but it must apply
+    // (incl. the parcel-2 milestone yield bonus reached by this prestige):
     const effective = Math.pow(2, CONFIG.compostSoftcapExp)
     const expectedYield =
-      (1 + CONFIG.compostYieldPerPoint * effective) * (1 + CONFIG.levelYieldPerLevel * 6)
+      (1 + CONFIG.compostYieldPerPoint * effective) *
+      (1 + CONFIG.levelYieldPerLevel * 6) *
+      (1 + parcelBonus(s.parcels, 'yield'))
     assert.ok(Math.abs(yieldMultiplier(s) - expectedYield) < 1e-9)
 
     // lifetime-based: immediately prestiging again earns nothing extra
@@ -1243,16 +1261,25 @@ test('PHASE 12: post-prestige quests stay on tier; idle upgrade bonuses', () => 
     s.maxUnlockEarned = 1e12
     for (let i = 0; i < 30; i++) {
       const q = generateQuest(s)
-      const def = PLANTS.find((p) => p.id === q.plantId)
-      assert.notEqual(q.plantId, 'basilikum', 'no trivial basil after prestige')
-      assert.ok(def.unlockAtTotalEarned <= s.maxUnlockEarned, 'order plant was reachable before')
-      assert.ok(!def.beautyBonus && !def.passiveIncome, 'only harvestable produce')
+      for (const it of q.items) {
+        if (it.plantId) {
+          assert.notEqual(it.plantId, 'basilikum', 'no trivial basil after prestige')
+          const def = PLANTS.find((p) => p.id === it.plantId)
+          assert.ok(def.unlockAtTotalEarned <= s.maxUnlockEarned, 'order plant was reachable before')
+          assert.ok(!def.beautyBonus && !def.passiveIncome, 'only harvestable produce')
+        } else {
+          const reachable = PLANTS.some(
+            (p) => p.category === it.category && !p.beautyBonus && !p.passiveIncome && p.unlockAtTotalEarned <= s.maxUnlockEarned
+          )
+          assert.ok(reachable, 'category order has reachable produce')
+        }
+      }
     }
     // a fresh start (no progress) may still ask for basil
     const e = fresh()
     e.totalEarned = 0
     e.maxUnlockEarned = 0
-    assert.equal(generateQuest(e).plantId, 'basilikum', 'fresh start can ask basil')
+    assert.equal(generateQuest(e).items[0].plantId, 'basilikum', 'fresh start can ask basil')
   })
 
   // Wasserfass: passive growth bonus (idle value) + counts toward cannabis care
@@ -1269,6 +1296,85 @@ test('PHASE 12: post-prestige quests stay on tier; idle upgrade bonuses', () => 
   const cbd = PLANTS.find((p) => p.id === 'cbdhanf')
   tick(w, cbd.growTime)
   assert.ok(plotReady(w.plots[0]), 'wasserfass tops up the cannabis watering care')
+})
+
+test('PHASE 13: fair amounts, order types, reservation, milestones, compost garden', () => {
+  // fair amounts: a fast crop asks for far more units than a slow endgame one
+  withBoringRng(() => {
+    const fast = fresh()
+    const fq = generateQuest(fast)
+    assert.equal(fq.items[0].plantId, 'basilikum')
+    const fastAmount = fq.items[0].amount
+    assert.ok(fastAmount > 50, 'a fast crop can be asked for in bulk')
+
+    const slow = fresh()
+    slow.totalEarned = 2e15
+    slow.maxUnlockEarned = 2e15
+    const si = generateQuest(slow).items[0]
+    const slowPlant = PLANTS.find((p) => p.id === si.plantId)
+    assert.ok(si.amount < fastAmount, 'slow plant asks for fewer units than a fast one')
+    assert.ok(si.amount <= slowPlant.yield * 4, 'no absurd haul for a slow endgame crop')
+  })
+
+  // order types via controlled rolls: tier, client, kind, then picks/amounts
+  const make = (kindRoll) => {
+    const s = fresh()
+    s.parcels = 2
+    s.totalEarned = 1e7
+    s.maxUnlockEarned = 1e7
+    s.plots = Array.from({ length: 16 }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+    let q
+    withRngQueue([0.5, 0.5, kindRoll, 0.5, 0.5, 0.5, 0.5, 0.5], () => {
+      q = generateQuest(s)
+    })
+    return { s, q }
+  }
+  const combi = make(0.1).q
+  assert.equal(combi.kind, 'combi')
+  assert.ok(combi.items.length === 2 && combi.items.every((it) => it.plantId), 'combo = two plant lines')
+  const category = make(0.2).q
+  assert.equal(category.kind, 'category')
+  assert.ok(category.items.length === 1 && category.items[0].category, 'category order targets a category')
+  const big = make(0.35).q
+  assert.equal(big.kind, 'big')
+  assert.ok(big.rewardTickets >= 1, 'big haul drops an extra ticket')
+
+  // reservation for combi (per plant) and category (the category's held stock)
+  const cr = make(0.1)
+  cr.s.quests = [cr.q]
+  const a = cr.q.items[0]
+  cr.s.inventory[a.plantId] = a.amount + 5
+  assert.equal(questReserved(cr.s, a.plantId), a.amount, 'combi reserves each plant line')
+
+  const kr = make(0.2)
+  kr.s.quests = [kr.q]
+  const catItem = kr.q.items[0]
+  const catPlant = PLANTS.find((p) => p.category === catItem.category)
+  kr.s.inventory[catPlant.id] = 3
+  assert.equal(questReserved(kr.s, catPlant.id), Math.min(catItem.amount, 3), 'category reserves held stock')
+
+  // parcel milestones
+  assert.equal(parcelBonus(1, 'yield'), 0)
+  assert.ok(parcelBonus(2, 'yield') > 0, 'parcel 2 gives a yield bonus')
+  const slotS = fresh()
+  slotS.parcels = 5
+  assert.equal(questSlotCount(slotS), questSlots(1) + 1, 'parcel 5 adds a quest slot')
+
+  // compost garden: spend compost, keep the flat bonus, gated by parcel
+  const g = fresh()
+  g.compost = 1000
+  g.parcels = 1
+  const claimedBefore = compostClaimed(g)
+  assert.ok(buyCompostUpgrade('fruchtbarerBoden'))
+  assert.equal(g.compostUpgrades['fruchtbarerBoden'], 1)
+  assert.equal(compostClaimed(g), claimedBefore, 'spending keeps total claimed (flat bonus intact)')
+  assert.ok(g.compostSpent > 0 && g.compost < 1000)
+  assert.ok(yieldMultiplier(g) > 1, 'compost upgrade lifts yield')
+  assert.ok(!buyCompostUpgrade('auftragshumus'), 'parcel-gated upgrade locked at parcel 1')
+  g.parcels = 10
+  assert.ok(buyCompostUpgrade('auftragshumus'), 'auftragshumus unlocks at parcel 10')
+  assert.equal(compostGain(g), 0, 'spending compost grants no extra prestige gain')
+  assert.ok(Number.isFinite(yieldMultiplier(g)) && Number.isFinite(growthMultiplier(g)), 'no NaN')
 })
 
 test('ornamentals: never harvestable, beauty raises sell prices', () => {
@@ -1294,11 +1400,15 @@ test('ornamentals: never harvestable, beauty raises sell prices', () => {
     tick(s, 60)
     assert.equal(s.plots[0].plantId, 'nachtrose')
 
-    // quests never order ornamentals
+    // quests never order ornamentals or timber (no harvest)
     for (let i = 0; i < 25; i++) {
       const q = generateQuest(s)
-      const def = PLANTS.find((p) => p.id === q.plantId)
-      assert.ok(!def.beautyBonus, 'no orders for ornamentals')
+      for (const it of q.items) {
+        if (it.plantId) {
+          const def = PLANTS.find((p) => p.id === it.plantId)
+          assert.ok(!def.beautyBonus && !def.passiveIncome, 'no orders for ornamentals/timber')
+        }
+      }
     }
 
     // rip out works

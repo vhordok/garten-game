@@ -599,3 +599,34 @@ Gezielte QA-Nachbesserungen, keine neuen großen Systeme:
 
 Save v20 → v21: `maxUnlockEarned` ergänzt (alte Saves: aus `totalEarned`
 geseedet). Sonst keine Format-Änderung.
+
+### 9.15 Phase 13 — Auftrags-Vielfalt, faire Mengen, Parzellen & Kompost (Save v22)
+
+Mehr Endgame-Entscheidungen ohne neue Pflanzen/Preise:
+
+- **Faire Auftragsmengen:** Menge = was ein (auf 24 Beete gedeckeltes) volles
+  Feld in `questEffort` Sekunden produziert → langsame Endgame-Sorten verlangen
+  kleine Mengen (oft nur eine Ernte), schnelle größere. Auftragsschwierigkeit =
+  Zeit × Wert, nicht nur Preis.
+- **Auftragstypen (generalisiertes `items[]`):** **Single**, **Kombi**
+  (2 Sorten), **Kategorie** („X aus Beeren", Belohnung nach der günstigsten
+  Sorte der Kategorie → kein Exploit), **Groß** (×4 Menge, ×2,2 Belohnung,
+  +1 Los). Kombi/Kategorie motivieren Sortenvielfalt. Reservierung ist
+  kategorie-bewusst (`questReserved`), Erfüllung verbraucht aus der ganzen
+  Kategorie.
+- **Belohnung skaliert** mit Schwierigkeit (Wert × Tier × Typ-Bonus) und
+  Fortschritt (Parzellen-/Kompost-Auftragsbonus); Mehrteilig: Gold + XP + Lose.
+- **Parzellen-Meilensteine** (`data/milestones.ts`, überstehen Prestige):
+  Parzelle 2 +5 % Ertrag, 3 +5 % Tempo, 5 +1 Auftragsslot, 8 +5 % Los-Chance,
+  10 +25 % Auftragsbelohnung, 15 +4 h Offline, 20 +15 % Ertrag. Sichtbar im
+  Prestige-Panel mit nächstem Ziel.
+- **Kompost-Garten** (`data/compostUpgrades.ts`): Kompost wird ausgebbar für
+  dauerhafte Boni (Fruchtbarer/Lockerer Boden, Wurzelnetz, Nährstoffspeicher,
+  Auftragshumus), teils ab Parzelle X. **Ausgeben schwächt den Prestige-Bonus
+  nicht** — `compostSpent` wird getrennt geführt, `compost+compostSpent`
+  (= je verdient) treibt Flat-Bonus und nächsten Gewinn (`compostClaimed`),
+  kein Double-Dip. Panel-Sektion mit Kosten/Stufen.
+
+Save v21 → v22: Aufträge aufs `items[]`-Modell migriert (alte Einzel-Aufträge
+konvertiert), `compostSpent`/`compostUpgrades` ergänzt. Sim-Audit: Level-,
+Parzellen-(5/10/20/40) und Endgame-Meilensteine, kein Runaway/NaN.

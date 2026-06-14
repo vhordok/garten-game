@@ -3,15 +3,16 @@
 
 import { achievementById } from '../data/achievements'
 import { CONFIG } from '../data/config'
+import { COMPOST_UPGRADES } from '../data/compostUpgrades'
 import { maxScratchTickets } from './modifiers'
 import { PLANTS, plantById } from '../data/plants'
-import { questSlots } from '../data/progression'
 import { QUEST_CLIENTS, QUEST_TIERS } from '../data/questFlavor'
+import { questSlotCount } from './quests'
 import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
-import type { GameState, PlotState } from './types'
+import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 21
+export const SAVE_VERSION = 22
 
 interface SaveEnvelope {
   version: number
@@ -179,6 +180,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v20 → v21: maxUnlockEarned (post-prestige quest floor); sanitize()
       // seeds it from the round's totalEarned for old saves.
       return { ...envelope, version: 21 }
+    case 21:
+      // v21 → v22: multi-line quests + compost garden; sanitize() converts old
+      // single-plant orders to the new items[] shape and defaults the rest.
+      return { ...envelope, version: 22 }
     case SAVE_VERSION:
       return envelope
     default:
@@ -200,6 +205,18 @@ function sanitize(raw: unknown): GameState {
   state.maxUnlockEarned = clampNumber(r.maxUnlockEarned, state.totalEarned, state.totalEarned)
   state.parcels = Math.floor(clampNumber(r.parcels, 1, 1, 1000))
   state.compost = Math.floor(clampNumber(r.compost, 0, 0, 1e9))
+  state.compostSpent = Math.floor(clampNumber(r.compostSpent, 0, 0, 1e12))
+
+  // compost-garden upgrade levels — keep only known ids, clamp to maxLevel
+  const compostUpgrades: Record<string, number> = {}
+  if (typeof r.compostUpgrades === 'object' && r.compostUpgrades !== null) {
+    const raw = r.compostUpgrades as Record<string, unknown>
+    for (const def of COMPOST_UPGRADES) {
+      const level = Math.floor(clampNumber(raw[def.id], 0, 0, def.maxLevel))
+      if (level > 0) compostUpgrades[def.id] = level
+    }
+  }
+  state.compostUpgrades = compostUpgrades
 
   // per-plant mastery XP — keep only known plants, clamp to a sane ceiling
   const mastery: Record<string, number> = {}
@@ -330,23 +347,48 @@ function sanitize(raw: unknown): GameState {
   state.questStreak = Math.floor(clampNumber(r.questStreak, 0, 0, 1e6))
   const quests: GameState['quests'] = []
   if (Array.isArray(r.quests)) {
-    for (const raw of r.quests.slice(0, questSlots(state.level))) {
+    for (const raw of r.quests.slice(0, questSlotCount(state))) {
       if (typeof raw !== 'object' || raw === null) continue
       const q = raw as Record<string, unknown>
-      const plant = typeof q.plantId === 'string' ? plantById(q.plantId) : undefined
-      if (!plant) continue
-      const amount = Math.floor(clampNumber(q.amount, 0, 1))
+      // accept the new items[] shape; migrate a legacy single-plant order
+      const items: QuestItem[] = []
+      if (Array.isArray(q.items)) {
+        for (const it of q.items) {
+          if (typeof it !== 'object' || it === null) continue
+          const itr = it as Record<string, unknown>
+          const amount = Math.floor(clampNumber(itr.amount, 1, 1))
+          if (typeof itr.plantId === 'string' && plantById(itr.plantId)) items.push({ plantId: itr.plantId, amount })
+          else if (typeof itr.category === 'string' && categories.has(itr.category)) items.push({ category: itr.category, amount })
+        }
+      } else if (typeof q.plantId === 'string' && plantById(q.plantId)) {
+        items.push({ plantId: q.plantId, amount: Math.floor(clampNumber(q.amount, 1, 1)) })
+      }
+      if (items.length === 0) continue
+      const validKinds: QuestKind[] = ['single', 'combi', 'category', 'big']
+      const kind: QuestKind =
+        typeof q.kind === 'string' && validKinds.includes(q.kind as QuestKind)
+          ? (q.kind as QuestKind)
+          : items.length > 1
+            ? 'combi'
+            : items[0].category
+              ? 'category'
+              : 'single'
       const tier = typeof q.tier === 'string' && QUEST_TIERS.some((t) => t.id === q.tier) ? q.tier : 'bronze'
       const client =
-        typeof q.client === 'string' && q.client.length > 0 && q.client.length <= 40
-          ? q.client
-          : QUEST_CLIENTS[0]
+        typeof q.client === 'string' && q.client.length > 0 && q.client.length <= 40 ? q.client : QUEST_CLIENTS[0]
+      const fallbackReward = items.reduce((sum, it) => {
+        const p = it.plantId ? plantById(it.plantId) : undefined
+        return sum + it.amount * (p ? p.sellValue : 1)
+      }, 0)
+      const totalUnits = items.reduce((sum, it) => sum + it.amount, 0)
       quests.push({
         id: Math.floor(clampNumber(q.id, ++state.questCounter, 1)),
-        plantId: plant.id,
-        amount,
-        reward: Math.floor(clampNumber(q.reward, amount * plant.sellValue, 0)),
-        xp: Math.floor(clampNumber(q.xp, amount, 0)),
+        kind,
+        items,
+        reward: Math.floor(clampNumber(q.reward, fallbackReward, 0)),
+        rewardTickets: Math.floor(clampNumber(q.rewardTickets, 0, 0, 5)),
+        rewardCompost: Math.floor(clampNumber(q.rewardCompost, 0, 0, 1e6)),
+        xp: Math.floor(clampNumber(q.xp, totalUnits, 0)),
         tier,
         client,
         skipCooldown: clampNumber(q.skipCooldown, 0, 0, CONFIG.questSkipCooldownSeconds),

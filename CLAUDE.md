@@ -88,4 +88,7 @@ Endgame 2.0 (§9.13): Massenroden+Undo (kein Confirm), Pflanzen-Meisterschaft
 und Kategorie-Spezialisierung (Gold-Sink) — beide überstehen Prestige.
 Phase 12 (§9.14): Post-Prestige-Aufträge via maxUnlockEarned, Lager
 reserviert/frei, Idle-Nutzen für Wasserfass/Sternenuhr, Touch-Tooltip,
-Toasts unter Modals. 42 Sorten in 8 Kategorien, Stand SAVE_VERSION 21.
+Toasts unter Modals. Phase 13 (§9.15): faire Auftragsmengen, Auftragstypen
+(Single/Kombi/Kategorie/Groß via items[]), Parzellen-Meilensteine und
+Kompost-Garten (Kompost ausgebbar, compostSpent getrennt). 42 Sorten in
+8 Kategorien, Stand SAVE_VERSION 22.

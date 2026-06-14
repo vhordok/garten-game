@@ -6,6 +6,7 @@ import {
   autoSellInterval,
   autoSowChoice,
   autoSowRate,
+  compostUpgradeBonus,
   growthMultiplier,
   masteryYieldBonus,
   maxScratchTickets,
@@ -71,7 +72,8 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
     if (!plot.plantId) continue
     const def = plantById(plot.plantId)
     if (!def?.passiveIncome || plot.progress < def.growTime) continue
-    const gain = def.passiveIncome * dtSeconds * sellMultiplier(state)
+    const gain =
+      def.passiveIncome * dtSeconds * sellMultiplier(state) * (1 + compostUpgradeBonus(state, 'passive'))
     state.money += gain
     state.totalEarned += gain
     state.lifetimeEarned += gain

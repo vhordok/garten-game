@@ -14,6 +14,8 @@ export function createDefaultState(now = Date.now()): GameState {
     maxUnlockEarned: 0,
     parcels: 1,
     compost: 0,
+    compostSpent: 0,
+    compostUpgrades: {},
     mastery: {},
     specializations: {},
     level: 1,

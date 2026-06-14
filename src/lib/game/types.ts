@@ -109,15 +109,32 @@ export interface ComboState {
   remaining: number
 }
 
+/** One line of a delivery order: a specific plant OR a whole category (PHASE 13). */
+export interface QuestItem {
+  /** deliver this exact plant's produce (mutually exclusive with category) */
+  plantId?: string
+  /** deliver any produce from this category */
+  category?: string
+  /** units required */
+  amount: number
+}
+
+export type QuestKind = 'single' | 'combi' | 'category' | 'big'
+
 /** One rotating delivery order on the quest board. */
 export interface QuestState {
   /** unique per save (questCounter) — used for UI keying */
   id: number
-  plantId: string
-  /** units to deliver from storage */
-  amount: number
+  /** order shape: single plant, combo, whole category, or a big haul (PHASE 13) */
+  kind: QuestKind
+  /** one or more delivery lines (single/big = one, combi = several) */
+  items: QuestItem[]
   /** base money payout (delivery streak adds on top) */
   reward: number
+  /** scratch tickets paid on delivery */
+  rewardTickets: number
+  /** compost paid on delivery (big orders) */
+  rewardCompost: number
   /** bonus XP on delivery */
   xp: number
   /** order tier: gold pays best and drops a scratch ticket */
@@ -139,8 +156,13 @@ export interface GameState {
   maxUnlockEarned: number
   /** leased parcels (starts at 1); raises the plot cap */
   parcels: number
-  /** prestige currency: permanent yield/growth bonuses */
+  /** prestige currency: permanent yield/growth bonuses (spendable pool) */
   compost: number
+  /** compost spent on compost-garden upgrades; compost+compostSpent = total ever
+   * earned, which drives the flat prestige bonus and the next gain (PHASE 13) */
+  compostSpent: number
+  /** compost-garden upgrade levels keyed by CompostUpgradeDef id (PHASE 13) */
+  compostUpgrades: Record<string, number>
   /** per-plant mastery XP (= lifetime units harvested of each plant); survives
    * prestige, drives a permanent per-plant yield bonus (PHASE 11) */
   mastery: Record<string, number>
