@@ -44,6 +44,7 @@ import {
   refundScratchTicket,
   selectPlant,
   sellAll,
+  sellableValue,
   sellPlant,
   setAutoSowPlant,
   settleScratchCard,
@@ -1612,6 +1613,47 @@ test('PHASE 24: distinct endgame sprites + very-late-game goals', () => {
   assert.ok(new Set(ahead.map((p) => p.category)).size >= 2, 'late goals span multiple categories')
 })
 
+test('PHASE 25: tiny early quests (no softlock), scaling, steeper late levels', () => {
+  withBoringRng(() => {
+    // a brand-new gardener gets SMALL orders — no reservation softlock
+    let maxEarly = 0
+    for (let i = 0; i < 60; i++) {
+      const f = fresh()
+      const q = generateQuest(f)
+      for (const it of q.items) if (it.plantId === 'basilikum') maxEarly = Math.max(maxEarly, it.amount)
+    }
+    assert.ok(maxEarly > 0 && maxEarly <= 30, `fresh basil order stays small (got max ${maxEarly})`)
+
+    // amounts ramp with progression
+    const prog = fresh()
+    prog.level = 40
+    prog.plots = Array.from({ length: 16 }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+    let maxLate = 0
+    for (let i = 0; i < 60; i++) {
+      const q = generateQuest(prog)
+      for (const it of q.items) if (it.plantId === 'basilikum') maxLate = Math.max(maxLate, it.amount)
+    }
+    assert.ok(maxLate > maxEarly * 3, 'orders grow a lot with level/plots')
+
+    // free surplus is always sellable past the small reservation → no softlock
+    const s = fresh()
+    s.money = 0
+    s.inventory = { basilikum: 30 }
+    s.quests = [{
+      id: 1, kind: 'single', items: [{ plantId: 'basilikum', amount: 8 }],
+      reward: 1, rewardTickets: 0, rewardCompost: 0, xp: 1, tier: 'bronze', client: 'X', skipCooldown: 0,
+    }]
+    assert.equal(questReserved(s, 'basilikum'), 8, 'only the small order amount is reserved')
+    assert.ok(sellableValue(s) > 0, 'the 22 free basil can still be sold (no softlock)')
+
+    // late level curve is far steeper than before → levels stop racing
+    assert.ok(xpToNext(1000) > 5e6, 'level 1000 costs millions of XP')
+    assert.ok(xpToNext(10000) > 50 * xpToNext(1000), 'cost keeps climbing super-linearly')
+    // still monotonic + finite
+    for (const lv of [1, 100, 1000, 11300]) assert.ok(Number.isFinite(xpToNext(lv)) && xpToNext(lv) > 0)
+  })
+})
+
 test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () => {
   withBoringRng(() => {
     const s = fresh()
@@ -1959,12 +2001,14 @@ test('PHASE 13: fair amounts, order types, reservation, milestones, compost gard
   // fair amounts: a fast crop asks for far more units than a slow endgame one
   withBoringRng(() => {
     const fast = fresh()
+    fast.level = 40 // full effort scale (PHASE 25 ramps amounts with progression)
     const fq = generateQuest(fast)
     assert.equal(fq.items[0].plantId, 'basilikum')
     const fastAmount = fq.items[0].amount
-    assert.ok(fastAmount > 50, 'a fast crop can be asked for in bulk')
+    assert.ok(fastAmount > 50, 'a fast crop can be asked for in bulk (once progressed)')
 
     const slow = fresh()
+    slow.level = 40
     slow.totalEarned = 2e15
     slow.maxUnlockEarned = 2e15
     const si = generateQuest(slow).items[0]

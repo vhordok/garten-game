@@ -986,3 +986,33 @@ Keine Save-Format-Änderung (SAVE_VERSION bleibt 27): reine Daten/Sprites; Plots
 Quests referenzieren Pflanzen über IDs. Tests 53/53, check/build grün, 14-d-Sim
 ohne Runaway/NaN. Breitere Sprite-Politur der älteren Mittelfeld-Pflanzen bleibt
 optionaler Feinschliff.
+
+### 9.27 Phase 25 — Core-Progression: Quest-Skalierung, Level-Wert (keine Save-Änderung)
+
+Gezielt die konkretesten Progressions-Schwächen behoben; die tiefe Prestige-
+Gating-Reparatur + Shop/Kompost/Lizenz-Sinks bewusst → Phase 26 (eigener,
+risikoreicher Eingriff — nicht halbgar neben drei anderen Reworks).
+
+- **Start-Softlock behoben + Quest-Skalierung (`game/quests.ts`):** `fairAmount`
+  wird jetzt mit dem Fortschritt skaliert (`questEffortScale` = Level + Parzellen).
+  Ein frischer Lvl-1-Garten bekommt **~8–21 Basilikum** statt der alten ~156 →
+  kein Reservierungs-/Verkaufs-Softlock mehr (man überproduziert die kleine
+  Reservierung sofort, freier Überschuss bleibt verkaufbar; Notgroschen wird
+  nicht mehr als Krücke gebraucht). Mengen rampen bis Lvl ~30 auf das volle
+  Fenster; späte Aufträge bleiben über den `sellValue`-getriebenen Reward lukrativ.
+- **Level-Wert (`data/progression.ts`, `data/config.ts`):** die XP-Kurve ist
+  spät **deutlich steiler** (`20·level^1.5·(1+level/120)`) — Lvl 1000 kostet ~19×,
+  Lvl 11300 ~240× mehr XP → kein 5–10-Level/Sekunde-Durchrasen mehr, jedes Level
+  ist verdient. Der Level-Ertragsbonus-Deckel wurde von +100 % (Lvl 101) auf
+  **+300 %** (Lvl ~301) angehoben, damit Level tiefer hinein echten Wert behalten;
+  der Deckel verhindert weiterhin Runaway. Reine Kurven-/Cap-Änderung → kein
+  Save-Bruch (ein hochstufiger Stand levelt nur langsamer weiter, nie zurück).
+- **Diagnose (`scripts/diagnose.mjs`):** Quest-Größe nach Fortschritt (frisch
+  klein → voll), Level-Kurve (XP bei Lvl 1/10/100/1000/5000/11300). Belegt den
+  Fix.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 27): alles reine Logik/Balance.
+Tests 54/54, check/build grün, 14-d-Sim ohne Runaway/NaN (Leveln spürbar
+langsamer, Ökonomie gesund). **Offen → Phase 26:** Prestige-Skip-Grundursache
+(Unlock-Gating am Multiplikator skalieren), Shop-/Kompost-Late-Sinks, Lizenz-
+Tiers, Ziel-Panel-Priorisierung.

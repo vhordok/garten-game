@@ -28,6 +28,8 @@ import { achievementBonus, initAchievementTiers, reachedTier, totalClaimedTiers 
 import { SCRATCH_PRIZES, effectiveHarvestValue, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
 import { CONFIG as CFG } from '../src/lib/data/config.ts'
 import { compostGain } from '../src/lib/game/actions.ts'
+import { generateQuest } from '../src/lib/game/quests.ts'
+import { xpToNext } from '../src/lib/data/progression.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
 
 function fmtN(v) {
@@ -286,5 +288,30 @@ for (const [label, earned] of scenarios) {
   console.log(`  ${label.padEnd(18)}: ${unlocked}/${PLANTS.length} frei · noch offen: ${ahead.length}${ahead.length ? ` → ${next}` : ' (alle frei)'}`)
 }
 console.log('  ⇒ Bei 570 Qi bleiben echte Pflanzenziele offen (Galaxieorchidee/Schöpfungsrose), statt sofort leer.')
+
+// ── PHASE 25: Quest-Skalierung, Level-Kurve, Prestige-Skip ──────────────────
+console.log('\n── PHASE 25: Quest-Größe nach Fortschritt (Basilikum, Beispiel) ──')
+function sampleQuestAmount(level, parcels) {
+  replaceState(createDefaultState())
+  const st = getState()
+  st.level = level
+  st.parcels = parcels
+  let min = Infinity, max = 0
+  for (let i = 0; i < 40; i++) {
+    const q = generateQuest(st)
+    const it = q.items.find((x) => x.plantId === 'basilikum')
+    if (it) { min = Math.min(min, it.amount); max = Math.max(max, it.amount) }
+  }
+  return min === Infinity ? '—' : `${min}–${max}`
+}
+console.log(`  frisch (Lvl 1, 1 Parzelle) : Basilikum-Auftrag ~ ${sampleQuestAmount(1, 1)} Stück (klein → kein Reservierungs-Softlock)`)
+console.log(`  Lvl 10                     : ~ ${sampleQuestAmount(10, 1)} Stück`)
+console.log(`  Lvl 30+ / Parzellen        : ~ ${sampleQuestAmount(40, 4)} Stück (volle Skala)`)
+
+console.log('\n── PHASE 25: Level-Kurve (XP bis nächstes Level) ──')
+for (const lv of [1, 10, 100, 1000, 5000, 11300]) {
+  console.log(`  Lvl ${String(lv).padStart(5)} : ${fmtN(xpToNext(lv))} XP  (Level-Ertragsbonus bis +${(CFG.levelYieldMaxBonus * 100).toFixed(0)} %)`)
+}
+console.log('  ⇒ Späte Level kosten massiv mehr XP → kein 5–10 Level/Sekunde mehr, jedes Level zählt.')
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')

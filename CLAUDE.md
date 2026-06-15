@@ -138,5 +138,10 @@ Invariante gehalten, Sprites aliasiert. Phase 24 (§9.26): Sprite-Qualitätsrewo
 distinkte Sprites für alle Endgame-Pflanzen — keine Aliase mehr; Hanf-Linie als
 klare Cannabis-Fächerblätter) + Very-Late-Game-Leiter: 7 weitere Pflanzen von
 1 Qi bis 300 Sx (Kometbeere/Nebelzeder/Himmelshanf/Galaxieorchidee/Schöpfungsrose/
-Mondkristall/Urweltbaum) → bei 570 Qi bleiben 4 Pflanzenziele offen. Keine
-Save-Änderung. 53 Sorten (+1 Spezial) in 8 Kategorien, Stand SAVE_VERSION 27.
+Mondkristall/Urweltbaum) → bei 570 Qi bleiben 4 Pflanzenziele offen. Phase 25
+(§9.27): Core-Progression — Quest-Mengen mit Fortschritt skaliert (questEffortScale:
+frischer Lvl-1-Garten ~8–21 statt ~156 Basilikum → kein Reservierungs-Softlock,
+rampt bis Lvl 30), Level-Wert (XP-Kurve spät viel steiler 20·level^1.5·(1+level/120)
+→ kein Level-Durchrasen, Level-Ertragsdeckel +100 %→+300 %). Prestige-Skip-Fix +
+Shop/Kompost/Lizenz-Late-Sinks → Phase 26. Keine Save-Änderung. 53 Sorten
+(+1 Spezial) in 8 Kategorien, Stand SAVE_VERSION 27.
