@@ -866,3 +866,36 @@ Save v26 → v27: neues `discoveredVariants` (id-Liste); `sanitize()` defaultet 
 [] und behält nur bekannte IDs → alte Saves laden mit leerer Sammlung, keine
 Doppel-Belohnung. Tests 49/49, check/build grün, 14-d-Sim ohne Runaway/NaN.
 Produkt-/Lose-Kosten, Skill-/Event-Synergien und „angebaut"-Tracking → Phase 21.
+
+### 9.23 Phase 21 — Saatlabor vertieft: Produktkosten, Hinweise, Synergien (keine Save-Änderung)
+
+Das Saatlabor wird ein echtes Spielsystem statt nur Gold-Sink — ohne neue
+Pflanzen/Varianten/Ressource.
+
+- **Ernteprodukte als Kreuzungskosten (`data/variants.ts` `produceCost`):** 7 der
+  10 Rezepte verlangen jetzt zusätzlich Ernteprodukte ihrer Eltern (z. B. Med.
+  Tomate = 20 Basilikum + 10 Tomaten) → alte Pflanzen müssen wieder **angebaut &
+  geerntet** werden. Es wird **nur freier Überschuss** verbraucht: `freeStock =
+  Lager − questReserved` (für offene Aufträge reservierte Ware bleibt unangetastet,
+  kein Softlock). Die UI zeigt frei/Lager/benötigt; `crossEligibility` liefert den
+  Status `missing-produce` mit Fehlmengen.
+- **Rezept-Hinweise statt Lösung (`recipeHint`):** unentdeckte Rezepte zeigen nur
+  noch eine **Kategorie-Paar-Andeutung** („Kräuter + Gemüse") + Effekt-Typ +
+  „braucht Produkte", nicht die exakten Eltern → echtes Experimentieren, aber nie
+  frustrierend (deterministisch, kein RNG).
+- **Varianten-Gameplay-Synergien (`eventSynergy`):** 5 Varianten **verstärken ihr
+  Themen-Event** (Humusveilchen→Komposttag, Prachtorchidee→Gartenschau,
+  Sternenblume→Sternennacht, Meisterhanf→Meistertag, Weltenhybride→Erntefest) über
+  `variantEventBonus()`, verdrahtet an denselben Event-Hooks. Varianten wirken so
+  spürbar in mehreren Systemen, nicht nur als stiller %-Bonus.
+- **Skilltree-Anbindung:** neuer Knoten **Saatgut-Forschung** (Labor-Pfad) −15 %
+  Gold-Kosten/Stufe (gedeckelt) im Saatlabor (`effectiveGoldCost`).
+- **Ziel-Anbindung:** das Ziel-Panel zeigt jetzt „Variante X braucht Produkte"
+  inkl. frei/benötigt-Fortschritt; der Saatforscher-Erfolg bleibt.
+- **Pflanzbare Variante (D): bewusst auf Phase 22 verschoben** — eine pflanzbare
+  Variante braucht Sprite- (`ui/pixel/sprites.ts`), Plot- und Hotbar-Integration
+  + eigenes Unlock-Gating; das ist eine eigene Phase wert statt halbgar.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 27): alle neuen Felder sind
+Daten/Logik, `discoveredVariants` unverändert. Tests 50/50, check/build grün,
+14-d-Sim ohne Runaway/NaN.

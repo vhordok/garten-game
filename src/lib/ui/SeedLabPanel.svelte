@@ -2,7 +2,7 @@
   import { PLANTS } from '../data/plants'
   import { RARITY_ORDER, VARIANTS, type VariantDef, type VariantEffect } from '../data/variants'
   import { crossPlants, isPlantUnlocked } from '../game/actions'
-  import { crossEligibility, isDiscovered } from '../game/seedlab'
+  import { crossEligibility, effectiveGoldCost, isDiscovered, produceStatus, recipeHint } from '../game/seedlab'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -80,10 +80,16 @@
         <span class="rar" data-r={result.variant.rarity}>{result.variant.rarity}</span>
       </span>
       <span class="o-eff num">{effectText(result.variant)} · {result.variant.role}</span>
+      {@const gold = effectiveGoldCost($gameStore, result.variant)}
       <span class="o-cost num">
-        Kosten: <span class:short={$gameStore.money < result.variant.goldCost}>💰 {formatNumber(result.variant.goldCost)}</span>
+        Kosten: <span class:short={$gameStore.money < gold}>💰 {formatNumber(gold)}</span>
         {#if result.variant.compostCost > 0}· <span class:short={$gameStore.compost < result.variant.compostCost}>🌱 {result.variant.compostCost}</span>{/if}
       </span>
+      {#each produceStatus($gameStore, result.variant) as line (line.plantId)}
+        <span class="o-prod num" class:short={!line.ok}>
+          📦 {line.name}: frei {line.free}/{line.need}{line.have > line.free ? ` (${line.have} im Lager, Aufträge reserviert)` : ''}
+        </span>
+      {/each}
       <span class="o-reason" class:ok={result.status === 'ok'}>{result.reason}</span>
     {:else}
       <span class="o-reason">{result.reason}</span>
@@ -96,8 +102,6 @@
   <ul class="lex">
     {#each sorted as v (v.id)}
       {@const found = isDiscovered($gameStore, v.id)}
-      {@const pa = PLANTS.find((p) => p.id === v.parents[0])}
-      {@const pb = PLANTS.find((p) => p.id === v.parents[1])}
       <li class="lex-row" class:found>
         <span class="lex-icon">{found ? v.emoji : '❔'}</span>
         <span class="lex-body">
@@ -106,7 +110,7 @@
             <span class="rar" data-r={v.rarity}>{v.rarity}</span>
           </span>
           <span class="lex-desc num">
-            {#if found}{effectText(v)} · {v.role}{:else}Rezept: {pa?.emoji ?? '?'} + {pb?.emoji ?? '?'} · {EFFECT_LABEL[v.effect]}{/if}
+            {#if found}{effectText(v)} · {v.role}{:else}Hinweis: {recipeHint(v)} · {EFFECT_LABEL[v.effect]}{#if v.produceCost}· braucht Produkte{/if}{/if}
           </span>
         </span>
       </li>
@@ -178,6 +182,15 @@
   }
 
   .o-cost .short {
+    color: var(--c-rose, #e06c75);
+  }
+
+  .o-prod {
+    font-size: 0.72rem;
+    color: var(--c-cloud);
+  }
+
+  .o-prod.short {
     color: var(--c-rose, #e06c75);
   }
 

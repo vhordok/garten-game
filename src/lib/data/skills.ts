@@ -4,14 +4,14 @@
 // game*, and you can't max everything: you pick a build. Starts with one root +
 // four branch skills; the data shape scales to more nodes later.
 
-export type SkillEffect = 'yield' | 'crit' | 'questReward' | 'beauty' | 'compostGain' | 'scratchLuck'
+export type SkillEffect = 'yield' | 'crit' | 'questReward' | 'beauty' | 'compostGain' | 'scratchLuck' | 'crossDiscount'
 
 export interface SkillDef {
   id: string
   name: string
   desc: string
   /** UI grouping / flavour */
-  branch: 'wurzel' | 'ernte' | 'markt' | 'zier' | 'kompost' | 'glueck'
+  branch: 'wurzel' | 'ernte' | 'markt' | 'zier' | 'kompost' | 'glueck' | 'labor'
   effect: SkillEffect
   perLevel: number
   maxLevel: number
@@ -122,6 +122,17 @@ export const SKILLS: SkillDef[] = [
     cost: 2,
     prereq: 'gartenplanung',
   },
+  {
+    id: 'saatgutforschung',
+    name: 'Saatgut-Forschung',
+    desc: '−15 % Gold-Kosten pro Stufe im Saatlabor — günstigere Kreuzungen.',
+    branch: 'labor',
+    effect: 'crossDiscount',
+    perLevel: 0.15,
+    maxLevel: 2,
+    cost: 2,
+    prereq: 'gartenplanung',
+  },
 ]
 
 const byId = new Map(SKILLS.map((s) => [s.id, s]))
@@ -137,4 +148,5 @@ export const BRANCH_LABEL: Record<SkillDef['branch'], string> = {
   zier: 'Zier',
   kompost: 'Kompost',
   glueck: 'Glück',
+  labor: 'Labor',
 }

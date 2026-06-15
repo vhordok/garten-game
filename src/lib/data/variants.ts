@@ -34,6 +34,11 @@ export interface VariantDef {
   goldCost: number
   /** compost cost on top (0 = none) — ties higher tiers to the prestige economy */
   compostCost: number
+  /** PHASE 21: harvested produce consumed from FREE (unreserved) storage — makes
+   * the parent plants worth growing again. Only set when a parent is harvestable. */
+  produceCost?: { plantId: string; amount: number }[]
+  /** PHASE 21: once discovered, this variant amplifies a themed weather event. */
+  eventSynergy?: { weatherId: string; extra: number }
   /** extra gates beyond "both parents unlocked" */
   requires?: { parcels?: number; masteryLevel?: number; beauty?: number }
 }
@@ -51,6 +56,10 @@ export const VARIANTS: VariantDef[] = [
     role: 'Ertrag — solider Frühstart-Bonus',
     goldCost: 5000,
     compostCost: 0,
+    produceCost: [
+      { plantId: 'basilikum', amount: 20 },
+      { plantId: 'tomate', amount: 10 },
+    ],
   },
   {
     id: 'eilkraut',
@@ -63,6 +72,10 @@ export const VARIANTS: VariantDef[] = [
     role: 'Wachstum — alles reift etwas schneller',
     goldCost: 8000,
     compostCost: 0,
+    produceCost: [
+      { plantId: 'basilikum', amount: 15 },
+      { plantId: 'minze', amount: 15 },
+    ],
   },
   // ── midgame ──
   {
@@ -76,6 +89,10 @@ export const VARIANTS: VariantDef[] = [
     role: 'Lose — häufiger Glücks-Lose bei der Ernte',
     goldCost: 60000,
     compostCost: 0,
+    produceCost: [
+      { plantId: 'erdbeere', amount: 30 },
+      { plantId: 'blaubeere', amount: 20 },
+    ],
   },
   {
     id: 'marktruebe',
@@ -88,6 +105,10 @@ export const VARIANTS: VariantDef[] = [
     role: 'Aufträge — bessere Lieferbelohnung',
     goldCost: 120000,
     compostCost: 0,
+    produceCost: [
+      { plantId: 'karotte', amount: 25 },
+      { plantId: 'kuerbis', amount: 8 },
+    ],
   },
   {
     id: 'humusveilchen',
@@ -100,6 +121,7 @@ export const VARIANTS: VariantDef[] = [
     role: 'Kompost — wertvollere Prestiges',
     goldCost: 200000,
     compostCost: 10,
+    eventSynergy: { weatherId: 'komposttag', extra: 0.5 },
   },
   // ── late ──
   {
@@ -113,6 +135,7 @@ export const VARIANTS: VariantDef[] = [
     role: 'Zier — stärkt den Schönheits-Build',
     goldCost: 5e6,
     compostCost: 0,
+    eventSynergy: { weatherId: 'gartenschau', extra: 0.5 },
     requires: { parcels: 3 },
   },
   {
@@ -126,6 +149,8 @@ export const VARIANTS: VariantDef[] = [
     role: 'Lose/Magie — Sternenlicht zieht Glück an',
     goldCost: 5e7,
     compostCost: 40,
+    produceCost: [{ plantId: 'mondblume', amount: 12 }],
+    eventSynergy: { weatherId: 'sternschnuppen', extra: 1 },
   },
   {
     id: 'meisterhanf',
@@ -138,6 +163,11 @@ export const VARIANTS: VariantDef[] = [
     role: 'Meisterschaft — Ernten geben mehr Meister-XP',
     goldCost: 1e8,
     compostCost: 0,
+    produceCost: [
+      { plantId: 'lavendel', amount: 20 },
+      { plantId: 'cbdhanf', amount: 6 },
+    ],
+    eventSynergy: { weatherId: 'meistertag', extra: 0.5 },
     requires: { masteryLevel: 3 },
   },
   {
@@ -164,6 +194,11 @@ export const VARIANTS: VariantDef[] = [
     role: 'Ertrag — die Krone der Sammlung',
     goldCost: 5e10,
     compostCost: 500,
+    produceCost: [
+      { plantId: 'weltenbaum', amount: 5 },
+      { plantId: 'weltenrose', amount: 5 },
+    ],
+    eventSynergy: { weatherId: 'erntefest', extra: 0.5 },
     requires: { masteryLevel: 5, parcels: 6 },
   },
 ]

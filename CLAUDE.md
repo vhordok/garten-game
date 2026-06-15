@@ -122,4 +122,9 @@ achievements[], Migration initialisiert aus Stats ohne Reward-Flut). Phase 20
 Spielweisen; deterministische Kreuzung zweier freigeschalteter Eltern gegen
 Gold/Kompost mit Parzellen-/Meisterschafts-Gates, kein Plot/Sprite-Aufwand;
 Lexikon + Ziel-/Erfolg-Anbindung „Saatforscher", discoveredVariants übersteht
-Prestige). 42 Sorten in 8 Kategorien, Stand SAVE_VERSION 27.
+Prestige). Phase 21 (§9.23): Saatlabor vertieft — Ernteprodukt-Kosten (nur freier
+Überschuss via freeStock = Lager − questReserved), Kategorie-Rezept-Hinweise
+statt Lösung, 5 Varianten-Event-Synergien (variantEventBonus), Skill „Saatgut-
+Forschung" (−Gold), Ziel-Panel zeigt fehlende Produkte; pflanzbare Variante
+bewusst → Phase 22 (braucht Sprite/Plot/Hotbar). Keine Save-Änderung. 42 Sorten
+in 8 Kategorien, Stand SAVE_VERSION 27.

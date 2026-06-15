@@ -16,7 +16,7 @@ import { UPGRADES } from '../data/upgrades'
 import { compostGain, isPlantUnlocked, leaseRequirement, nextUpgradeCost, upgradeLevel } from './actions'
 import { gardenBeauty, masteryLevel, masteryThreshold, nextSpecMilestone, specializationLevel } from './modifiers'
 import { availableSkillPoints } from './skills'
-import { crossEligibility, discoverableVariants } from './seedlab'
+import { crossEligibility, discoverableVariants, produceStatus } from './seedlab'
 import { VARIANTS } from '../data/variants'
 import type { GameState } from './types'
 
@@ -265,7 +265,7 @@ function variantGoal(state: GameState): Goal | null {
   const discovered = state.discoveredVariants.length
   if (discovered >= VARIANTS.length) return null
   const reachable = discoverableVariants(state)
-  // a variant you can afford & meet conditions for → ready; else show collection
+  // a variant you can afford & meet conditions for → ready
   const ready = reachable.find((v) => crossEligibility(state, v.parents[0], v.parents[1]).status === 'ok')
   if (ready) {
     return {
@@ -278,6 +278,26 @@ function variantGoal(state: GameState): Goal | null {
       target: 1,
       fraction: 1,
       ready: true,
+    }
+  }
+  // PHASE 21: a recipe blocked only on FREE produce → guide the player to grow it
+  for (const v of reachable) {
+    const r = crossEligibility(state, v.parents[0], v.parents[1])
+    if (r.status === 'missing-produce') {
+      const lines = produceStatus(state, v)
+      const have = lines.reduce((a, l) => a + Math.min(l.free, l.need), 0)
+      const need = lines.reduce((a, l) => a + l.need, 0)
+      return {
+        id: 'variant',
+        tier: 'mittel',
+        icon: v.emoji,
+        label: `Saatlabor: ${v.name} braucht Produkte`,
+        reward: lines.map((l) => `${l.free}/${l.need} ${l.name}`).join(' · '),
+        current: have,
+        target: need,
+        fraction: clamp01(have / need),
+        ready: false,
+      }
     }
   }
   return {
