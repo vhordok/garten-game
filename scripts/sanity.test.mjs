@@ -89,6 +89,7 @@ import {
 import { ACHIEVEMENTS } from '../src/lib/data/achievements.ts'
 import { achievementBonus, achievementSkillPoints, reachedTier } from '../src/lib/game/achievements.ts'
 import { VARIANTS } from '../src/lib/data/variants.ts'
+import { SPRITES } from '../src/lib/ui/pixel/sprites.ts'
 import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceStatus, variantBonus, variantEventBonus } from '../src/lib/game/seedlab.ts'
 import { activeGoals } from '../src/lib/game/goals.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
@@ -1575,6 +1576,40 @@ test('PHASE 23: late-game ladder extends past Weltenrose with distinct roles', (
   const hanf = after.find((p) => p.category === 'cannabis')
   assert.equal(hanf.requiresLicense, 3, 'endgame Hanf needs licence III')
   assert.ok(plantById('dauerbluetenhanf'), 'new Hanf resolves via plantById')
+})
+
+test('PHASE 24: distinct endgame sprites + very-late-game goals', () => {
+  // every plant (incl. specials) has a registered, valid 16×16 mature sprite
+  for (const p of [...PLANTS, ...SPECIAL_PLANTS]) {
+    const grid = SPRITES[`${p.id}-3`]
+    assert.ok(grid, `${p.id}: mature sprite registered`)
+    assert.equal(grid.length, 16, `${p.id}: 16 rows`)
+    assert.ok(grid.every((row) => row.length === 16), `${p.id}: 16 cols`)
+  }
+
+  // the formerly-aliased endgame plants now have their OWN distinct sprites
+  const distinct = [
+    ['traumorchidee', 'himmelsorchidee'],
+    ['ewigrose', 'weltenrose'],
+    ['sternenzeder', 'mondzeder'],
+    ['dauerbluetenhanf', 'goldhanf'],
+    ['spv-prachtorchidee', 'leuchtlilie'],
+  ]
+  for (const [a, b] of distinct) {
+    assert.notStrictEqual(SPRITES[`${a}-3`], SPRITES[`${b}-3`], `${a} no longer aliases ${b}`)
+    assert.notDeepEqual(SPRITES[`${a}-3`], SPRITES[`${b}-3`], `${a} sprite differs from ${b}`)
+  }
+  // the new very-late plants have their own sprites too
+  for (const id of ['kometbeere', 'nebelzeder', 'himmelshanf', 'galaxieorchidee', 'schoepfungsrose', 'mondkristall', 'urweltbaum']) {
+    assert.ok(SPRITES[`${id}-3`], `${id}: own sprite`)
+  }
+
+  // a 570 Qi player still has several real plant goals ahead
+  const at570 = 5.7e20
+  const ahead = PLANTS.filter((p) => p.unlockAtTotalEarned > at570)
+  assert.ok(ahead.length >= 3, `≥3 plant goals remain above 570 Qi (got ${ahead.length})`)
+  // those goals span more than one role/category
+  assert.ok(new Set(ahead.map((p) => p.category)).size >= 2, 'late goals span multiple categories')
 })
 
 test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () => {

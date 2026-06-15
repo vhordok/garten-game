@@ -2,3 +2,6 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# generated sprite audit (regenerate via: npx tsx scripts/sprite-atlas.mjs)
+sprite-atlas.png

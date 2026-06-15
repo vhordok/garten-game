@@ -955,3 +955,34 @@ Sprites aliasiert (distinkte Endgame-Sprites = spätere optische Politur). Quest
 Sammlung („alle Sorten") und Erfolge skalieren automatisch mit (mehr Late-Game-
 Ziele). Tests 52/52, check/build grün, 14-d-Sim ohne Runaway/NaN. Keine
 Save-Format-Änderung (reine Daten; Plots/Quests referenzieren Pflanzen über IDs).
+
+### 9.26 Phase 24 — Sprite-Qualität & Very-Late-Game-Progression (keine Save-Änderung)
+
+Zwei Probleme behoben: Phase-23-Pflanzen nutzten Alias-Sprites, und bei ~570 Qi
+war die Leiter sofort leer.
+
+- **Sprite-Atlas (`scripts/sprite-atlas.mjs`):** rendert **alle** reifen Pflanzen-
+  Sprites in eine echte PNG (`sprite-atlas.png`, eigener minimaler PNG-Encoder via
+  `zlib`) — die Pixel-Arbeit ist damit **sichtbar prüfbar** (kein Blind-Editieren
+  mehr) und die Audit-Übersicht selbst (Deliverable). Reihenfolge wird gelistet.
+- **Distinkte Endgame-Sprites (keine Aliase mehr):** Ewigrose (Plum-Rose mit
+  weißem Kern), Traumorchidee (violette Orchidee), Sternenzeder (Konifere mit
+  Goldstern), Dauerblütenhanf (Cannabis-Fächerblatt + Goldknospen), Prachtorchidee
+  (weiß-blaue Orchidee) — jeweils eigene Stufe-3-Grids (Stufen 1-2 nutzen eine
+  thematische Basis). Plus eigene Sprites für alle neuen Pflanzen.
+- **Hanf-Linie überarbeitet:** CBD/Medizinal/Gold/Dauerblüten/Himmel sind jetzt
+  klare **Cannabis-Fächerblätter** mit eigenen Akzenten (blass / weiß-medizinisch /
+  goldgespitzt / Goldknospen / Cyan) und wachsender Größe — die Kategorie liest
+  sich endlich als echtes Cannabis. Basilikum (Phase 22) bestätigt klarer.
+- **Very-Late-Game-Leiter (`diagnose.mjs`-Szenarien):** Diagnose zeigte, dass die
+  Phase-23-Pflanzen (≤200 Qa) bei 570 Qi sofort trivial sind. **Sieben neue
+  Pflanzen** spannen jetzt von 1 Qi bis 300 Sx (Kometbeere/Magie, Nebelzeder/
+  Offline, Himmelshanf/Hanf, Galaxieorchidee/Zier, Schöpfungsrose/Magie,
+  Mondkristall/Magie-Direkt, Urweltbaum/Offline-Finale). Bei **570 Qi bleiben
+  4 echte Ziele offen** (statt vorher 0), bei 1 Sx noch 3 — Erntepflanzen halten
+  die Profit/ROI-Invariante.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 27): reine Daten/Sprites; Plots/
+Quests referenzieren Pflanzen über IDs. Tests 53/53, check/build grün, 14-d-Sim
+ohne Runaway/NaN. Breitere Sprite-Politur der älteren Mittelfeld-Pflanzen bleibt
+optionaler Feinschliff.

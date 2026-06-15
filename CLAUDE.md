@@ -133,5 +133,10 @@ neue Logik), Basilikum-Sprite neu + dokumentierte Sprite-Stilregel. Phase 23
 (§9.25): Late-Game-Leiter über Weltenrose hinaus — 4 neue Pflanzen mit Rollen
 (Traumorchidee/Zier, Ewigrose/Magie-Wiederernte, Sternenzeder/Holz-passiv,
 Dauerblütenhanf/Hanf-Wiederernte Lizenz III) jenseits von Weltenroses Unlock,
-Invariante gehalten, Sprites aliasiert. Keine Save-Änderung. 46 Sorten (+1 Spezial)
-in 8 Kategorien, Stand SAVE_VERSION 27.
+Invariante gehalten, Sprites aliasiert. Phase 24 (§9.26): Sprite-Qualitätsrework
+(scripts/sprite-atlas.mjs rendert alle Pflanzen als PNG zur Sichtprüfung; eigene
+distinkte Sprites für alle Endgame-Pflanzen — keine Aliase mehr; Hanf-Linie als
+klare Cannabis-Fächerblätter) + Very-Late-Game-Leiter: 7 weitere Pflanzen von
+1 Qi bis 300 Sx (Kometbeere/Nebelzeder/Himmelshanf/Galaxieorchidee/Schöpfungsrose/
+Mondkristall/Urweltbaum) → bei 570 Qi bleiben 4 Pflanzenziele offen. Keine
+Save-Änderung. 53 Sorten (+1 Spezial) in 8 Kategorien, Stand SAVE_VERSION 27.
