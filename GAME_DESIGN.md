@@ -931,3 +931,27 @@ Keine Save-Format-Änderung (SAVE_VERSION bleibt 27): `SPECIAL_PLANTS` ist Daten
 Plots referenzieren sie über `plantById` (Sanitize akzeptiert sie). Tests 51/51,
 check/build grün, 14-d-Sim ohne Runaway/NaN. **Late-Game-Leiter über Weltenrose
 hinaus + Hanf-Kategorie-Ausbau → Phase 23.**
+
+### 9.25 Phase 23 — Late-Game-Pflanzenleiter über Weltenrose & Hanf-Endgame (keine Save-Änderung)
+
+Die Leiter endete faktisch bei Weltenrose (Unlock 8 Qa); sehr späte Spieler
+hatten danach kein Pflanzenziel mehr. **Vier neue Pflanzen jenseits von
+Weltenrose** mit klar verschiedenen Rollen (statt nur „teurer"):
+
+- **Traumorchidee** (Zier, Schönheit 0,2 — Unlock 1,5e16): Endgame-Aura-Pflanze
+  für den Schönheits-Build, kein Ertrag.
+- **Ewigrose** (Magie, Wiederernte — Unlock 4e16): Direktgewinn-Spitze, schlägt
+  Weltenroses Dauerertrag deutlich.
+- **Sternenzeder** (Holz, passiv 900k/s — Unlock 1e17): Offline/Passiv-Endgame.
+- **Dauerblütenhanf** (Hanf, Wiederernte, Lizenz III, Gießen 10 — Unlock 2e17):
+  **macht Hanf endgame-relevant** — der erste *nachwachsende* Hanf, hoher
+  Dauerertrag statt einmaliger Lange-Wuchs-Ernte.
+
+Balance: alle vier liegen **strikt über Weltenroses Unlock** (echte neue Ziele,
+nicht überspringbar wie die alten billigen Spitzen), und die Erntepflanzen halten
+die Invariante (Profit/s pro Stufe ×1,5+, ROI ok) — die Leiterkurve wird nur
+sauber verlängert, keine Explosion. Sprites sind vorerst auf thematisch passende
+Sprites aliasiert (distinkte Endgame-Sprites = spätere optische Politur). Quests,
+Sammlung („alle Sorten") und Erfolge skalieren automatisch mit (mehr Late-Game-
+Ziele). Tests 52/52, check/build grün, 14-d-Sim ohne Runaway/NaN. Keine
+Save-Format-Änderung (reine Daten; Plots/Quests referenzieren Pflanzen über IDs).

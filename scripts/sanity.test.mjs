@@ -1128,12 +1128,10 @@ test('PHASE 15: escalating spec value, milestones, repeatable compost sinks', ()
     assert.ok(Number.isFinite(yieldMultiplier(g)) && yieldMultiplier(g) > 1, 'urhumus lifts yield, no overflow')
 
     // ── top-of-ladder unlocks were widened (endgame is a longer climb) ──
-    const ids = PLANTS.map((p) => p.id)
     const weltenrose = PLANTS.find((p) => p.id === 'weltenrose')
     const ewig = PLANTS.find((p) => p.id === 'ewigkeitsbluete')
     assert.ok(weltenrose.unlockAtTotalEarned >= 8e15, 'final plant pushed further out')
     assert.ok(weltenrose.unlockAtTotalEarned > ewig.unlockAtTotalEarned * 4, 'big top-end gap')
-    assert.equal(ids[ids.length - 1], 'weltenrose', 'weltenrose stays the finale')
   })
 })
 
@@ -1545,6 +1543,38 @@ test('PHASE 22: plantable special variant (discovery-gated, capped, beauty, save
     sowPlot(0)
     assert.ok(clearAllPlots().count >= 1, 'Alles roden removes the special plant')
   })
+})
+
+test('PHASE 23: late-game ladder extends past Weltenrose with distinct roles', () => {
+  const ids = PLANTS.map((p) => p.id)
+  const wIdx = ids.indexOf('weltenrose')
+  // there are now plants AFTER Weltenrose
+  assert.ok(wIdx >= 0 && wIdx < PLANTS.length - 1, 'Weltenrose is no longer the finale')
+
+  const after = PLANTS.slice(wIdx + 1)
+  const cats = new Set(after.map((p) => p.category))
+  // role variety beyond Weltenrose: a Zier (beauty), a Holz (passive), Magie + Hanf
+  assert.ok(after.some((p) => p.beautyBonus && p.category === 'zier'), 'a Zier endgame plant (Schönheit)')
+  assert.ok(after.some((p) => p.passiveIncome && p.category === 'baeume'), 'a Holz endgame plant (Offline/Passiv)')
+  assert.ok(after.some((p) => p.category === 'magie' && p.yield > 0), 'a Magie endgame harvest plant')
+  assert.ok(after.some((p) => p.category === 'cannabis'), 'a Hanf endgame plant')
+  assert.ok(cats.size >= 3, 'several categories beyond Weltenrose')
+
+  // every new plant unlocks strictly later than Weltenrose (real new goals)
+  const wUnlock = PLANTS[wIdx].unlockAtTotalEarned
+  for (const p of after) assert.ok(p.unlockAtTotalEarned > wUnlock, `${p.id} unlocks after Weltenrose`)
+
+  // the new top harvest plant clearly beats Weltenrose's steady profit
+  const top = [...PLANTS].filter((p) => p.yield > 0).pop()
+  assert.ok(
+    steadyProfitPerSecond(top) > steadyProfitPerSecond(PLANTS[wIdx]),
+    'top harvest plant out-earns Weltenrose'
+  )
+
+  // the endgame Hanf is licence-gated (grows the Hanf category)
+  const hanf = after.find((p) => p.category === 'cannabis')
+  assert.equal(hanf.requiresLicense, 3, 'endgame Hanf needs licence III')
+  assert.ok(plantById('dauerbluetenhanf'), 'new Hanf resolves via plantById')
 })
 
 test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () => {
