@@ -585,6 +585,7 @@ export const PLANTS: PlantDef[] = [
     yield: 0,
     sellValue: 0,
     unlockAtTotalEarned: 1.5e16,
+    unlockParcel: 6,
   },
   {
     id: 'ewigrose',
@@ -599,6 +600,7 @@ export const PLANTS: PlantDef[] = [
     yield: 48,
     sellValue: 3.2e9,
     unlockAtTotalEarned: 4e16,
+    unlockParcel: 7,
   },
   {
     id: 'sternenzeder',
@@ -612,6 +614,7 @@ export const PLANTS: PlantDef[] = [
     yield: 0,
     sellValue: 0,
     unlockAtTotalEarned: 1e17,
+    unlockParcel: 8,
   },
   {
     id: 'dauerbluetenhanf',
@@ -626,6 +629,7 @@ export const PLANTS: PlantDef[] = [
     yield: 70,
     sellValue: 4e9,
     unlockAtTotalEarned: 2e17,
+    unlockParcel: 9,
     requiresLicense: 3,
     needsWateringLevel: 10,
   },
@@ -643,6 +647,7 @@ export const PLANTS: PlantDef[] = [
     yield: 90,
     sellValue: 5.5e9,
     unlockAtTotalEarned: 1e18,
+    unlockParcel: 11,
   },
   {
     id: 'nebelzeder',
@@ -656,6 +661,7 @@ export const PLANTS: PlantDef[] = [
     yield: 0,
     sellValue: 0,
     unlockAtTotalEarned: 1e19,
+    unlockParcel: 13,
   },
   {
     id: 'himmelshanf',
@@ -670,6 +676,7 @@ export const PLANTS: PlantDef[] = [
     yield: 120,
     sellValue: 7e9,
     unlockAtTotalEarned: 6e19,
+    unlockParcel: 15,
     requiresLicense: 3,
     needsWateringLevel: 10,
   },
@@ -685,6 +692,7 @@ export const PLANTS: PlantDef[] = [
     yield: 0,
     sellValue: 0,
     unlockAtTotalEarned: 7e20,
+    unlockParcel: 18,
   },
   {
     id: 'schoepfungsrose',
@@ -699,6 +707,7 @@ export const PLANTS: PlantDef[] = [
     yield: 180,
     sellValue: 11e9,
     unlockAtTotalEarned: 5e21,
+    unlockParcel: 22,
   },
   {
     id: 'mondkristall',
@@ -713,6 +722,7 @@ export const PLANTS: PlantDef[] = [
     yield: 230,
     sellValue: 15e9,
     unlockAtTotalEarned: 4e22,
+    unlockParcel: 28,
   },
   {
     id: 'urweltbaum',
@@ -726,6 +736,7 @@ export const PLANTS: PlantDef[] = [
     yield: 0,
     sellValue: 0,
     unlockAtTotalEarned: 3e23,
+    unlockParcel: 36,
   },
 ]
 

@@ -56,6 +56,21 @@ function plantGoal(state: GameState): Goal | null {
     if (isPlantUnlocked(p, state)) continue
     // only surface plants gated purely by earnings (license gates are their own UI)
     if (p.requiresLicense && state.licenses < p.requiresLicense) continue
+    const earnedMet = state.totalEarned >= p.unlockAtTotalEarned
+    // PHASE 26: earnings met but parcel-gated → guide toward leasing parcels
+    if (earnedMet && p.unlockParcel && state.parcels < p.unlockParcel) {
+      return {
+        id: 'plant',
+        tier: 'lang',
+        icon: p.emoji,
+        label: `Parzelle ${p.unlockParcel} für ${p.name}`,
+        reward: `schaltet ${produceName(p)} frei (Prestige/Parzelle)`,
+        current: state.parcels,
+        target: p.unlockParcel,
+        fraction: clamp01(state.parcels / p.unlockParcel),
+        ready: false,
+      }
+    }
     return {
       id: 'plant',
       tier: 'kurz',

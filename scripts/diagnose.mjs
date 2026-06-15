@@ -27,7 +27,7 @@ import { ACHIEVEMENTS, TIER_NAMES } from '../src/lib/data/achievements.ts'
 import { achievementBonus, initAchievementTiers, reachedTier, totalClaimedTiers } from '../src/lib/game/achievements.ts'
 import { SCRATCH_PRIZES, effectiveHarvestValue, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
 import { CONFIG as CFG } from '../src/lib/data/config.ts'
-import { compostGain } from '../src/lib/game/actions.ts'
+import { compostGain, isPlantUnlocked } from '../src/lib/game/actions.ts'
 import { generateQuest } from '../src/lib/game/quests.ts'
 import { xpToNext } from '../src/lib/data/progression.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
@@ -313,5 +313,18 @@ for (const lv of [1, 10, 100, 1000, 5000, 11300]) {
   console.log(`  Lvl ${String(lv).padStart(5)} : ${fmtN(xpToNext(lv))} XP  (Level-Ertragsbonus bis +${(CFG.levelYieldMaxBonus * 100).toFixed(0)} %)`)
 }
 console.log('  ⇒ Späte Level kosten massiv mehr XP → kein 5–10 Level/Sekunde mehr, jedes Level zählt.')
+
+console.log('\n── PHASE 26: Prestige-Soft-Gate — Parzellen pacen die Spitze ──')
+const gated = PLANTS.filter((p) => p.unlockParcel)
+console.log(`  ${gated.length} sehr späte Pflanzen sind zusätzlich an Parzellen gebunden:`)
+console.log(`    ${gated.map((p) => `${p.name}→P${p.unlockParcel}`).join(', ')}`)
+console.log('  Bei totalEarned = 1 Sx (Multiplikator rast), aber unterschiedlichen Parzellen:')
+for (const parc of [12, 16, 22, 30, 40]) {
+  const st = { ...createDefaultState(), totalEarned: 1e21, lifetimeEarned: 1e21, licenses: 3, parcels: parc }
+  const sowable = PLANTS.filter((p) => isPlantUnlocked(p, st)).length
+  const gatedOpen = gated.filter((p) => st.parcels < p.unlockParcel).length
+  console.log(`    Parzelle ${String(parc).padStart(2)}: ${sowable}/${PLANTS.length} pflanzbar · ${gatedOpen} Spitzen-Pflanzen noch durch Parzellen gesperrt`)
+}
+console.log('  ⇒ Der persistente Multiplikator beschleunigt weiter, aber die Spitze wird durch Parzellen (≈1/Prestige) gepact — kein Sofort-Skip.')
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')

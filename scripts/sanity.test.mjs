@@ -1654,6 +1654,60 @@ test('PHASE 25: tiny early quests (no softlock), scaling, steeper late levels', 
   })
 })
 
+test('PHASE 26: parcel soft-gate paces the very-late ladder (no instant skip)', () => {
+  withBoringRng(() => {
+    const gated = PLANTS.filter((p) => p.unlockParcel)
+    assert.ok(gated.length >= 6, 'several very-late plants are parcel-gated')
+
+    // a racing multiplier (huge earnings) still can't sow a parcel-gated plant
+    const top = PLANTS.find((p) => p.id === 'urweltbaum')
+    const s = fresh()
+    s.totalEarned = 1e24 // far past every earnings threshold
+    s.licenses = 3
+    s.parcels = 5
+    assert.equal(isPlantUnlocked(top, s), false, 'huge earnings alone do NOT unlock the finale')
+    s.parcels = top.unlockParcel
+    assert.equal(isPlantUnlocked(top, s), true, 'leasing enough parcels unlocks it')
+    // earnings still required on top of parcels
+    const poor = fresh()
+    poor.parcels = 99
+    poor.totalEarned = 0
+    assert.equal(isPlantUnlocked(top, poor), false, 'parcels alone are not enough either')
+
+    // un-gated plants are unaffected by the parcel gate
+    const basil = PLANTS.find((p) => p.id === 'basilikum')
+    assert.equal(isPlantUnlocked(basil, { ...fresh(), parcels: 1, totalEarned: 0 }), true)
+
+    // quests never ask for a plant the player can't sow yet (parcel-gated)
+    const q = fresh()
+    q.totalEarned = 1e20
+    q.maxUnlockEarned = 1e20
+    q.parcels = 12
+    q.level = 50
+    for (let i = 0; i < 80; i++) {
+      for (const it of generateQuest(q).items) {
+        const def = it.plantId ? plantById(it.plantId) : null
+        if (def?.unlockParcel) assert.ok(q.parcels >= def.unlockParcel, `quest never asks for parcel-gated ${def.id}`)
+      }
+    }
+
+    // the goal panel turns an earnings-met-but-parcel-gated plant into a parcel goal
+    const g = fresh()
+    g.totalEarned = 1e24
+    g.licenses = 3
+    g.parcels = 5
+    const pg = activeGoals(g).find((x) => x.id === 'plant')
+    assert.ok(pg && /Parzelle/.test(pg.label), 'plant goal guides toward leasing parcels')
+
+    // an already-planted gated plant still resolves + grows (no brick)
+    const planted = fresh()
+    planted.plots[0] = { plantId: 'urweltbaum', progress: 100, waterLeft: 0, regrowing: false }
+    assert.ok(plantById('urweltbaum'), 'gated plant still resolves via plantById')
+    tick(planted, 60)
+    assert.equal(planted.plots[0].plantId, 'urweltbaum', 'existing gated plot keeps growing, never bricks')
+  })
+})
+
 test('regrow plants: stay after harvest, faster cycles, clearPlot removes', () => {
   withBoringRng(() => {
     const s = fresh()

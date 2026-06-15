@@ -71,10 +71,12 @@ function fairAmount(s: GameState, plant: PlantDef): number {
 function questPool(s: GameState): PlantDef[] {
   const harvestable = PLANTS.filter((p) => !p.beautyBonus && !p.passiveIncome)
   const reach = Math.max(s.totalEarned, s.maxUnlockEarned * CONFIG.questReachFactor)
+  // PHASE 26: never ask for a plant the player can't actually sow yet (parcel gate)
+  const sowable = (p: PlantDef) => (p.unlockParcel ?? 0) <= s.parcels
   let pool = harvestable.filter(
-    (p) => p.unlockAtTotalEarned <= reach && p.unlockAtTotalEarned >= reach / CONFIG.questBandWidth
+    (p) => sowable(p) && p.unlockAtTotalEarned <= reach && p.unlockAtTotalEarned >= reach / CONFIG.questBandWidth
   )
-  if (pool.length === 0) pool = harvestable.filter((p) => p.unlockAtTotalEarned <= reach)
+  if (pool.length === 0) pool = harvestable.filter((p) => sowable(p) && p.unlockAtTotalEarned <= reach)
   if (pool.length === 0) pool = [harvestable[0]]
   return pool
 }

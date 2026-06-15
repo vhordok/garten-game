@@ -42,6 +42,11 @@ export interface PlantDef {
   requiresLicense?: number
   /** cannabis care: below this Gießkannen-Stufe the plant grows at half speed */
   needsWateringLevel?: number
+  /** PHASE 26 soft prestige-gate: also requires this many leased parcels to sow.
+   * Parcels persist + grow ~1/prestige, so this PACES the post-prestige re-climb
+   * (a racing multiplier alone can't skip to the very-late plants). Only gates new
+   * sowing/selection — existing plots are never affected. Default 0 = no gate. */
+  unlockParcel?: number
   /** PHASE 22 seed-lab special plant: not in the normal ladder/quests. Unlocked
    * by discovering `unlockVariant` rather than by earnings, and capped per garden. */
   special?: boolean

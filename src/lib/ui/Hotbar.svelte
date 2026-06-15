@@ -96,9 +96,11 @@
 
   <div class="hotbar pxpanel">
     {#each slots as plant, i (plant.id)}
-      {@const unlocked =
+      {@const earnedMet =
         $gameStore.totalEarned >= plant.unlockAtTotalEarned &&
         (!plant.requiresLicense || $gameStore.licenses >= plant.requiresLicense)}
+      {@const parcelLocked = earnedMet && !!plant.unlockParcel && $gameStore.parcels < plant.unlockParcel}
+      {@const unlocked = earnedMet && !parcelLocked}
       {@const selected = $gameStore.selectedPlantId === plant.id}
       {@const affordable = $gameStore.money >= plant.seedCost}
       <button
@@ -119,7 +121,7 @@
           </span>
         {:else}
           <span class="art lock"><PixelIcon name="lock" scale={3} /></span>
-          <span class="price num">???</span>
+          <span class="price num">{parcelLocked ? `Parz. ${plant.unlockParcel}` : '???'}</span>
         {/if}
 
         <span class="tip pxpanel">
