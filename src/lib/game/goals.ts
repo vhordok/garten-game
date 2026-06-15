@@ -10,10 +10,10 @@ import { claimedTier } from './achievements'
 import { nextBeautyMilestone } from '../data/beautyMilestones'
 import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
 import { nextMilestone } from '../data/milestones'
-import { PLANTS, plantById, produceName } from '../data/plants'
+import { PLANTS, SPECIAL_PLANTS, plantById, produceName } from '../data/plants'
 import { CATEGORY_SPECS } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
-import { compostGain, isPlantUnlocked, leaseRequirement, nextUpgradeCost, upgradeLevel } from './actions'
+import { compostGain, isPlantUnlocked, leaseRequirement, nextUpgradeCost, plotsWithPlant, upgradeLevel } from './actions'
 import { gardenBeauty, masteryLevel, masteryThreshold, nextSpecMilestone, specializationLevel } from './modifiers'
 import { availableSkillPoints } from './skills'
 import { crossEligibility, discoverableVariants, produceStatus } from './seedlab'
@@ -313,6 +313,26 @@ function variantGoal(state: GameState): Goal | null {
   }
 }
 
+/** Plant a freshly unlocked seed-lab special plant for the first time (PHASE 22). */
+function specialPlantGoal(state: GameState): Goal | null {
+  for (const sp of SPECIAL_PLANTS) {
+    if (!isPlantUnlocked(sp, state)) continue
+    if (plotsWithPlant(state, sp.id) > 0) continue
+    return {
+      id: 'specialplant',
+      tier: 'mittel',
+      icon: sp.emoji,
+      label: `${sp.name} anpflanzen`,
+      reward: 'Spezialpflanze — starke Schönheit',
+      current: 0,
+      target: 1,
+      fraction: 0,
+      ready: true,
+    }
+  }
+  return null
+}
+
 /** Collection goal: unlock every plant. */
 function collectionGoal(state: GameState): Goal | null {
   const unlocked = PLANTS.filter((p) => isPlantUnlocked(p, state)).length
@@ -408,6 +428,7 @@ export function activeGoals(state: GameState): Goal[] {
     beautyGoal(state),
     masteryGoal(state),
     variantGoal(state),
+    specialPlantGoal(state),
     achievementGoal(state),
     compostGoal(state),
     collectionGoal(state),

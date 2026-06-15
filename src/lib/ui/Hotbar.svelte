@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { PLANTS, steadyProfitPerSecond } from '../data/plants'
-  import { selectPlant } from '../game/actions'
+  import { PLANTS, SPECIAL_PLANTS, steadyProfitPerSecond } from '../data/plants'
+  import { isPlantUnlocked, selectPlant } from '../game/actions'
   import { masteryLevel } from '../game/modifiers'
   import { CONFIG } from '../data/config'
   import { gameStore } from '../game/state'
@@ -27,7 +27,11 @@
     PLANTS.find((p) => p.id === $gameStore.selectedPlantId)?.category ?? 'kraeuter'
   )
 
-  const slots = $derived(PLANTS.filter((p) => p.category === activeCat))
+  // PHASE 22: discovered seed-lab special plants appear in their category slot
+  const slots = $derived([
+    ...PLANTS.filter((p) => p.category === activeCat),
+    ...SPECIAL_PLANTS.filter((p) => p.category === activeCat && isPlantUnlocked(p, $gameStore)),
+  ])
 
   function catUnlocked(cat: PlantCategory): boolean {
     const first = PLANTS.find((p) => p.category === cat)
