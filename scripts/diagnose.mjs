@@ -263,4 +263,28 @@ console.log(`  ${VARIANTS.length} Varianten · Effekte: ${Object.entries(byEffec
 console.log(`  Ertrags-Gesamtbonus aller Varianten: +${(variantBonus(allVar, 'yield') * 100).toFixed(0)} % (klein & gedeckelt, keine Explosion)`)
 console.log('  ⇒ Varianten sind Sammelziele mit kleinen Boni, nicht Ersatz für die Pflanzenleiter.')
 
+// ── PHASE 24: Very-Late-Game-Progression gegen echte Extrem-Stände ──────────
+console.log('\n── PHASE 24: Pflanzenziele bei sehr hohem totalEarned (Very Late Game) ──')
+const harvestable = PLANTS.filter((p) => !p.requiresLicense || true)
+function plantsAtEarned(earned) {
+  const unlocked = PLANTS.filter((p) => earned >= p.unlockAtTotalEarned)
+  const ahead = PLANTS.filter((p) => earned < p.unlockAtTotalEarned).sort(
+    (a, b) => a.unlockAtTotalEarned - b.unlockAtTotalEarned
+  )
+  return { unlocked: unlocked.length, ahead }
+}
+const scenarios = [
+  ['nach Weltenrose', 8e15],
+  ['10 Qi', 1e19],
+  ['100 Qi', 1e20],
+  ['570 Qi (gemeldet)', 5.7e20],
+  ['1 Sx', 1e21],
+]
+for (const [label, earned] of scenarios) {
+  const { unlocked, ahead } = plantsAtEarned(earned)
+  const next = ahead.slice(0, 4).map((p) => `${p.name} (${fmtN(p.unlockAtTotalEarned)})`).join(', ')
+  console.log(`  ${label.padEnd(18)}: ${unlocked}/${PLANTS.length} frei · noch offen: ${ahead.length}${ahead.length ? ` → ${next}` : ' (alle frei)'}`)
+}
+console.log('  ⇒ Bei 570 Qi bleiben echte Pflanzenziele offen (Galaxieorchidee/Schöpfungsrose), statt sofort leer.')
+
 console.log('\n════════ ENDE DIAGNOSE ════════\n')
