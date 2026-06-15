@@ -39,7 +39,9 @@
     onOpenSeedLab: () => void
   } = $props()
 
-  const goalsReady = $derived(activeGoals($gameStore).filter((g) => g.ready).length)
+  // PHASE 28: only MEANINGFUL ready goals light the badge — trivial chores
+  // (cheap upgrade, cash a ticket) shouldn't keep it permanently lit.
+  const goalsReady = $derived(activeGoals($gameStore).filter((g) => g.ready && !g.chore).length)
   const skillPoints = $derived(availableSkillPoints($gameStore))
   const newCross = $derived(discoverableVariants($gameStore).some((v) => crossEligibility($gameStore, v.parents[0], v.parents[1]).status === 'ok'))
 

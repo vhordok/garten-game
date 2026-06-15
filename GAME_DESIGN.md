@@ -1084,3 +1084,45 @@ Save: **SAVE_VERSION 27 → 28** (reiner Passthrough — neue Upgrade-/Kompost-I
 defaulten auf Stufe 0, Lizenz-Cap-Anhebung). Alte Saves laden unverändert. Tests
 56/56, check/build grün, 14-d-Sim & `scripts/diagnose.mjs` (Vorher/Nachher) ohne
 Runaway/NaN/Stall.
+
+### 9.30 Phase 28 — End-to-End-Playtest, Ziel-Politur & UX-Feinschliff (keine Save-Änderung)
+
+Nach den vielen Systemen der Phasen 11–27 ein **diagnosegetriebener Politur-Durchlauf**
+statt neuer Feature-Schicht: erst messen, dann gezielt fixen (keine Großumbauten).
+
+- **A — End-to-End-Playtest (`scripts/playtest.mjs`, neu):** baut **20 repräsentative
+  Spielstände** (frischer Start → Very Late 1 Sx, Parzelle 12/20/36, Shop/Kompost
+  maxed, Lizenz III/IV/V, Hanf/Zier/Magie/Holz/Saatlabor/Achievement-Builds) und
+  prüft pro Stand durch die **echten** Core-Funktionen zwölf Fragen: nächste
+  sinnvolle Pflanze/Shop/Kompost/Lizenz/Auftrag/Erfolg, Zeit bis Fortschritt,
+  relevante/tote/dominante Systeme, Ziel-Panel-Güte und ob mehrere echte Optionen
+  bestehen. Ergebnis: **alle 22 Szenarien haben ≥3 offene Optionen**; „tote" Systeme
+  (mastery/spec/beauty) sind **kontextuell korrekt** (Build-Opt-in, leuchten sobald
+  man sie bespielt — verifiziert).
+- **C — Ziel-Panel kritisch verbessert (Kern-Fix):** Die Diagnose zeigte EIN klares
+  Problem — das Ziel-Panel headlinte in **fast jedem** Stand das triviale „Gießkanne
+  kaufen, bereit" (auch bei 570 Qi Gold). Ursache: `upgradeGoal` zeigte stets das
+  *billigste* Upgrade, das bei viel Gold sofort „bereit" (Fraction 1) war und oben
+  klebte. Fix: `upgradeGoal` zielt jetzt auf das **billigste noch nicht bezahlbare**
+  Upgrade (echte Sparleiste); ist alles bezahlbar, wird es ein **Chore-Hinweis**
+  (bevorzugt den endlosen Edelkompost-Sink) statt Headline. Neues `Goal.chore`-Flag:
+  triviale „jederzeit"-Ziele (billiges Upgrade, Los einlösen, Skillpunkt) sortieren
+  **innerhalb ihres Horizonts hinter** echte Fortschrittsziele, sind im Panel optisch
+  ruhiger (Opacity) und zählen **nicht** mehr in den HUD-„bereit"-Badge. Neuer
+  `goalBoard()`-Export **deckelt das Panel auf ≤3 Ziele je Horizont** (war ~12) →
+  scannbar auf Mobile. Resultat laut Playtest: dominantes Ziel ist nun durchweg
+  substanziell (Pflanze/echtes Spar-Upgrade/Parzelle), nie mehr der 150-Gold-Klick.
+- **B/D/H — geprüft, gesund:** Fresh Start (Szenario 1) gibt klare erste Ziele
+  (Gießkanne sparen, Schnittlauch, Parzelle, Auftrag) ohne Quest-Softlock (Phase-25-
+  Skalierung greift); Shop/Kompost/Lizenz-UI stellt gesperrte Tiers („ab Parzelle N"),
+  `repeatable` (∞-Badge, „Stufe N") und Lizenz-Benefit bereits klar dar (Phase 27);
+  Zahlenformat (`format.ts`) sauber, Goal-Fractions NaN-gehärtet (`clamp01`).
+- **J — Regression-Schutz:** Phase-28-Test deckt ab: Upgrade-Ziel ist echtes Spar-
+  Ziel (nicht „bereit"), Chores dominieren nie, Chore-Sortierung, `goalBoard`-
+  Deckelung, Very-Late hat ≥3 substanzielle Optionen über ≥3 Horizonte, keine
+  NaN/Infinity-Fractions.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 28). Tests 57/57, check/build grün,
+14-d-Sim ohne Runaway/NaN/Stall, `playtest.mjs`/`diagnose.mjs` sauber. **Offen →
+Phase 29:** echte Inventar-Fülle in Auftrags-Ziel-Wirtschaftlichkeit modellieren,
+optionale „Build-Entdeck"-Ziele für noch nicht begonnene Spielweisen.

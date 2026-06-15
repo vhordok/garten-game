@@ -37,6 +37,10 @@ export interface Goal {
   fraction: number
   /** true once the goal is reachable/affordable right now */
   ready: boolean
+  /** PHASE 28: a trivial "you can do this anytime" nudge (buy a cheap upgrade,
+   * cash a ticket). Useful, but it must never dominate the board or inflate the
+   * HUD ready-badge — sorts below substantive goals within its horizon. */
+  chore?: boolean
 }
 
 const clamp01 = (v: number) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0)
@@ -87,27 +91,52 @@ function plantGoal(state: GameState): Goal | null {
   return null
 }
 
-/** Cheapest UNLOCKED upgrade you are closest to affording. */
+/**
+ * Next upgrade worth saving for (PHASE 28 rework). The old version always pointed
+ * at the CHEAPEST upgrade, so a rich player saw the same trivial "Gießkanne,
+ * bereit" headline at every stage. Instead: target the cheapest upgrade you can't
+ * yet afford (a real progress bar). Only when literally everything unlocked is
+ * already affordable does it become a low-priority "spend surplus" chore — and
+ * then it prefers the endless repeatable sink (the real late-game gold home).
+ */
 function upgradeGoal(state: GameState): Goal | null {
-  let best: { def: (typeof UPGRADES)[number]; cost: number } | null = null
+  const open: { def: (typeof UPGRADES)[number]; cost: number }[] = []
   for (const def of UPGRADES) {
     // PHASE 27: skip parcel-gated late tiers — they get their own shopGoal
     if (def.unlockParcel && state.parcels < def.unlockParcel) continue
     const cost = nextUpgradeCost(def, state)
     if (cost === null) continue
-    if (!best || cost < best.cost) best = { def, cost }
+    open.push({ def, cost })
   }
-  if (!best) return null
+  if (open.length === 0) return null
+  // a genuine savings target: the cheapest one still out of reach
+  const target = open.filter((o) => state.money < o.cost).sort((a, b) => a.cost - b.cost)[0]
+  if (target) {
+    return {
+      id: 'upgrade',
+      tier: 'kurz',
+      icon: '🛠️',
+      label: `Nächstes Upgrade: ${target.def.name}`,
+      reward: `Stufe ${upgradeLevel(state, target.def.id) + 1}`,
+      current: state.money,
+      target: target.cost,
+      fraction: clamp01(state.money / target.cost),
+      ready: false,
+    }
+  }
+  // everything affordable → a spend nudge (prefer the endless sink), never dominant
+  const spend = open.find((o) => o.def.repeatable) ?? open.sort((a, b) => b.cost - a.cost)[0]
   return {
     id: 'upgrade',
     tier: 'kurz',
     icon: '🛠️',
-    label: `Nächstes Upgrade: ${best.def.name}`,
-    reward: `Stufe ${upgradeLevel(state, best.def.id) + 1}`,
-    current: Math.min(state.money, best.cost),
-    target: best.cost,
-    fraction: clamp01(state.money / best.cost),
-    ready: state.money >= best.cost,
+    label: `Upgrade kaufen: ${spend.def.name}`,
+    reward: `Stufe ${upgradeLevel(state, spend.def.id) + 1}`,
+    current: spend.cost,
+    target: spend.cost,
+    fraction: 1,
+    ready: true,
+    chore: true,
   }
 }
 
@@ -422,6 +451,7 @@ function skillGoal(state: GameState): Goal | null {
     target: pts,
     fraction: 1,
     ready: true,
+    chore: true,
   }
 }
 
@@ -439,6 +469,7 @@ function scratchGoal(state: GameState): Goal | null {
     target: t,
     fraction: 1,
     ready: true,
+    chore: true,
   }
 }
 
@@ -473,11 +504,6 @@ const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endg
  * applies, sorted short → endgame. Always returns several goals across tiers so
  * the player can pick what to chase.
  */
-// PHASE 27: always-ready "chore" reminders (cash in this, spend that). They are
-// useful nudges but shouldn't crowd out goals the player actually has to work
-// toward, so within a tier they sort BELOW substantive in-progress goals.
-const CHORE_IDS = new Set(['scratch', 'skill'])
-
 export function activeGoals(state: GameState): Goal[] {
   const goals = [
     plantGoal(state),
@@ -501,12 +527,28 @@ export function activeGoals(state: GameState): Goal[] {
   goals.sort((a, b) => {
     const t = TIER_ORDER[a.tier] - TIER_ORDER[b.tier]
     if (t !== 0) return t
-    // demote trivial always-ready chores beneath real progress within the tier
-    const chore = (CHORE_IDS.has(a.id) ? 1 : 0) - (CHORE_IDS.has(b.id) ? 1 : 0)
+    // PHASE 28: trivial "anytime" chores (cheap upgrade, cash a ticket, spend a
+    // skill point) sort BELOW substantive goals within the same horizon, so the
+    // board never headlines the same boring point at every stage.
+    const chore = (a.chore ? 1 : 0) - (b.chore ? 1 : 0)
     if (chore !== 0) return chore
     return b.fraction - a.fraction
   })
   return goals
+}
+
+/**
+ * PHASE 28: the goal BOARD shown in the UI — capped per horizon so the panel
+ * stays scannable on mobile (was dumping all ~12 goals). Keeps the strongest few
+ * of each tier (already sorted), so the player still sees several real options
+ * across short → endgame without an overwhelming wall.
+ */
+export function goalBoard(state: GameState, perTier = 3): Goal[] {
+  const counts: Record<string, number> = {}
+  return activeGoals(state).filter((g) => {
+    counts[g.tier] = (counts[g.tier] ?? 0) + 1
+    return counts[g.tier] <= perTier
+  })
 }
 
 export const TIER_LABEL: Record<GoalTier, string> = {
