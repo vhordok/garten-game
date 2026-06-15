@@ -33,7 +33,7 @@ import {
   yieldMultiplier,
 } from './modifiers'
 import { generateQuest, questReserved, questStreakBonus, refillQuests } from './quests'
-import { crossEligibility, variantBonus } from './seedlab'
+import { crossEligibility, effectiveGoldCost, variantBonus, variantEventBonus } from './seedlab'
 import { availableSkillPoints, skillBonus, skillLevel } from './skills'
 import { grantXp, type LevelUp } from './xp'
 
@@ -432,7 +432,8 @@ export function maxPlots(state: GameState): number {
 export function compostGain(state: GameState): number {
   // PHASE 17: the Tiefwurzel skill boosts the raw lifetime-based gain
   // PHASE 18: a Komposttag event adds +50 % to the next parcel's compost
-  const event = state.weather.id === 'komposttag' ? 1.5 : 1
+  // PHASE 21: the Humusveilchen variant amplifies Komposttag
+  const event = state.weather.id === 'komposttag' ? 1.5 + variantEventBonus(state, 'komposttag') : 1
   const fromLifetime = Math.floor(
     Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase) *
       (1 + skillBonus(state, 'compostGain') + variantBonus(state, 'compostGain')) *
@@ -588,10 +589,17 @@ export function crossPlants(parentA: string, parentB: string): CrossOutcome {
     return { ok: false, variantId: res.variant?.id ?? null, reason: res.reason }
   }
   const v = res.variant
-  s.money -= v.goldCost
+  s.money -= effectiveGoldCost(s, v)
   if (v.compostCost > 0) {
     s.compost -= v.compostCost
     s.compostSpent += v.compostCost
+  }
+  // PHASE 21: consume harvested produce (only the FREE surplus is ever spent —
+  // crossEligibility already verified free ≥ need, so orders stay safe)
+  for (const c of v.produceCost ?? []) {
+    const left = (s.inventory[c.plantId] ?? 0) - c.amount
+    if (left > 0) s.inventory[c.plantId] = left
+    else delete s.inventory[c.plantId]
   }
   s.discoveredVariants.push(v.id)
   notify()

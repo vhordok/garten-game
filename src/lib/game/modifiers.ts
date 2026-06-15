@@ -6,7 +6,7 @@ import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { achievementBonus } from './achievements'
-import { variantBonus } from './seedlab'
+import { variantBonus, variantEventBonus } from './seedlab'
 import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
 import { categorySpecById, type SpecKind } from '../data/specializations'
@@ -86,7 +86,8 @@ export function yieldMultiplier(state: GameState): number {
   const meta =
     1 + beautyMilestoneBonus(gardenBeauty(state), 'yield') + skillBonus(state, 'yield') + variantBonus(state, 'yield')
   // PHASE 18: Erntefest event lifts every harvest while it lasts
-  const event = state.weather.id === 'erntefest' ? 1.5 : 1
+  // PHASE 21: the Weltenhybride variant amplifies Erntefest
+  const event = state.weather.id === 'erntefest' ? 1.5 + variantEventBonus(state, 'erntefest') : 1
   return (
     multiplierFor(state, 'yield') *
     (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
@@ -246,7 +247,7 @@ export function gardenBeauty(state: GameState): number {
   // PHASE 17: the Schaugarten skill amplifies the whole beauty stat
   // PHASE 18: the Gartenschau event boosts beauty's pull while it lasts
   // PHASE 20: a discovered Zier variant (Prachtorchidee) adds to beauty
-  const event = state.weather.id === 'gartenschau' ? 1.5 : 1
+  const event = state.weather.id === 'gartenschau' ? 1.5 + variantEventBonus(state, 'gartenschau') : 1
   const raw = bonus * (1 + skillBonus(state, 'beauty') + variantBonus(state, 'beauty')) * event
   // PHASE 18 softcap: linear up to the cap, compressed above → a Zier build
   // stays strong but stops being the automatic best strategy (diminishing
@@ -303,14 +304,14 @@ export function critChanceBonus(state: GameState): number {
   return effectBonus(state, 'critChance') + beautyMilestoneBonus(gardenBeauty(state), 'crit') + skillBonus(state, 'crit')
 }
 
-/** Shooting-star nights triple every crit chance. */
+/** Shooting-star nights triple every crit chance (Sternenblume boosts it). */
 export function critWeatherMult(state: GameState): number {
-  return state.weather.id === 'sternschnuppen' ? 3 : 1
+  return state.weather.id === 'sternschnuppen' ? 3 + variantEventBonus(state, 'sternschnuppen') : 1
 }
 
-/** Meistertag doubles mastery XP gained from harvests while it lasts (PHASE 18). */
+/** Meistertag doubles mastery XP gained from harvests (Meisterhanf boosts it). */
 export function eventMasteryMult(state: GameState): number {
-  return state.weather.id === 'meistertag' ? 2 : 1
+  return state.weather.id === 'meistertag' ? 2 + variantEventBonus(state, 'meistertag') : 1
 }
 
 /**

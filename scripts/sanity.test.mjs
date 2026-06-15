@@ -87,7 +87,7 @@ import {
 import { ACHIEVEMENTS } from '../src/lib/data/achievements.ts'
 import { achievementBonus, achievementSkillPoints, reachedTier } from '../src/lib/game/achievements.ts'
 import { VARIANTS } from '../src/lib/data/variants.ts'
-import { crossEligibility, isDiscovered, variantBonus } from '../src/lib/game/seedlab.ts'
+import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceStatus, variantBonus, variantEventBonus } from '../src/lib/game/seedlab.ts'
 import { activeGoals } from '../src/lib/game/goals.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
@@ -1386,12 +1386,14 @@ test('PHASE 20: seed lab crosses, discovers, applies bonus, persists', () => {
     const s = fresh()
     s.totalEarned = 1e6 // unlock both parents
     s.money = 1e6
+    s.inventory = { basilikum: 100, tomate: 100 } // PHASE 21: produce for the recipe
     const v = VARIANTS.find((x) => x.id === 'mediterrane-tomate')
     const moneyBefore = s.money
     const yieldBefore = yieldMultiplier(s)
     const out = crossPlants('basilikum', 'tomate')
     assert.ok(out.ok && out.variantId === 'mediterrane-tomate')
     assert.equal(s.money, moneyBefore - v.goldCost, 'gold cost deducted')
+    assert.equal(s.inventory['basilikum'], 80, 'produce consumed (20 basil)')
     assert.ok(isDiscovered(s, 'mediterrane-tomate'))
     assert.ok(Math.abs(variantBonus(s, 'yield') - v.value) < 1e-9, 'variant yield bonus registered')
     assert.ok(yieldMultiplier(s) > yieldBefore, 'discovered variant lifts yield')
@@ -1434,6 +1436,53 @@ test('PHASE 20: seed lab crosses, discovers, applies bonus, persists', () => {
     fresh()
     assert.notEqual(importSave(old), null)
     assert.deepEqual(getState().discoveredVariants, [], 'old saves load with an empty collection')
+  })
+})
+
+test('PHASE 21: produce costs (free only), event synergy, skill discount', () => {
+  withBoringRng(() => {
+    // ── produce costs consume only FREE (unreserved) storage ──
+    const s = fresh()
+    s.totalEarned = 1e6
+    s.money = 1e9
+    // recipe needs 20 basilikum + 10 tomate; give 25 basil but reserve most via a quest
+    s.inventory = { basilikum: 25, tomate: 50 }
+    s.quests = [{
+      id: 1, kind: 'single', items: [{ plantId: 'basilikum', amount: 20 }],
+      reward: 1, rewardTickets: 0, rewardCompost: 0, xp: 1, tier: 'bronze', client: 'X', skipCooldown: 0,
+    }]
+    // only 25 − 20 = 5 basil are free → not enough for the 20 needed
+    assert.equal(freeStock(s, 'basilikum'), 5, 'reserved stock is not free')
+    assert.equal(crossEligibility(s, 'basilikum', 'tomate').status, 'missing-produce', 'reserved stock blocks the cross')
+    assert.equal(crossPlants('basilikum', 'tomate').ok, false, 'cross refused on missing free produce')
+    assert.equal(s.inventory['basilikum'], 25, 'nothing consumed when refused')
+
+    // drop the order → now the basil is free and the cross succeeds, consuming produce
+    s.quests = []
+    const produce = produceStatus(s, { ...crossEligibility(s, 'basilikum', 'tomate').variant })
+    assert.ok(produce.every((p) => p.ok), 'all produce free now')
+    assert.ok(crossPlants('basilikum', 'tomate').ok, 'cross works with free produce')
+    assert.equal(s.inventory['basilikum'], 5, '20 basil consumed')
+    assert.equal(s.inventory['tomate'], 40, '10 tomate consumed')
+
+    // ── event synergy: discovering Humusveilchen boosts Komposttag ──
+    const e = fresh()
+    e.totalEarned = 1e18
+    e.lifetimeEarned = 1e12
+    assert.equal(variantEventBonus(e, 'komposttag'), 0)
+    e.discoveredVariants = ['humusveilchen']
+    assert.ok(Math.abs(variantEventBonus(e, 'komposttag') - 0.5) < 1e-9, 'variant tied to its event')
+    e.weather = { id: 'komposttag', remaining: 60 }
+    const withVariant = compostGain(e)
+    e.discoveredVariants = []
+    assert.ok(withVariant > compostGain(e), 'Humusveilchen makes Komposttag stronger')
+
+    // ── skill discount lowers the effective gold cost ──
+    const g = fresh()
+    const v = { goldCost: 1e6, value: 0, parents: ['a', 'b'] }
+    assert.equal(effectiveGoldCost(g, v), 1e6, 'no discount without the skill')
+    g.skills = { saatgutforschung: 2 } // −30 %
+    assert.equal(effectiveGoldCost(g, v), 700000, 'Saatgut-Forschung discounts gold cost')
   })
 })
 
