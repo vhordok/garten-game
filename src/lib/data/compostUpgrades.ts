@@ -122,6 +122,34 @@ export const COMPOST_UPGRADES: CompostUpgradeDef[] = [
     unlockParcel: 16,
     repeatable: true,
   },
+  // ── PHASE 27: zwei weitere endlose Sinks, damit JEDER Compost-Effekt einen
+  // Spät-Pfad hat (vorher fehlten passive Holz-Einnahmen und Offline). Greifen
+  // erst sehr spät (Parzelle 18/20), kosten viel — saugen das gestaute Endgame-
+  // Kompost ab, ohne den Multiplikator zu sprengen (geometrische Kosten).
+  {
+    id: 'tiefenmoor',
+    name: 'Tiefenmoor',
+    desc: '+6 % passive Holz-Einnahmen pro Stufe — endlos, Kosten steigen stetig',
+    effect: 'passive',
+    perLevel: 0.06,
+    maxLevel: 999,
+    baseCost: 200,
+    costFactor: 1.5,
+    unlockParcel: 18,
+    repeatable: true,
+  },
+  {
+    id: 'ewighumus',
+    name: 'Ewighumus',
+    desc: '+1 h Offline-Wachstum pro Stufe — endlos, Kosten steigen stetig',
+    effect: 'offline',
+    perLevel: 1,
+    maxLevel: 999,
+    baseCost: 260,
+    costFactor: 1.55,
+    unlockParcel: 20,
+    repeatable: true,
+  },
 ]
 
 const byId = new Map(COMPOST_UPGRADES.map((u) => [u.id, u]))

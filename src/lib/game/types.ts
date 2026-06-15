@@ -86,6 +86,11 @@ export interface UpgradeDef {
   baseCost: number
   /** cost(level) = baseCost × costFactor^level */
   costFactor: number
+  /** PHASE 27 late tier: only buyable once this many parcels are leased (0 = from
+   * the start) — gates Very-Late shop tiers behind prestige progress. */
+  unlockParcel?: number
+  /** PHASE 27: endless gold sink (maxLevel acts as a high cap, UI shows no /max). */
+  repeatable?: boolean
 }
 
 export interface PlotState {
@@ -226,7 +231,8 @@ export interface GameState {
   /** highest CLAIMED achievement tier per track (0 = none); survives prestige.
    * Permanent rewards + skill points derive from this (PHASE 19). */
   achievementTiers: Record<string, number>
-  /** cannabis license level owned (0–3), survives prestige */
+  /** cannabis license level owned (0–5; IV/V are PHASE 27 trade licenses that
+   * boost quest rewards instead of unlocking plants), survives prestige */
   licenses: number
   /** personal records (survive prestige) */
   records: { bestHarvest: number; longestCombo: number; biggestWin: number; bestBeauty: number }

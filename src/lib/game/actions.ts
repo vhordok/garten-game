@@ -10,7 +10,7 @@ import { skillById } from '../data/skills'
 import { PLANTS, plantById } from '../data/plants'
 import { bestHarvestValue, masteryPrizePlant, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
 import { UPGRADES, upgradeById } from '../data/upgrades'
-import { LICENSES } from '../data/licenses'
+import { LICENSES, licenseQuestBonus } from '../data/licenses'
 import { weatherById } from '../data/weather'
 import {
   comboMultiplier,
@@ -503,6 +503,16 @@ export function upgradeLevel(state: GameState, upgradeId: string): number {
   return state.upgrades[upgradeId] ?? 0
 }
 
+/**
+ * PHASE 27: late-tier shop unlock. Most upgrades are available from the start;
+ * the Very-Late tiers require leased parcels (which pace via prestige), so a
+ * racing post-prestige multiplier can't buy the whole shop at once. Only gates
+ * NEW purchases — an already-owned level is never affected. Default = open.
+ */
+export function isUpgradeUnlocked(def: UpgradeDef, state: GameState): boolean {
+  return !def.unlockParcel || state.parcels >= def.unlockParcel
+}
+
 /** Cost of the next level, or null when maxed out. */
 export function nextUpgradeCost(def: UpgradeDef, state: GameState): number | null {
   const level = upgradeLevel(state, def.id)
@@ -513,7 +523,7 @@ export function nextUpgradeCost(def: UpgradeDef, state: GameState): number | nul
 export function buyUpgrade(upgradeId: string): boolean {
   const s = getState()
   const def = upgradeById(upgradeId)
-  if (!def) return false
+  if (!def || !isUpgradeUnlocked(def, s)) return false
   const cost = nextUpgradeCost(def, s)
   if (cost === null || s.money < cost) return false
   s.money -= cost
@@ -618,9 +628,10 @@ export function crossPlants(parentA: string, parentB: string): CrossOutcome {
   return { ok: true, variantId: v.id, reason: res.reason }
 }
 
-/** True if any upgrade level is currently affordable (HUD badge). */
+/** True if any unlocked upgrade level is currently affordable (HUD badge). */
 export function anyUpgradeAffordable(state: GameState): boolean {
   return UPGRADES.some((def) => {
+    if (!isUpgradeUnlocked(def, state)) return false
     const cost = nextUpgradeCost(def, state)
     return cost !== null && state.money >= cost
   })
@@ -703,7 +714,8 @@ export function fulfillQuest(questId: number): QuestReward | null {
     beautyMilestoneBonus(gardenBeauty(s), 'questReward') +
     skillBonus(s, 'questReward') +
     achievementBonus(s, 'questReward') +
-    variantBonus(s, 'questReward')
+    variantBonus(s, 'questReward') +
+    licenseQuestBonus(s.licenses) // PHASE 27: Lizenz IV/V machen Aufträge wieder lohnend
   const payout = Math.round(quest.reward * (1 + questStreakBonus(s)) * rewardBonus)
   s.money += payout
   s.totalEarned += payout

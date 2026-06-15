@@ -148,5 +148,11 @@ späten Pflanzen brauchen zusätzlich Mindest-Parzellen P6…P36; Parzellen wach
 ~1/Prestige + überstehen Reset → pacen die Spitze, während der Multiplikator
 weiter beschleunigt; kein Nerf, greift nur beim Säen/Auswählen, bestehende Beete
 laufen via plantById weiter, questPool/Hotbar/Ziel-Panel respektieren das Gate).
-Shop-/Kompost-/Lizenz-Late-Sinks → Phase 27. Keine Save-Änderung. 53 Sorten
-(+1 Spezial) in 8 Kategorien, Stand SAVE_VERSION 27.
+Keine Save-Änderung. Phase 27 (§9.29): Late-Game-Sinks vollständig umgesetzt —
+7 parzellen-gegatete Shop-Stufen (UpgradeDef.unlockParcel) inkl. endlosem Gold-Sink
+Edelkompost (repeatable), 2 weitere endlose Kompost-Sinks (Tiefenmoor/Ewighumus →
+jeder Effekt hat einen Endlos-Pfad), Lizenz-Tiers IV/V (level:number+benefit, keine
+neuen Pflanzen, licenseQuestBonus +20/+30 % Auftragsbelohnung, Cap 3→5),
+fulfillQuest zahlt Lizenz-Bonus, Ziel-Panel shopGoal+licenseGoal & triviale ready-
+Ziele sortieren hinter Fortschritt. Reiner Save-Passthrough. 53 Sorten (+1 Spezial)
+in 8 Kategorien, Stand SAVE_VERSION 28.

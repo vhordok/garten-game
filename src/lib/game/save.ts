@@ -15,7 +15,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 27
+export const SAVE_VERSION = 28
 
 interface SaveEnvelope {
   version: number
@@ -198,6 +198,11 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v26 → v27: PHASE 20 seed lab — new `discoveredVariants` id list. sanitize()
       // defaults it to [] (empty collection), so old saves are unaffected.
       return { ...envelope, version: 27 }
+    case 27:
+      // v27 → v28: PHASE 27 late-game sinks. No new persisted fields — new shop
+      // upgrades + compost sinks default to level 0 for old saves, licenses IV/V
+      // just lift the existing `licenses` clamp from 3 to 5. Pure passthrough.
+      return { ...envelope, version: 28 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -381,7 +386,7 @@ function sanitize(raw: unknown): GameState {
     }
   }
   state.achievementTiers = achievementTiers
-  state.licenses = Math.floor(clampNumber(r.licenses, 0, 0, 3))
+  state.licenses = Math.floor(clampNumber(r.licenses, 0, 0, 5))
 
   const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
   state.records = {

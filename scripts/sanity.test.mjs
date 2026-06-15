@@ -13,7 +13,8 @@ globalThis.localStorage ??= {
 import { CONFIG } from '../src/lib/data/config.ts'
 import { PLANTS, SPECIAL_PLANTS, plantById, produceName, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
-import { upgradeById } from '../src/lib/data/upgrades.ts'
+import { UPGRADES, upgradeById } from '../src/lib/data/upgrades.ts'
+import { LICENSES, licenseQuestBonus } from '../src/lib/data/licenses.ts'
 import {
   buyCompostUpgrade,
   buyLicense,
@@ -40,6 +41,7 @@ import {
   nextUpgradeCost,
   quickSellAmount,
   isPlantUnlocked,
+  isUpgradeUnlocked,
   plotsWithPlant,
   refundScratchTicket,
   selectPlant,
@@ -1705,6 +1707,89 @@ test('PHASE 26: parcel soft-gate paces the very-late ladder (no instant skip)', 
     assert.ok(plantById('urweltbaum'), 'gated plant still resolves via plantById')
     tick(planted, 60)
     assert.equal(planted.plots[0].plantId, 'urweltbaum', 'existing gated plot keeps growing, never bricks')
+  })
+})
+
+test('PHASE 27: parcel-gated shop tiers, trade licenses, late compost sinks, goals', () => {
+  withBoringRng(() => {
+    // --- B: late shop tiers are parcel-gated (pace via prestige) -------------
+    const gatedUp = UPGRADES.filter((u) => u.unlockParcel)
+    assert.ok(gatedUp.length >= 6, 'several late-tier upgrades are parcel-gated')
+    const edel = upgradeById('edelkompost')
+    assert.ok(edel && edel.repeatable && edel.maxLevel > 100, 'edelkompost is the endless gold sink')
+
+    const s = fresh()
+    s.money = 1e24 // can afford anything
+    s.parcels = 1
+    const tier = gatedUp[0]
+    assert.equal(isUpgradeUnlocked(tier, s), false, 'gated tier locked at 1 parcel')
+    assert.equal(buyUpgrade(tier.id), false, 'cannot buy a parcel-locked tier yet')
+    assert.equal(upgradeLevel(s, tier.id), 0)
+    s.parcels = tier.unlockParcel
+    assert.equal(isUpgradeUnlocked(tier, s), true, 'unlocks once enough parcels are leased')
+    assert.ok(buyUpgrade(tier.id), 'buyable at/above the parcel gate')
+    assert.equal(upgradeLevel(s, tier.id), 1)
+    // un-gated upgrades remain available from the start
+    assert.equal(isUpgradeUnlocked(upgradeById('giesskanne'), fresh()), true)
+
+    // --- D: trade licenses IV/V exist and pay a permanent quest bonus --------
+    assert.ok(LICENSES.find((l) => l.level === 4), 'Lizenz IV exists')
+    assert.ok(LICENSES.find((l) => l.level === 5), 'Lizenz V exists')
+    assert.equal(licenseQuestBonus(3), 0, 'no quest bonus below Lizenz IV')
+    assert.equal(licenseQuestBonus(4), 0.2)
+    assert.ok(Math.abs(licenseQuestBonus(5) - 0.5) < 1e-9, 'IV+V stack to +50 %')
+
+    // buying past license 3 works (cap raised to 5)
+    const lic = fresh()
+    lic.licenses = 3
+    lic.parcels = 12
+    lic.money = LICENSES.find((l) => l.level === 4).cost
+    assert.ok(buyLicense(), 'Lizenz IV is purchasable past III')
+    assert.equal(getState().licenses, 4)
+
+    // --- E: licenses make orders pay more (same order, more reward) ----------
+    const payoutWith = (licenses) => {
+      const g = fresh()
+      g.licenses = licenses
+      g.inventory['basilikum'] = 100000
+      g.quests = [{
+        id: 1, kind: 'single', items: [{ plantId: 'basilikum', amount: 10 }],
+        reward: 1000, rewardTickets: 0, rewardCompost: 0, xp: 0, tier: 'bronze', client: 'X', skipCooldown: 0,
+      }]
+      replaceState(g)
+      return fulfillQuest(1).reward
+    }
+    assert.ok(payoutWith(5) > payoutWith(0), 'trade licenses raise quest payouts')
+
+    // --- C: every compost effect now has an endless late sink ----------------
+    const repeatables = COMPOST_UPGRADES.filter((u) => u.repeatable)
+    const effects = new Set(repeatables.map((u) => u.effect))
+    for (const eff of ['yield', 'growth', 'questReward', 'passive', 'offline']) {
+      assert.ok(effects.has(eff), `endless compost sink for ${eff}`)
+    }
+
+    // --- F: goal panel surfaces shop + license goals, demotes trivial chores -
+    const g = fresh()
+    g.parcels = 3 // below the late shop gates → a shop goal appears
+    g.scratchTickets = 2 // a trivial always-ready chore
+    const goals = activeGoals(g)
+    assert.ok(goals.find((x) => x.id === 'shop'), 'shop goal guides toward late tiers')
+    assert.ok(goals.find((x) => x.id === 'license'), 'license goal is shown')
+    // within a tier, a trivial ready chore never sorts above a substantive goal
+    for (let i = 1; i < goals.length; i++) {
+      if (goals[i - 1].id === 'scratch' && goals[i].tier === goals[i - 1].tier) {
+        assert.ok(['scratch', 'skill'].includes(goals[i].id), 'chores grouped, not crowding real goals')
+      }
+    }
+
+    // --- save safety: licenses up to 5 survive a roundtrip -------------------
+    const save = fresh()
+    save.licenses = 5
+    replaceState(save)
+    const code = exportSave()
+    fresh()
+    importSave(code)
+    assert.equal(getState().licenses, 5, 'license V survives save/load')
   })
 })
 
