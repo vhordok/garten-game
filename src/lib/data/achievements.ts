@@ -20,6 +20,7 @@ export type AchCategory =
   | 'meisterschaft'
   | 'spezialisierung'
   | 'level'
+  | 'varianten'
 
 export const TIER_NAMES = ['Bronze', 'Silber', 'Gold', 'Platin', 'Diamant', 'Legendär'] as const
 export type TierName = (typeof TIER_NAMES)[number]
@@ -215,6 +216,15 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     metric: (s) => s.level,
     format: (v) => `Lv ${Math.round(v)}`,
     tiers: track([10, 25, 50, 100, 250, 1000], 'yield', YIELD),
+  },
+  {
+    id: 'varianten',
+    name: 'Saatforscher',
+    category: 'varianten',
+    icon: '🧬',
+    metric: (s) => s.discoveredVariants.length,
+    format: fmtPlain,
+    tiers: track([1, 2, 4, 6, 8, 10], 'growth', GROWTH),
   },
 ]
 

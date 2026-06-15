@@ -33,6 +33,7 @@ import {
   yieldMultiplier,
 } from './modifiers'
 import { generateQuest, questReserved, questStreakBonus, refillQuests } from './quests'
+import { crossEligibility, variantBonus } from './seedlab'
 import { availableSkillPoints, skillBonus, skillLevel } from './skills'
 import { grantXp, type LevelUp } from './xp'
 
@@ -285,7 +286,7 @@ function harvestInternal(s: GameState, index: number, comboMult: number): Harves
   // PHASE 18: a Meistertag event doubles it
   s.mastery[def.id] =
     (s.mastery[def.id] ?? 0) +
-    Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery')) * eventMasteryMult(s))
+    Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery') + variantBonus(s, 'mastery')) * eventMasteryMult(s))
   s.stats.harvested += units
   if (crit.tier !== 'none') s.stats.crits += 1
   if (def.regrowTime) {
@@ -433,7 +434,9 @@ export function compostGain(state: GameState): number {
   // PHASE 18: a Komposttag event adds +50 % to the next parcel's compost
   const event = state.weather.id === 'komposttag' ? 1.5 : 1
   const fromLifetime = Math.floor(
-    Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase) * (1 + skillBonus(state, 'compostGain')) * event
+    Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase) *
+      (1 + skillBonus(state, 'compostGain') + variantBonus(state, 'compostGain')) *
+      event
   )
   // subtract compost already CLAIMED (pool + spent) so spending on the compost
   // garden can't double-dip into a bigger next gain (PHASE 13)
@@ -566,6 +569,35 @@ export function respecSkills(): boolean {
   return true
 }
 
+export interface CrossOutcome {
+  ok: boolean
+  variantId: string | null
+  /** German reason on failure */
+  reason: string
+}
+
+/**
+ * Cross two parent plants in the seed lab (PHASE 20). On success, deducts the
+ * gold/compost cost and adds the discovered variant to the collection (permanent,
+ * survives prestige). Discovery is deterministic — no sub-1% rolls.
+ */
+export function crossPlants(parentA: string, parentB: string): CrossOutcome {
+  const s = getState()
+  const res = crossEligibility(s, parentA, parentB)
+  if (res.status !== 'ok' || !res.variant) {
+    return { ok: false, variantId: res.variant?.id ?? null, reason: res.reason }
+  }
+  const v = res.variant
+  s.money -= v.goldCost
+  if (v.compostCost > 0) {
+    s.compost -= v.compostCost
+    s.compostSpent += v.compostCost
+  }
+  s.discoveredVariants.push(v.id)
+  notify()
+  return { ok: true, variantId: v.id, reason: res.reason }
+}
+
 /** True if any upgrade level is currently affordable (HUD badge). */
 export function anyUpgradeAffordable(state: GameState): boolean {
   return UPGRADES.some((def) => {
@@ -650,7 +682,8 @@ export function fulfillQuest(questId: number): QuestReward | null {
     compostUpgradeBonus(s, 'questReward') +
     beautyMilestoneBonus(gardenBeauty(s), 'questReward') +
     skillBonus(s, 'questReward') +
-    achievementBonus(s, 'questReward')
+    achievementBonus(s, 'questReward') +
+    variantBonus(s, 'questReward')
   const payout = Math.round(quest.reward * (1 + questStreakBonus(s)) * rewardBonus)
   s.money += payout
   s.totalEarned += payout

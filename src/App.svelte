@@ -20,6 +20,7 @@
   import QuestPanel from './lib/ui/QuestPanel.svelte'
   import Scene from './lib/ui/Scene.svelte'
   import ScratchPanel from './lib/ui/ScratchPanel.svelte'
+  import SeedLabPanel from './lib/ui/SeedLabPanel.svelte'
   import SkillsPanel from './lib/ui/SkillsPanel.svelte'
   import SettingsPanel from './lib/ui/SettingsPanel.svelte'
   import ShopPanel from './lib/ui/ShopPanel.svelte'
@@ -32,7 +33,7 @@
   let { offline }: { offline: OfflineReport | null } = $props()
 
   let openPanel = $state<
-    | 'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'goals' | 'skills' | 'tutorial' | null
+    | 'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'goals' | 'skills' | 'seedlab' | 'tutorial' | null
   >(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
@@ -122,6 +123,7 @@
     onOpenAchievements={() => (openPanel = 'achievements')}
     onOpenGoals={() => (openPanel = 'goals')}
     onOpenSkills={() => (openPanel = 'skills')}
+    onOpenSeedLab={() => (openPanel = 'seedlab')}
   />
   <main bind:this={stageEl}>
     <!-- PHASE 16: in-flow notification zone — event banners reserve space here,
@@ -164,6 +166,8 @@
   <GoalsPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'skills'}
   <SkillsPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'seedlab'}
+  <SeedLabPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'tutorial'}
   <TutorialPanel onClose={closeTutorial} />
 {/if}

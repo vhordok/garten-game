@@ -22,6 +22,7 @@ import {
   buySpecialization,
   buyUpgrade,
   catchFirefly,
+  crossPlants,
   claimDaily,
   clearAllPlots,
   clearPlot,
@@ -85,6 +86,8 @@ import {
 } from '../src/lib/game/modifiers.ts'
 import { ACHIEVEMENTS } from '../src/lib/data/achievements.ts'
 import { achievementBonus, achievementSkillPoints, reachedTier } from '../src/lib/game/achievements.ts'
+import { VARIANTS } from '../src/lib/data/variants.ts'
+import { crossEligibility, isDiscovered, variantBonus } from '../src/lib/game/seedlab.ts'
 import { activeGoals } from '../src/lib/game/goals.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
@@ -1360,6 +1363,77 @@ test('PHASE 19: old saves migrate without a reward flood; late game stays open',
     // the goal panel surfaces an achievement target
     const goals = activeGoals(late)
     assert.ok(goals.some((g) => g.id === 'achievement'), 'achievement appears as a goal')
+  })
+})
+
+test('PHASE 20: seed lab crosses, discovers, applies bonus, persists', () => {
+  withBoringRng(() => {
+    // ── pure eligibility checks (crossEligibility takes the state directly) ──
+    const locked = fresh()
+    locked.money = 1e9
+    locked.totalEarned = 0
+    assert.equal(crossEligibility(locked, 'basilikum', 'tomate').status, 'locked-parents')
+    assert.equal(crossEligibility(locked, 'basilikum', 'basilikum').status, 'same')
+    assert.equal(crossEligibility(locked, 'basilikum', 'schnittlauch').status, 'nomatch')
+    const reqState = fresh()
+    reqState.totalEarned = 1e18
+    reqState.money = 1e12
+    reqState.compost = 1e6
+    reqState.parcels = 1
+    assert.equal(crossEligibility(reqState, 'weltenbaum', 'weltenrose').status, 'locked-req', 'parcel/mastery gate')
+
+    // ── main flow: crossPlants acts on the LIVE state, so build it last ──
+    const s = fresh()
+    s.totalEarned = 1e6 // unlock both parents
+    s.money = 1e6
+    const v = VARIANTS.find((x) => x.id === 'mediterrane-tomate')
+    const moneyBefore = s.money
+    const yieldBefore = yieldMultiplier(s)
+    const out = crossPlants('basilikum', 'tomate')
+    assert.ok(out.ok && out.variantId === 'mediterrane-tomate')
+    assert.equal(s.money, moneyBefore - v.goldCost, 'gold cost deducted')
+    assert.ok(isDiscovered(s, 'mediterrane-tomate'))
+    assert.ok(Math.abs(variantBonus(s, 'yield') - v.value) < 1e-9, 'variant yield bonus registered')
+    assert.ok(yieldMultiplier(s) > yieldBefore, 'discovered variant lifts yield')
+
+    // crossing again is a no-op (already discovered, no double charge)
+    const moneyAfter = s.money
+    assert.equal(crossPlants('basilikum', 'tomate').ok, false, 'already discovered')
+    assert.equal(s.money, moneyAfter, 'no double charge')
+
+    // the goal panel surfaces a seed-lab goal
+    assert.ok(activeGoals(s).some((gl) => gl.id === 'variant'), 'seed lab appears as a goal')
+
+    // discovery survives prestige AND a save roundtrip
+    s.lifetimeEarned = 1e12
+    s.totalEarned = 1e12
+    assert.ok(leaseParcel() > 0)
+    assert.ok(getState().discoveredVariants.includes('mediterrane-tomate'), 'survives prestige')
+    const code = exportSave()
+    fresh()
+    importSave(code)
+    assert.ok(getState().discoveredVariants.includes('mediterrane-tomate'), 'survives save/load')
+
+    // ── a compost-cost recipe deducts compost too (fresh live state) ──
+    const g = fresh()
+    g.totalEarned = 1e18
+    g.money = 1e12
+    g.compost = 100
+    g.parcels = 5
+    const hum = VARIANTS.find((x) => x.id === 'humusveilchen')
+    const compostBefore = g.compost
+    assert.ok(crossPlants('veilchen', 'ringelblume').ok, 'compost recipe works')
+    assert.equal(g.compost, compostBefore - hum.compostCost, 'compost cost deducted')
+
+    // ── old saves migrate: no discoveredVariants field → empty collection ──
+    const old = JSON.stringify({
+      version: 26,
+      savedAt: Date.now(),
+      state: { money: 1, totalEarned: 1, selectedPlantId: 'basilikum', stats: { planted: 0, harvested: 0, sold: 0, crits: 0 }, createdAt: 1 },
+    })
+    fresh()
+    assert.notEqual(importSave(old), null)
+    assert.deepEqual(getState().discoveredVariants, [], 'old saves load with an empty collection')
   })
 })
 

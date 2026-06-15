@@ -10,11 +10,12 @@ import { PLANTS, plantById } from '../data/plants'
 import { QUEST_CLIENTS, QUEST_TIERS } from '../data/questFlavor'
 import { questSlotCount } from './quests'
 import { SKILLS } from '../data/skills'
+import { variantById } from '../data/variants'
 import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 26
+export const SAVE_VERSION = 27
 
 interface SaveEnvelope {
   version: number
@@ -193,6 +194,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // flows through compost/compostSpent — so old saves carry over unchanged;
       // sanitize() still clamps specialisation levels to specMaxLevel.
       return { ...envelope, version: 23 }
+    case 26:
+      // v26 → v27: PHASE 20 seed lab — new `discoveredVariants` id list. sanitize()
+      // defaults it to [] (empty collection), so old saves are unaffected.
+      return { ...envelope, version: 27 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -279,6 +284,15 @@ function sanitize(raw: unknown): GameState {
     }
   }
   state.skills = skills
+
+  // PHASE 20 discovered seed-lab variants — keep only known ids, dedupe
+  const variants: string[] = []
+  if (Array.isArray(r.discoveredVariants)) {
+    for (const id of r.discoveredVariants) {
+      if (typeof id === 'string' && variantById(id) && !variants.includes(id)) variants.push(id)
+    }
+  }
+  state.discoveredVariants = variants
 
   state.level = Math.floor(clampNumber(r.level, 1, 1, 9999))
   state.xp = clampNumber(r.xp, 0)
