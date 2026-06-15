@@ -835,3 +835,34 @@ retroaktiver Flut-Bug, aber dauerhafte Boni gelten sofort). Neue Stats/Records
 defaulten auf 0. Diagnose: ein Endgame-Stand erreicht 41/66 Stufen, **9 Tracks
 bleiben offen** (Erfolg-Ertragsbonus +37 %, vgl. alt fix +22 %). Tests 48/48,
 check/build grün, 14-d-Sim ohne Runaway/NaN (Prestige unbeeinträchtigt).
+
+### 9.22 Phase 20 — Saatlabor, Kreuzungen & Pflanzenvarianten (Save v27)
+
+Ein neues Sammel-/Suchtloop-System, bewusst **klein, sauber, erweiterbar**.
+
+- **Varianten als entdeckbare Sammel-Boni (`data/variants.ts`):** 10 Varianten
+  über alle Spielweisen (Ertrag/Wachstum/Aufträge/Kompost/Lose/Zier/Meisterschaft/
+  Offline-Passiv), je 1 früh/mid + mehrere Endgame. Eine Variante ist **keine
+  pflanzbare Pflanze** (kein Plot/Sprite-Aufwand), sondern ein **permanenter,
+  kleiner Passivbonus** + Sammlungseintrag. Gesamt-Ertragsbonus aller 10 = +8 %
+  → keine Economy-Explosion, keine Entwertung der Pflanzenleiter.
+- **Kreuzungslogik (`game/seedlab.ts`):** zwei freigeschaltete Elternpflanzen +
+  passendes Rezept → **deterministische** Entdeckung (keine frustrierenden
+  Sub-1%-Rolls). Kosten Gold (+ Kompost ab Mid/Late), manche Rezepte mit
+  Parzellen-/Meisterschafts-Gate. `crossEligibility()` liefert klare Status/
+  Gründe für die UI; `crossPlants()` zahlt einmalig und schaltet frei (übersteht
+  Prestige). Effekte hängen an denselben Modifier-Hooks wie Skills/Erfolge
+  (yield/growth/quest/luck/compost/beauty/mastery/passive).
+- **Sammlung/Lexikon (`ui/SeedLabPanel.svelte`):** zwei Eltern-Slots (Selects,
+  touch-freundlich), Kosten-/Hinweis-/Ergebnisanzeige, Kreuzen-Button, und ein
+  Lexikon mit entdeckten Varianten (voll) + unentdeckten (❔ + Eltern-Emoji +
+  Effekt-Typ + Seltenheit) und Fortschritt X/10. HUD-Button 🧬 mit Punkt, wenn
+  etwas kreuzbar ist; nichts verdeckt Hauptbuttons.
+- **Einbindung:** Ziel-Panel (nächste kreuzbare/entdeckbare Variante), Erfolge
+  (neuer „Saatforscher"-Track: 1→10 Varianten), Meisterschaft/Parzelle als Gates,
+  Kompost als Kostenanteil.
+
+Save v26 → v27: neues `discoveredVariants` (id-Liste); `sanitize()` defaultet auf
+[] und behält nur bekannte IDs → alte Saves laden mit leerer Sammlung, keine
+Doppel-Belohnung. Tests 49/49, check/build grün, 14-d-Sim ohne Runaway/NaN.
+Produkt-/Lose-Kosten, Skill-/Event-Synergien und „angebaut"-Tracking → Phase 21.

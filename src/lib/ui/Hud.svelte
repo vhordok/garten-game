@@ -5,6 +5,7 @@
   import { anyUpgradeAffordable, compostGain, dailyClaimable, leaseRequirement, questFulfillable, sellableValue, sellAll } from '../game/actions'
   import { activeGoals } from '../game/goals'
   import { availableSkillPoints } from '../game/skills'
+  import { crossEligibility, discoverableVariants } from '../game/seedlab'
   import { comboMultiplier, comboWindowSeconds, marketFactor, maxScratchTickets } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -23,6 +24,7 @@
     onOpenAchievements,
     onOpenGoals,
     onOpenSkills,
+    onOpenSeedLab,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
@@ -34,10 +36,12 @@
     onOpenAchievements: () => void
     onOpenGoals: () => void
     onOpenSkills: () => void
+    onOpenSeedLab: () => void
   } = $props()
 
   const goalsReady = $derived(activeGoals($gameStore).filter((g) => g.ready).length)
   const skillPoints = $derived(availableSkillPoints($gameStore))
+  const newCross = $derived(discoverableVariants($gameStore).some((v) => crossEligibility($gameStore, v.parents[0], v.parents[1]).status === 'ok'))
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
   const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
@@ -186,6 +190,11 @@
   <button class="pxbtn" onclick={onOpenSkills} aria-label="Fähigkeiten" title="Fähigkeiten — dein langfristiger Build">
     <PixelIcon name="seedling" scale={1} />
     {#if skillPoints > 0}<span class="badge num">{skillPoints}</span>{/if}
+  </button>
+
+  <button class="pxbtn" onclick={onOpenSeedLab} aria-label="Saatlabor" title="Saatlabor — Pflanzen kreuzen & Varianten sammeln">
+    🧬
+    {#if newCross}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">

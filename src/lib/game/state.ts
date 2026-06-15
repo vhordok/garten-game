@@ -19,6 +19,7 @@ export function createDefaultState(now = Date.now()): GameState {
     mastery: {},
     specializations: {},
     skills: {},
+    discoveredVariants: [],
     level: 1,
     xp: 0,
     plots: Array.from({ length: CONFIG.startPlots }, emptyPlot),

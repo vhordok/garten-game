@@ -6,6 +6,7 @@ import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { achievementBonus } from './achievements'
+import { variantBonus } from './seedlab'
 import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
 import { categorySpecById, type SpecKind } from '../data/specializations'
@@ -56,7 +57,11 @@ export function growthMultiplier(state: GameState): number {
   // PHASE 13: parcel milestones + compost-garden upgrades add small growth boni;
   // PHASE 19: achievement-tier growth rewards
   const perma =
-    1 + parcelBonus(state.parcels, 'growth') + compostUpgradeBonus(state, 'growth') + achievementBonus(state, 'growth')
+    1 +
+    parcelBonus(state.parcels, 'growth') +
+    compostUpgradeBonus(state, 'growth') +
+    achievementBonus(state, 'growth') +
+    variantBonus(state, 'growth')
   // PHASE 17: a beautiful garden (beauty milestone) speeds the whole garden up
   const aura = 1 + beautyMilestoneBonus(gardenBeauty(state), 'growth')
   return (
@@ -76,8 +81,10 @@ export function yieldMultiplier(state: GameState): number {
   )
   // PHASE 13: parcel milestones + compost-garden upgrades add small yield boni
   const perma = 1 + parcelBonus(state.parcels, 'yield') + compostUpgradeBonus(state, 'yield')
-  // PHASE 17: beauty-milestone aura + skill-tree (Gartenplanung) yield
-  const meta = 1 + beautyMilestoneBonus(gardenBeauty(state), 'yield') + skillBonus(state, 'yield')
+  // PHASE 17: beauty-milestone aura + skill-tree (Gartenplanung) yield;
+  // PHASE 20: seed-lab variant yield bonus
+  const meta =
+    1 + beautyMilestoneBonus(gardenBeauty(state), 'yield') + skillBonus(state, 'yield') + variantBonus(state, 'yield')
   // PHASE 18: Erntefest event lifts every harvest while it lasts
   const event = state.weather.id === 'erntefest' ? 1.5 : 1
   return (
@@ -238,8 +245,9 @@ export function gardenBeauty(state: GameState): number {
   }
   // PHASE 17: the Schaugarten skill amplifies the whole beauty stat
   // PHASE 18: the Gartenschau event boosts beauty's pull while it lasts
+  // PHASE 20: a discovered Zier variant (Prachtorchidee) adds to beauty
   const event = state.weather.id === 'gartenschau' ? 1.5 : 1
-  const raw = bonus * (1 + skillBonus(state, 'beauty')) * event
+  const raw = bonus * (1 + skillBonus(state, 'beauty') + variantBonus(state, 'beauty')) * event
   // PHASE 18 softcap: linear up to the cap, compressed above → a Zier build
   // stays strong but stops being the automatic best strategy (diminishing
   // returns, never a hard wall, the build keeps its value)
@@ -318,6 +326,7 @@ export function scratchDropChance(state: GameState, cycleSeconds: number, catego
     beautyMilestoneBonus(gardenBeauty(state), 'ticketLuck') +
     skillBonus(state, 'scratchLuck') +
     achievementBonus(state, 'ticketLuck') +
+    variantBonus(state, 'ticketLuck') +
     (category ? specUniqueBonus(state, category, 'ticket') : 0)
   return Math.min(perMinute * (cycleSeconds / 60), CONFIG.scratchDropCap)
 }

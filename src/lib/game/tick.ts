@@ -1,4 +1,5 @@
 import { claimAchievements } from './achievements'
+import { variantBonus } from './seedlab'
 import { CONFIG } from '../data/config'
 import { plantById } from '../data/plants'
 import {
@@ -86,7 +87,8 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
       dtSeconds *
       sellMultiplier(state) *
       (1 + compostUpgradeBonus(state, 'passive')) *
-      (1 + specUniqueBonus(state, def.category, 'wood'))
+      (1 + specUniqueBonus(state, def.category, 'wood')) *
+      (1 + variantBonus(state, 'passive'))
     state.money += gain
     state.totalEarned += gain
     state.lifetimeEarned += gain
@@ -166,7 +168,9 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
       s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
       s.mastery[def.id] =
         (s.mastery[def.id] ?? 0) +
-        Math.round(units * (1 + specUniqueBonus(s, def.category, 'mastery')) * eventMasteryMult(s))
+        Math.round(
+          units * (1 + specUniqueBonus(s, def.category, 'mastery') + variantBonus(s, 'mastery')) * eventMasteryMult(s)
+        )
       s.stats.harvested += units
       if (def.regrowTime) {
         plot.progress = 0

@@ -176,6 +176,9 @@ export interface GameState {
   /** skill-tree levels keyed by SkillDef id; survives prestige. Points are
    * earned from parcels/achievements/level, not gold (PHASE 17). */
   skills: Record<string, number>
+  /** discovered seed-lab variant ids; survives prestige. Each grants a small
+   * permanent passive bonus and counts toward the collection (PHASE 20). */
+  discoveredVariants: string[]
   /** gardener level (starts at 1); gates quest slots and future QoL */
   level: number
   /** progress within the current level (resets each level-up) */

@@ -116,5 +116,10 @@ abnehmender Grenznutzen). Keine Save-Änderung. Phase 19 (§9.21): mehrstufiges
 Erfolge-Tier-System (data/achievements.ts + game/achievements.ts — 11 Tracks ×
 6 Stufen Bronze→Legendär; dauerhafte Boni + Skillpunkte aus beanspruchten Stufen
 abgeleitet, Einmal-Belohnungen Booster/Lose ohne Kompost; achievementTiers ersetzt
-achievements[], Migration initialisiert aus Stats ohne Reward-Flut). 42 Sorten in
-8 Kategorien, Stand SAVE_VERSION 26.
+achievements[], Migration initialisiert aus Stats ohne Reward-Flut). Phase 20
+(§9.22): Saatlabor (data/variants.ts + game/seedlab.ts + ui/SeedLabPanel.svelte —
+10 entdeckbare Pflanzenvarianten als permanente Sammel-Passivboni über alle
+Spielweisen; deterministische Kreuzung zweier freigeschalteter Eltern gegen
+Gold/Kompost mit Parzellen-/Meisterschafts-Gates, kein Plot/Sprite-Aufwand;
+Lexikon + Ziel-/Erfolg-Anbindung „Saatforscher", discoveredVariants übersteht
+Prestige). 42 Sorten in 8 Kategorien, Stand SAVE_VERSION 27.

@@ -16,6 +16,8 @@ import { UPGRADES } from '../data/upgrades'
 import { compostGain, isPlantUnlocked, leaseRequirement, nextUpgradeCost, upgradeLevel } from './actions'
 import { gardenBeauty, masteryLevel, masteryThreshold, nextSpecMilestone, specializationLevel } from './modifiers'
 import { availableSkillPoints } from './skills'
+import { crossEligibility, discoverableVariants } from './seedlab'
+import { VARIANTS } from '../data/variants'
 import type { GameState } from './types'
 
 export type GoalTier = 'kurz' | 'mittel' | 'lang' | 'endgame'
@@ -258,6 +260,39 @@ function achievementGoal(state: GameState): Goal | null {
   }
 }
 
+/** Discover the next seed-lab variant you can already reach. */
+function variantGoal(state: GameState): Goal | null {
+  const discovered = state.discoveredVariants.length
+  if (discovered >= VARIANTS.length) return null
+  const reachable = discoverableVariants(state)
+  // a variant you can afford & meet conditions for → ready; else show collection
+  const ready = reachable.find((v) => crossEligibility(state, v.parents[0], v.parents[1]).status === 'ok')
+  if (ready) {
+    return {
+      id: 'variant',
+      tier: 'mittel',
+      icon: ready.emoji,
+      label: `Saatlabor: ${ready.name} kreuzbar`,
+      reward: ready.role,
+      current: 1,
+      target: 1,
+      fraction: 1,
+      ready: true,
+    }
+  }
+  return {
+    id: 'variant',
+    tier: 'lang',
+    icon: '🧬',
+    label: 'Saatlabor: neue Variante entdecken',
+    reward: `${discovered}/${VARIANTS.length} Varianten gesammelt`,
+    current: discovered,
+    target: VARIANTS.length,
+    fraction: clamp01(discovered / VARIANTS.length),
+    ready: false,
+  }
+}
+
 /** Collection goal: unlock every plant. */
 function collectionGoal(state: GameState): Goal | null {
   const unlocked = PLANTS.filter((p) => isPlantUnlocked(p, state)).length
@@ -352,6 +387,7 @@ export function activeGoals(state: GameState): Goal[] {
     parcelMilestoneGoal(state),
     beautyGoal(state),
     masteryGoal(state),
+    variantGoal(state),
     achievementGoal(state),
     compostGoal(state),
     collectionGoal(state),

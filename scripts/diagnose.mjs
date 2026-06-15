@@ -21,6 +21,8 @@ import {
   gardenBeauty,
 } from '../src/lib/game/modifiers.ts'
 import { BEAUTY_MILESTONES } from '../src/lib/data/beautyMilestones.ts'
+import { VARIANTS } from '../src/lib/data/variants.ts'
+import { variantBonus } from '../src/lib/game/seedlab.ts'
 import { ACHIEVEMENTS, TIER_NAMES } from '../src/lib/data/achievements.ts'
 import { achievementBonus, initAchievementTiers, reachedTier, totalClaimedTiers } from '../src/lib/game/achievements.ts'
 import { SCRATCH_PRIZES, effectiveHarvestValue, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
@@ -252,5 +254,13 @@ for (const def of ACHIEVEMENTS) {
 }
 console.log(`  noch offen: ${open} Tracks · Erfolg-Ertragsbonus: +${(achievementBonus(s, 'yield') * 100).toFixed(0)} %`)
 console.log('  ⇒ auch im Endgame bleiben Legendär-Stufen als Langzeitziele offen.')
+
+console.log('\n── PHASE 20: Saatlabor — Varianten-Gesamtbonus (alle entdeckt) ──')
+const allVar = { ...createDefaultState(), discoveredVariants: VARIANTS.map((v) => v.id) }
+const byEffect = {}
+for (const v of VARIANTS) byEffect[v.effect] = (byEffect[v.effect] ?? 0) + v.value
+console.log(`  ${VARIANTS.length} Varianten · Effekte: ${Object.entries(byEffect).map(([e, val]) => `${e} +${(val * 100).toFixed(0)}%`).join(' · ')}`)
+console.log(`  Ertrags-Gesamtbonus aller Varianten: +${(variantBonus(allVar, 'yield') * 100).toFixed(0)} % (klein & gedeckelt, keine Explosion)`)
+console.log('  ⇒ Varianten sind Sammelziele mit kleinen Boni, nicht Ersatz für die Pflanzenleiter.')
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')
