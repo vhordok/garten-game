@@ -154,5 +154,10 @@ Edelkompost (repeatable), 2 weitere endlose Kompost-Sinks (Tiefenmoor/Ewighumus 
 jeder Effekt hat einen Endlos-Pfad), Lizenz-Tiers IV/V (level:number+benefit, keine
 neuen Pflanzen, licenseQuestBonus +20/+30 % Auftragsbelohnung, Cap 3→5),
 fulfillQuest zahlt Lizenz-Bonus, Ziel-Panel shopGoal+licenseGoal & triviale ready-
-Ziele sortieren hinter Fortschritt. Reiner Save-Passthrough. 53 Sorten (+1 Spezial)
-in 8 Kategorien, Stand SAVE_VERSION 28.
+Ziele sortieren hinter Fortschritt. Reiner Save-Passthrough. Phase 28 (§9.30):
+diagnosegetriebener Politur-Durchlauf — End-to-End-Playtest (scripts/playtest.mjs,
+20 Spielstände × 12 Fragen), Ziel-Panel-Kern-Fix (upgradeGoal zielt auf billigstes
+noch-nicht-bezahlbares Upgrade statt „Gießkanne bereit"; Goal.chore-Flag entwertet
+triviale Jederzeit-Ziele in Sortierung/Panel-Optik/HUD-Badge; goalBoard() deckelt
+≤3 Ziele/Horizont), Fresh-Start/Shop-Kompost-Lizenz-UI/Zahlenformat geprüft & gesund.
+Keine Save-Änderung. 53 Sorten (+1 Spezial) in 8 Kategorien, Stand SAVE_VERSION 28.

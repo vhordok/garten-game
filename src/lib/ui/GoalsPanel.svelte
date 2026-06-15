@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { activeGoals, TIER_LABEL, type GoalTier } from '../game/goals'
+  import { goalBoard, TIER_LABEL, type GoalTier } from '../game/goals'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import Overlay from './Overlay.svelte'
 
   let { onClose }: { onClose: () => void } = $props()
 
-  const goals = $derived(activeGoals($gameStore))
+  const goals = $derived(goalBoard($gameStore))
   const TIERS: GoalTier[] = ['kurz', 'mittel', 'lang', 'endgame']
 </script>
 
@@ -22,7 +22,7 @@
       <h3 class="tier">{TIER_LABEL[tier]}</h3>
       <ul class="goal-list">
         {#each list as g (g.id)}
-          <li class="goal" class:ready={g.ready}>
+          <li class="goal" class:ready={g.ready} class:chore={g.chore}>
             <span class="g-icon">{g.icon}</span>
             <span class="g-body">
               <span class="g-head">
@@ -82,6 +82,11 @@
 
   .goal.ready {
     border-left-color: var(--c-leaf4);
+  }
+
+  /* PHASE 28: trivial "anytime" chores are visually quieter than real targets */
+  .goal.chore {
+    opacity: 0.7;
   }
 
   .g-icon {

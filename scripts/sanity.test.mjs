@@ -94,7 +94,7 @@ import { achievementBonus, achievementSkillPoints, reachedTier } from '../src/li
 import { VARIANTS } from '../src/lib/data/variants.ts'
 import { SPRITES } from '../src/lib/ui/pixel/sprites.ts'
 import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceStatus, variantBonus, variantEventBonus } from '../src/lib/game/seedlab.ts'
-import { activeGoals } from '../src/lib/game/goals.ts'
+import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
 import { eventMasteryMult, gardenBeauty } from '../src/lib/game/modifiers.ts'
@@ -1790,6 +1790,67 @@ test('PHASE 27: parcel-gated shop tiers, trade licenses, late compost sinks, goa
     fresh()
     importSave(code)
     assert.equal(getState().licenses, 5, 'license V survives save/load')
+  })
+})
+
+test('PHASE 28: goal board prioritises real progress over trivial chores', () => {
+  withBoringRng(() => {
+    // --- upgradeGoal targets an UNAFFORDABLE upgrade (a real savings bar) -----
+    const fresh1 = fresh()
+    fresh1.money = 10
+    const up0 = activeGoals(fresh1).find((g) => g.id === 'upgrade')
+    assert.ok(up0 && !up0.ready && up0.fraction < 1, 'fresh start: upgrade goal is a real target, not "bereit"')
+
+    // --- a rich player is NOT headlined by a sub-1000-gold trivial upgrade ----
+    const rich = fresh()
+    rich.money = 1e9 // can afford every basic upgrade
+    rich.totalEarned = 5e4 // but still early on the ladder → real plant goals exist
+    const goalsRich = activeGoals(rich)
+    const dom = goalsRich[0]
+    assert.ok(!dom.chore, 'dominant goal is substantive, not a chore')
+    const upRich = goalsRich.find((g) => g.id === 'upgrade')
+    // with this much money every basic upgrade is affordable → upgrade is a chore
+    assert.ok(upRich && upRich.chore && upRich.ready, 'all-affordable upgrade becomes a low-priority chore')
+
+    // chores never sort above a substantive goal within the same horizon
+    for (let i = 1; i < goalsRich.length; i++) {
+      if (goalsRich[i - 1].tier === goalsRich[i].tier && !goalsRich[i - 1].chore && goalsRich[i].chore) {
+        // ok: substantive before chore
+      } else if (goalsRich[i - 1].tier === goalsRich[i].tier && goalsRich[i - 1].chore && !goalsRich[i].chore) {
+        assert.fail('a chore sorted above a substantive goal in the same horizon')
+      }
+    }
+
+    // --- goalBoard caps each horizon so the panel stays scannable ------------
+    const board = goalBoard(rich, 3)
+    const perTier = {}
+    for (const g of board) perTier[g.tier] = (perTier[g.tier] ?? 0) + 1
+    for (const [t, n] of Object.entries(perTier)) assert.ok(n <= 3, `≤3 goals per horizon (${t}=${n})`)
+
+    // --- very-late state still offers several real options across horizons ----
+    const late = fresh()
+    late.money = 5.7e20
+    late.totalEarned = 5.7e20
+    late.lifetimeEarned = 1.6e18
+    late.parcels = 12
+    late.compost = 3.2e5
+    late.licenses = 3
+    late.level = 886
+    const goalsLate = activeGoals(late)
+    const horizons = new Set(goalsLate.map((g) => g.tier))
+    assert.ok(horizons.size >= 3, 'very late: goals span ≥3 horizons')
+    const substantive = goalsLate.filter((g) => !g.chore)
+    assert.ok(substantive.length >= 3, 'very late: ≥3 substantive options, never a dead end')
+    // a 570-Qi player is never headlined by a sub-1000-gold purchase
+    assert.ok(!(goalsLate[0].id === 'upgrade' && goalsLate[0].target < 1000), 'no trivial gold headline in the endgame')
+
+    // --- no NaN/Infinity fractions anywhere ----------------------------------
+    for (const st of [fresh1, rich, late]) {
+      for (const g of activeGoals(st)) {
+        assert.ok(Number.isFinite(g.fraction) && g.fraction >= 0 && g.fraction <= 1, `clean fraction for ${g.id}`)
+        assert.ok(Number.isFinite(g.current) && Number.isFinite(g.target), `clean numbers for ${g.id}`)
+      }
+    }
   })
 })
 
