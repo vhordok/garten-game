@@ -129,6 +129,9 @@ Forschung" (−Gold), Ziel-Panel zeigt fehlende Produkte. Phase 22 (§9.24): ers
 pflanzbare Spezialvariante (data/plants.ts SPECIAL_PLANTS — Prachtorchidee, reine
 Zier-Utility, max 3, via discoveredVariants freigeschaltet; integriert allein über
 plantById → Plot/Beauty/Save/Hotbar generisch, isPlantUnlocked+maxPlots als einzige
-neue Logik), Basilikum-Sprite neu + dokumentierte Sprite-Stilregel; Late-Game-Leiter
-+ Hanf-Ausbau → Phase 23. Keine Save-Änderung. 42 Sorten (+1 Spezial) in
-8 Kategorien, Stand SAVE_VERSION 27.
+neue Logik), Basilikum-Sprite neu + dokumentierte Sprite-Stilregel. Phase 23
+(§9.25): Late-Game-Leiter über Weltenrose hinaus — 4 neue Pflanzen mit Rollen
+(Traumorchidee/Zier, Ewigrose/Magie-Wiederernte, Sternenzeder/Holz-passiv,
+Dauerblütenhanf/Hanf-Wiederernte Lizenz III) jenseits von Weltenroses Unlock,
+Invariante gehalten, Sprites aliasiert. Keine Save-Änderung. 46 Sorten (+1 Spezial)
+in 8 Kategorien, Stand SAVE_VERSION 27.
