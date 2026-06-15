@@ -42,6 +42,13 @@ export interface PlantDef {
   requiresLicense?: number
   /** cannabis care: below this Gießkannen-Stufe the plant grows at half speed */
   needsWateringLevel?: number
+  /** PHASE 22 seed-lab special plant: not in the normal ladder/quests. Unlocked
+   * by discovering `unlockVariant` rather than by earnings, and capped per garden. */
+  special?: boolean
+  /** the discovered variant id that unlocks this special plant (special only) */
+  unlockVariant?: string
+  /** max simultaneous plots for a special plant (utility limiter) */
+  maxPlots?: number
 }
 
 export type UpgradeEffect =

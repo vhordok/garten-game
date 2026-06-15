@@ -899,3 +899,35 @@ Pflanzen/Varianten/Ressource.
 Keine Save-Format-Änderung (SAVE_VERSION bleibt 27): alle neuen Felder sind
 Daten/Logik, `discoveredVariants` unverändert. Tests 50/50, check/build grün,
 14-d-Sim ohne Runaway/NaN.
+
+### 9.24 Phase 22 — Pflanzbare Spezialvariante & Sprite-Politur (keine Save-Änderung)
+
+Fokus auf zwei der drei offenen Schwächen; die Late-Game-Pflanzenleiter + Hanf-
+Ausbau bewusst → Phase 23 (eigener Daten-/Sprite-/Balance-Aufwand, nicht halbgar).
+
+- **Erste pflanzbare Spezialvariante (`data/plants.ts` `SPECIAL_PLANTS`):** die im
+  Saatlabor entdeckte **Prachtorchidee** wird pflanzbar — eine reine **Utility-
+  Zierpflanze** (Ertrag 0, Schönheit 0,2), **max. 3 gleichzeitig**, freigeschaltet
+  durch `discoveredVariants.includes('prachtorchidee')` statt durch Einnahmen.
+  Architektur-Trick: Spezialpflanzen hängen nur an **`plantById`** (das jetzt aus
+  PLANTS + SPECIAL_PLANTS baut) — dadurch funktionieren Plot-Render, Beauty-Aura
+  (`gardenBeauty` iteriert Beete), Auto-Saat/-Ernte, Roden, Save/Load und Hotbar
+  **automatisch generisch**. Neue Logik nur: Discovery-Gate in `isPlantUnlocked`,
+  `maxPlots`-Cap in `sowPlot`, Hotbar listet entdeckte Spezialpflanzen, Sprite-
+  Alias. Quests/Sammlung iterieren weiter PLANTS → Spezialpflanzen bleiben außen
+  vor (keine Balance-/Invariantenstörung). Ziel-Panel: „Prachtorchidee anpflanzen".
+- **Sprite-Politur (A):** Basilikum neu gezeichnet (klarere, rundere Paarblätter
+  mit Top-Highlight + definiertem dunklem Stiel-Sockel) — deutlich lesbarere
+  Silhouette. Spezialpflanze nutzt die leuchtende Leuchtlilien-Sprite.
+- **Sprite-Stilregel (dokumentiert, A.10):** neue Pflanzen folgen: klare
+  Silhouette vor Detailfülle; eine erkennbare Grundform pro Kategorie (Kräuter =
+  Paarblätter, Gemüse = Fruchtform, Beeren = Cluster, Zier = Blüte, Holz =
+  Stamm+Krone, Obst = Fruchtkrone, Magie = Glühen/Sternakzente, Hanf =
+  gefiederte Fingerblätter); dunkler Stiel-/Sockelkontrast unten, hellster
+  Ton (L) als Top-Highlight; 16×16, lesbar in Kleinansicht, kein matschiges
+  Vollflächen-Grün.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 27): `SPECIAL_PLANTS` ist Daten,
+Plots referenzieren sie über `plantById` (Sanitize akzeptiert sie). Tests 51/51,
+check/build grün, 14-d-Sim ohne Runaway/NaN. **Late-Game-Leiter über Weltenrose
+hinaus + Hanf-Kategorie-Ausbau → Phase 23.**

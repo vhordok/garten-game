@@ -125,6 +125,10 @@ Lexikon + Ziel-/Erfolg-Anbindung „Saatforscher", discoveredVariants übersteht
 Prestige). Phase 21 (§9.23): Saatlabor vertieft — Ernteprodukt-Kosten (nur freier
 Überschuss via freeStock = Lager − questReserved), Kategorie-Rezept-Hinweise
 statt Lösung, 5 Varianten-Event-Synergien (variantEventBonus), Skill „Saatgut-
-Forschung" (−Gold), Ziel-Panel zeigt fehlende Produkte; pflanzbare Variante
-bewusst → Phase 22 (braucht Sprite/Plot/Hotbar). Keine Save-Änderung. 42 Sorten
-in 8 Kategorien, Stand SAVE_VERSION 27.
+Forschung" (−Gold), Ziel-Panel zeigt fehlende Produkte. Phase 22 (§9.24): erste
+pflanzbare Spezialvariante (data/plants.ts SPECIAL_PLANTS — Prachtorchidee, reine
+Zier-Utility, max 3, via discoveredVariants freigeschaltet; integriert allein über
+plantById → Plot/Beauty/Save/Hotbar generisch, isPlantUnlocked+maxPlots als einzige
+neue Logik), Basilikum-Sprite neu + dokumentierte Sprite-Stilregel; Late-Game-Leiter
++ Hanf-Ausbau → Phase 23. Keine Save-Änderung. 42 Sorten (+1 Spezial) in
+8 Kategorien, Stand SAVE_VERSION 27.

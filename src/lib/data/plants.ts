@@ -574,7 +574,31 @@ export const PLANTS: PlantDef[] = [
   },
 ]
 
-const byId = new Map(PLANTS.map((p) => [p.id, p]))
+// PHASE 22: seed-lab special plants — plantable only once their variant is
+// discovered. NOT part of the normal ladder (excluded from quests, collection
+// goals and the balance invariants since those iterate PLANTS). They plug into
+// the whole engine through plantById, so plots/sprites/save/beauty just work.
+export const SPECIAL_PLANTS: PlantDef[] = [
+  {
+    id: 'spv-prachtorchidee',
+    name: 'Prachtorchidee',
+    emoji: '🪷',
+    category: 'zier',
+    description:
+      'Saatlabor-Spezialität: eine lebende Prachtorchidee. Kein Ertrag — aber sie strahlt enorme Schönheit aus. Erst nach Entdeckung im Saatlabor pflanzbar, max. 3 gleichzeitig.',
+    seedCost: 5e7,
+    growTime: 2400,
+    beautyBonus: 0.2,
+    yield: 0,
+    sellValue: 0,
+    unlockAtTotalEarned: 0,
+    special: true,
+    unlockVariant: 'prachtorchidee',
+    maxPlots: 3,
+  },
+]
+
+const byId = new Map<string, PlantDef>([...PLANTS, ...SPECIAL_PLANTS].map((p) => [p.id, p]))
 
 export function plantById(id: string): PlantDef | undefined {
   return byId.get(id)

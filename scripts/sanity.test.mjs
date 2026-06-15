@@ -11,7 +11,7 @@ globalThis.localStorage ??= {
   removeItem: () => {},
 }
 import { CONFIG } from '../src/lib/data/config.ts'
-import { PLANTS, produceName, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
+import { PLANTS, SPECIAL_PLANTS, plantById, produceName, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
 import { levelUpReward, questSlots, xpToNext } from '../src/lib/data/progression.ts'
 import { upgradeById } from '../src/lib/data/upgrades.ts'
 import {
@@ -39,6 +39,8 @@ import {
   nextPlotCost,
   nextUpgradeCost,
   quickSellAmount,
+  isPlantUnlocked,
+  plotsWithPlant,
   refundScratchTicket,
   selectPlant,
   sellAll,
@@ -1483,6 +1485,65 @@ test('PHASE 21: produce costs (free only), event synergy, skill discount', () =>
     assert.equal(effectiveGoldCost(g, v), 1e6, 'no discount without the skill')
     g.skills = { saatgutforschung: 2 } // −30 %
     assert.equal(effectiveGoldCost(g, v), 700000, 'Saatgut-Forschung discounts gold cost')
+  })
+})
+
+test('PHASE 22: plantable special variant (discovery-gated, capped, beauty, save)', () => {
+  withBoringRng(() => {
+    const sp = SPECIAL_PLANTS.find((p) => p.id === 'spv-prachtorchidee')
+    assert.ok(sp && sp.special && sp.unlockVariant === 'prachtorchidee')
+    assert.ok(plantById('spv-prachtorchidee'), 'special plant resolves via plantById')
+
+    // before discovery: locked — selectPlant refuses it, and sowPlot guards too
+    const s = fresh()
+    s.money = 1e12
+    s.totalEarned = 1e18
+    assert.equal(isPlantUnlocked(sp, s), false, 'locked before discovery')
+    selectPlant('spv-prachtorchidee')
+    assert.notEqual(s.selectedPlantId, 'spv-prachtorchidee', 'selectPlant refuses a locked special')
+    s.selectedPlantId = 'spv-prachtorchidee' // force it past selectPlant to test the sow guard
+    assert.equal(sowPlot(0), false, 'sowPlot refuses an undiscovered special plant')
+
+    // discover the variant → now unlocked and sowable
+    s.discoveredVariants = ['prachtorchidee']
+    assert.equal(isPlantUnlocked(sp, s), true, 'unlocked after discovery')
+    selectPlant('spv-prachtorchidee')
+    assert.equal(s.selectedPlantId, 'spv-prachtorchidee', 'now selectable')
+    assert.ok(sowPlot(0), 'special plant sows once discovered')
+    assert.equal(s.plots[0].plantId, 'spv-prachtorchidee')
+
+    // cap: max 3 simultaneously
+    assert.ok(sowPlot(1) && sowPlot(2), 'up to the cap')
+    assert.equal(sowPlot(3), false, 'capped at maxPlots (3)')
+    assert.equal(plotsWithPlant(s, 'spv-prachtorchidee'), 3)
+
+    // mature special plant feeds the beauty aura (reuses gardenBeauty)
+    for (let i = 0; i < 3; i++) s.plots[i].progress = sp.growTime
+    assert.ok(gardenBeauty(s) > 0, 'special ornamental contributes beauty')
+
+    // goal panel offers "plant it" only when discovered & none planted; here all planted
+    assert.ok(!activeGoals(s).some((g) => g.id === 'specialplant'), 'goal gone once planted')
+
+    // save/load keeps the special plant in its plot (s is still the live state)
+    const code = exportSave()
+    fresh()
+    importSave(code)
+    assert.equal(getState().plots[0].plantId, 'spv-prachtorchidee', 'special plant survives save/load')
+
+    // goal shown when discovered but none planted
+    const fresh2 = fresh()
+    fresh2.discoveredVariants = ['prachtorchidee']
+    fresh2.totalEarned = 1e18
+    assert.ok(activeGoals(fresh2).some((g) => g.id === 'specialplant'), 'goal shown when discovered, none planted')
+
+    // bulk clear works with the special plant
+    replaceState(createDefaultState())
+    const c = getState()
+    c.money = 1e12
+    c.discoveredVariants = ['prachtorchidee']
+    selectPlant('spv-prachtorchidee')
+    sowPlot(0)
+    assert.ok(clearAllPlots().count >= 1, 'Alles roden removes the special plant')
   })
 })
 

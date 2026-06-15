@@ -43,8 +43,15 @@ import { cycleTime, plotReady } from './tick'
 import type { GameState, PlantDef, PlotState, UpgradeDef } from './types'
 
 export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
+  // PHASE 22: special plants are gated by seed-lab discovery, not by earnings
+  if (def.special) return def.unlockVariant ? state.discoveredVariants.includes(def.unlockVariant) : false
   if (def.requiresLicense && state.licenses < def.requiresLicense) return false
   return state.totalEarned >= def.unlockAtTotalEarned
+}
+
+/** Plots currently occupied by a given plant (for special-plant caps). */
+export function plotsWithPlant(state: GameState, plantId: string): number {
+  return state.plots.filter((p) => p.plantId === plantId).length
 }
 
 /** Buy the next cannabis license (money sink with hard requirements). */
@@ -87,6 +94,8 @@ export function sowPlot(index: number): boolean {
   const def = plantById(s.selectedPlantId)
   if (!plot || plot.plantId !== null || !def) return false
   if (!isPlantUnlocked(def, s) || s.money < def.seedCost) return false
+  // PHASE 22: special plants are capped per garden
+  if (def.maxPlots && plotsWithPlant(s, def.id) >= def.maxPlots) return false
   s.money -= def.seedCost
   plot.plantId = def.id
   plot.progress = 0
