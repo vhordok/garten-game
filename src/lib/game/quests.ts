@@ -50,12 +50,20 @@ const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
  * Time-fair order size (PHASE 13): how much a (plot-capped) full field of this
  * plant produces in a few minutes — slow endgame plants get small amounts, fast
  * plants larger ones, so no order asks you to wait for hours on one slow crop.
+ *
+ * PHASE 25: scaled by progression so a brand-new gardener gets tiny orders
+ * (≈4–12 units, no reservation softlock), ramping to the full window by ~level 30.
  */
+function questEffortScale(s: GameState): number {
+  return Math.min(1, 0.03 + s.level * 0.03 + Math.max(s.parcels - 1, 0) * 0.15)
+}
+
 function fairAmount(s: GameState, plant: PlantDef): number {
   const cycle = plant.regrowTime ?? plant.growTime
   const plots = Math.min(Math.max(s.plots.length, CONFIG.startPlots), CONFIG.questEffortPlotsCap)
   const perSecond = (plots * plant.yield) / cycle
-  const seconds = CONFIG.questEffortMin + Math.random() * (CONFIG.questEffortMax - CONFIG.questEffortMin)
+  const window = CONFIG.questEffortMin + Math.random() * (CONFIG.questEffortMax - CONFIG.questEffortMin)
+  const seconds = window * questEffortScale(s)
   return Math.max(plant.yield, Math.min(Math.round(seconds * perSecond), CONFIG.questAmountCap))
 }
 

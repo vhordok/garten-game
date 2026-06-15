@@ -77,9 +77,12 @@ export const CONFIG = {
    * (balance audit: linear bonus × accumulating compost ran away) */
   compostSoftcapExp: 0.5,
   /** permanent yield bonus per gardener level above 1, capped — otherwise
-   * level×compost feedback runs away in the late game (balance audit) */
+   * level×compost feedback runs away in the late game (balance audit).
+   * PHASE 25: cap raised to +300% (reached ~level 300) so levels keep real value
+   * deeper in; the steeper XP curve means level 300 is genuinely earned, and the
+   * cap still prevents runaway. */
   levelYieldPerLevel: 0.01,
-  levelYieldMaxBonus: 1.0,
+  levelYieldMaxBonus: 3.0,
   /** market wave: sell prices oscillate ±~30 % over this period (seconds) */
   marketPeriodSeconds: 600,
   /** offline simulation cap; later extendable through upgrades (GAME_DESIGN.md §5) */
