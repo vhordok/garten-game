@@ -5,13 +5,15 @@ import { beautyMultiplier } from '../game/modifiers'
 // extra requirements — medical growing, fully licensed.
 
 export interface LicenseDef {
-  level: 1 | 2 | 3
+  level: number
   name: string
   description: string
   cost: number
   /** human-readable requirement + predicate */
   requirementText: string
   requirementMet: (s: GameState) => boolean
+  /** PHASE 27: short note on the lasting benefit beyond unlocking a plant */
+  benefit?: string
 }
 
 export const LICENSES: LicenseDef[] = [
@@ -39,4 +41,33 @@ export const LICENSES: LicenseDef[] = [
     requirementText: 'Parzelle 5 oder höher',
     requirementMet: (s) => s.parcels >= 5,
   },
+  // ── PHASE 27: Late-Game-Lizenzen — keine neuen Pflanzen, aber dauerhafte
+  // Auftrags-Vorteile (ziehen Aufträge im Endgame wieder lohnend). Großer
+  // Gold-Sink mit Parzellen-Gate. licenseQuestBonus() macht sie spürbar.
+  {
+    level: 4,
+    name: 'Lizenz IV — Hanf-Export',
+    description: 'Exportrechte für Hanf & Co. — Aufträge zahlen deutlich besser (+20 % Auftragsbelohnung).',
+    cost: 80e15,
+    requirementText: 'Parzelle 12 oder höher',
+    requirementMet: (s) => s.parcels >= 12,
+    benefit: '+20 % Auftragsbelohnung, dauerhaft',
+  },
+  {
+    level: 5,
+    name: 'Lizenz V — Welthandel',
+    description: 'Welthandels-Konzession — der Markt liegt dir zu Füßen (+30 % Auftragsbelohnung obendrauf).',
+    cost: 50e18,
+    requirementText: 'Parzelle 22 oder höher',
+    requirementMet: (s) => s.parcels >= 22,
+    benefit: '+30 % Auftragsbelohnung (zusätzlich), dauerhaft',
+  },
 ]
+
+/** Permanent quest-reward bonus from late licenses (Lizenz IV +20 %, V +30 %). */
+export function licenseQuestBonus(licenses: number): number {
+  let bonus = 0
+  if (licenses >= 4) bonus += 0.2
+  if (licenses >= 5) bonus += 0.3
+  return bonus
+}

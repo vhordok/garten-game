@@ -1045,3 +1045,42 @@ Keine Save-Format-Änderung (SAVE_VERSION bleibt 27). Tests 55/55, check/build g
 14-d-Sim ohne Runaway/NaN/Stall. **Offen → Phase 27:** Shop-Late-Tiers,
 Kompost-/Prestige-Sinks, Lizenz-Tiers, breitere Ziel-Panel-Priorisierung,
 Auftrags-Wirtschaftlichkeit.
+
+### 9.29 Phase 27 — Late-Game-Sinks, Lizenz-Tiers & Auftrags-Wirtschaft (SAVE 28)
+
+Die in 9.27/9.28 bewusst aufgeschobenen Inhalts-Sinks **vollständig umgesetzt**
+(nicht erneut diagnostiziert-und-verschoben). Alle neuen Inhalte sind reine
+Datendefinitionen über bestehende Modifier-Hooks — keine neuen Effekt-Pfade,
+Save-sicher.
+
+- **B — Shop-Late-Tiers (`UpgradeDef.unlockParcel` + `repeatable`):** sieben neue
+  Werkstatt-Stufen hinter **Parzellen-Gates** (pacen via Prestige, kein reiner
+  %-Kosmetik-Klon): Wasserwerk (P7), Erntegilde (P8), Saatgilde (P9), Sternwarte
+  (P10), Handelsflotte (P12), Goldenes Los (P14) — alle nutzen vorhandene Utility-
+  Effekte (Wasser/Automation/Offline/Glück) auf höherem Niveau. **Edelkompost**
+  (P16, `repeatable`) ist ein **endloser Gold-Sink** (+2 %/Stufe, costFactor 1.35):
+  570 Qi gestautes Gold kauft ~Stufe 40 und die nächste Stufe kostet wieder mehr,
+  also nie „leergekauft". `buyUpgrade`/`anyUpgradeAffordable` respektieren das Gate
+  (`isUpgradeUnlocked`), die UI zeigt „ab Parzelle N" + Schloss-Sprite und für
+  `repeatable` „Stufe N" ohne `/max`.
+- **C — Kompost-Spät-Sinks:** zwei weitere endlose Sinks (`Tiefenmoor` passive P18,
+  `Ewighumus` offline P20), damit **jeder** Compost-Effekt (yield/growth/questReward/
+  passive/offline) einen Endlos-Pfad hat — vorher fehlten passive & offline. Greifen
+  generisch über `compostUpgradeBonus`.
+- **D — Lizenz-Tiers (`LicenseDef.level: number` + `benefit`):** Lizenz IV — Hanf-
+  Export (80 Qa, P12, +20 % Auftragsbelohnung) und V — Welthandel (50 Qi, P22,
+  +30 % obendrauf) — **keine neuen Pflanzen**, sondern dauerhafte Auftrags-Boni
+  (`licenseQuestBonus`). Lizenz-Cap im `sanitize()` von 3 → 5 angehoben.
+- **E — Auftrags-Wirtschaftlichkeit:** `fulfillQuest` addiert `licenseQuestBonus`
+  in den `rewardBonus` → mit IV+V zahlen Aufträge dauerhaft +50 %, sodass Liefern
+  neben dem reinen Farmen konkurrenzfähig bleibt.
+- **F — Ziel-Panel-Priorisierung:** neue Generatoren `shopGoal` (nächste parzellen-
+  gegatete Werkstatt-Stufe) und `licenseGoal` (nächste Lizenz inkl. Bedingung/
+  Benefit); `upgradeGoal` überspringt gegatete Tiers. Sortierung: triviale Dauer-
+  „ready"-Ziele (Lose/Skill) sortieren **innerhalb ihres Horizonts hinter**
+  substanzielle Fortschritts-Ziele, statt sie zu verdrängen.
+
+Save: **SAVE_VERSION 27 → 28** (reiner Passthrough — neue Upgrade-/Kompost-IDs
+defaulten auf Stufe 0, Lizenz-Cap-Anhebung). Alte Saves laden unverändert. Tests
+56/56, check/build grün, 14-d-Sim & `scripts/diagnose.mjs` (Vorher/Nachher) ohne
+Runaway/NaN/Stall.

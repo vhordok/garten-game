@@ -13,6 +13,7 @@ import { nextMilestone } from '../data/milestones'
 import { PLANTS, SPECIAL_PLANTS, plantById, produceName } from '../data/plants'
 import { CATEGORY_SPECS } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
+import { LICENSES } from '../data/licenses'
 import { compostGain, isPlantUnlocked, leaseRequirement, nextUpgradeCost, plotsWithPlant, upgradeLevel } from './actions'
 import { gardenBeauty, masteryLevel, masteryThreshold, nextSpecMilestone, specializationLevel } from './modifiers'
 import { availableSkillPoints } from './skills'
@@ -86,10 +87,12 @@ function plantGoal(state: GameState): Goal | null {
   return null
 }
 
-/** Cheapest upgrade you are closest to affording. */
+/** Cheapest UNLOCKED upgrade you are closest to affording. */
 function upgradeGoal(state: GameState): Goal | null {
   let best: { def: (typeof UPGRADES)[number]; cost: number } | null = null
   for (const def of UPGRADES) {
+    // PHASE 27: skip parcel-gated late tiers — they get their own shopGoal
+    if (def.unlockParcel && state.parcels < def.unlockParcel) continue
     const cost = nextUpgradeCost(def, state)
     if (cost === null) continue
     if (!best || cost < best.cost) best = { def, cost }
@@ -217,6 +220,46 @@ function compostGoal(state: GameState): Goal | null {
     target: best.cost,
     fraction: clamp01(state.compost / best.cost),
     ready: state.compost >= best.cost,
+  }
+}
+
+/** Next parcel-gated late-tier shop upgrade — guides toward prestige (PHASE 27). */
+function shopGoal(state: GameState): Goal | null {
+  let best: { def: (typeof UPGRADES)[number]; parcel: number } | null = null
+  for (const def of UPGRADES) {
+    const gate = def.unlockParcel ?? 0
+    if (gate <= 0 || state.parcels >= gate) continue
+    if (!best || gate < best.parcel) best = { def, parcel: gate }
+  }
+  if (!best) return null
+  return {
+    id: 'shop',
+    tier: 'lang',
+    icon: '🛒',
+    label: `Werkstatt-Ausbau: ${best.def.name}`,
+    reward: `ab Parzelle ${best.parcel} kaufbar`,
+    current: state.parcels,
+    target: best.parcel,
+    fraction: clamp01(state.parcels / best.parcel),
+    ready: false,
+  }
+}
+
+/** Next cannabis/trade license — a hard money sink with a lasting benefit (PHASE 27). */
+function licenseGoal(state: GameState): Goal | null {
+  const next = LICENSES.find((l) => l.level === state.licenses + 1)
+  if (!next) return null
+  const met = next.requirementMet(state)
+  return {
+    id: 'license',
+    tier: next.level >= 4 ? 'endgame' : 'lang',
+    icon: '📜',
+    label: next.name,
+    reward: met ? next.benefit ?? next.description : next.requirementText,
+    current: met ? Math.min(state.money, next.cost) : 0,
+    target: next.cost,
+    fraction: met ? clamp01(state.money / next.cost) : 0,
+    ready: met && state.money >= next.cost,
   }
 }
 
@@ -430,10 +473,17 @@ const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endg
  * applies, sorted short → endgame. Always returns several goals across tiers so
  * the player can pick what to chase.
  */
+// PHASE 27: always-ready "chore" reminders (cash in this, spend that). They are
+// useful nudges but shouldn't crowd out goals the player actually has to work
+// toward, so within a tier they sort BELOW substantive in-progress goals.
+const CHORE_IDS = new Set(['scratch', 'skill'])
+
 export function activeGoals(state: GameState): Goal[] {
   const goals = [
     plantGoal(state),
     upgradeGoal(state),
+    shopGoal(state),
+    licenseGoal(state),
     scratchGoal(state),
     questGoal(state),
     specGoal(state),
@@ -448,7 +498,14 @@ export function activeGoals(state: GameState): Goal[] {
     compostGoal(state),
     collectionGoal(state),
   ].filter((g): g is Goal => g !== null)
-  goals.sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || b.fraction - a.fraction)
+  goals.sort((a, b) => {
+    const t = TIER_ORDER[a.tier] - TIER_ORDER[b.tier]
+    if (t !== 0) return t
+    // demote trivial always-ready chores beneath real progress within the tier
+    const chore = (CHORE_IDS.has(a.id) ? 1 : 0) - (CHORE_IDS.has(b.id) ? 1 : 0)
+    if (chore !== 0) return chore
+    return b.fraction - a.fraction
+  })
   return goals
 }
 

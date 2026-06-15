@@ -5,6 +5,8 @@
 globalThis.localStorage ??= { getItem: () => null, setItem: () => {}, removeItem: () => {} }
 
 import { PLANTS, steadyProfitPerSecond } from '../src/lib/data/plants.ts'
+import { UPGRADES } from '../src/lib/data/upgrades.ts'
+import { LICENSES, licenseQuestBonus } from '../src/lib/data/licenses.ts'
 import { COMPOST_UPGRADES, compostUpgradeCost } from '../src/lib/data/compostUpgrades.ts'
 import { CATEGORY_SPECS } from '../src/lib/data/specializations.ts'
 import { CONFIG } from '../src/lib/data/config.ts'
@@ -28,6 +30,7 @@ import { achievementBonus, initAchievementTiers, reachedTier, totalClaimedTiers 
 import { SCRATCH_PRIZES, effectiveHarvestValue, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
 import { CONFIG as CFG } from '../src/lib/data/config.ts'
 import { compostGain, isPlantUnlocked } from '../src/lib/game/actions.ts'
+import { activeGoals } from '../src/lib/game/goals.ts'
 import { generateQuest } from '../src/lib/game/quests.ts'
 import { xpToNext } from '../src/lib/data/progression.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
@@ -326,5 +329,56 @@ for (const parc of [12, 16, 22, 30, 40]) {
   console.log(`    Parzelle ${String(parc).padStart(2)}: ${sowable}/${PLANTS.length} pflanzbar · ${gatedOpen} Spitzen-Pflanzen noch durch Parzellen gesperrt`)
 }
 console.log('  ⇒ Der persistente Multiplikator beschleunigt weiter, aber die Spitze wird durch Parzellen (≈1/Prestige) gepact — kein Sofort-Skip.')
+
+// ── PHASE 27: Late-Game-Sinks, Lizenz-Wirtschaft & Ziel-Panel ───────────────
+console.log('\n════════ PHASE 27: LATE-GAME-SINKS & AUFTRAGS-WIRTSCHAFT ════════\n')
+
+console.log('── B. Shop: parzellen-gegatete Spät-Stufen (pacen via Prestige) ──')
+const gatedUpgrades = UPGRADES.filter((u) => u.unlockParcel)
+for (const u of gatedUpgrades) {
+  const repeat = u.repeatable ? ' · ENDLOS' : ` · max ${u.maxLevel}`
+  console.log(`  ${u.name.padEnd(16)} ab Parzelle ${String(u.unlockParcel).padStart(2)} · ${u.effect}${repeat} · Start-Kosten ${fmtN(u.baseCost)}`)
+}
+// Edelkompost als endloser Gold-Sink: wie tief frisst das gemeldete Gold (570 Qi)?
+const edel = UPGRADES.find((u) => u.id === 'edelkompost')
+if (edel) {
+  let lvl = 0, spent = 0, gold = 5.7e20
+  while (spent + Math.floor(edel.baseCost * edel.costFactor ** lvl) <= gold && lvl < edel.maxLevel) {
+    spent += Math.floor(edel.baseCost * edel.costFactor ** lvl); lvl++
+  }
+  console.log(`  ⇒ Edelkompost: 570 Qi Gold kauft ~Stufe ${lvl} (+${(edel.perLevel * lvl * 100).toFixed(0)} % Ertrag), nächste Stufe ${fmtN(Math.floor(edel.baseCost * edel.costFactor ** lvl))} Gold`)
+}
+
+console.log('\n── D/E. Lizenz-Wirtschaft: machen Aufträge wieder lohnend? ──')
+for (const l of LICENSES) {
+  const bonus = licenseQuestBonus(l.level)
+  console.log(`  ${l.name.padEnd(24)} Kosten ${fmtN(l.cost).padStart(8)} Gold · Auftrags-Bonus +${(bonus * 100).toFixed(0)} %`)
+}
+// quest reward vs. farming: a representative big order at the reported tier
+const baseQuestBonus = 1 + variantBonus(s, 'questReward') // ohne Lizenz (Diag-Stand hat keine Spät-Lizenz)
+const withLicenses = baseQuestBonus + licenseQuestBonus(5)
+console.log(`  Auftragsbelohnung ohne Spät-Lizenz: ×${baseQuestBonus.toFixed(2)} · mit Lizenz IV+V: ×${withLicenses.toFixed(2)} (+${((withLicenses / baseQuestBonus - 1) * 100).toFixed(0)} %)`)
+console.log('  ⇒ Lizenz IV/V heben die Auftragsbelohnung dauerhaft → Liefern bleibt neben dem Farmen konkurrenzfähig.')
+
+console.log('\n── C. Kompost: jeder Effekt hat jetzt einen endlosen Spät-Sink ──')
+const repeatSinks = COMPOST_UPGRADES.filter((u) => u.repeatable)
+for (const u of repeatSinks) {
+  const per = u.effect === 'offline' ? `+${u.perLevel} h/Stufe` : `+${(u.perLevel * 100).toFixed(1)} %/Stufe`
+  console.log(`  ${u.name.padEnd(18)} ab Parzelle ${String(u.unlockParcel).padStart(2)} · Effekt ${u.effect} · ${per}`)
+}
+const covered = new Set(repeatSinks.map((u) => u.effect))
+console.log(`  abgedeckte Effekte: ${[...covered].join(', ')} (vorher fehlten passive & offline)`)
+
+console.log('\n── F. Ziel-Panel: Zusammensetzung im Spät-Game ──')
+{
+  const probe = { ...createDefaultState(), parcels: 6, totalEarned: 1e16, lifetimeEarned: 1e16, money: 1e15, scratchTickets: 3, licenses: 3 }
+  for (const c of CATEGORY_SPECS) probe.specializations[c.id] = 10
+  const goals = activeGoals(probe)
+  const byTier = {}
+  for (const g of goals) (byTier[g.tier] ??= []).push(g.id)
+  for (const [t, ids] of Object.entries(byTier)) console.log(`  ${t.padEnd(8)}: ${ids.join(', ')}`)
+  console.log(`  shop-Ziel vorhanden: ${goals.some((g) => g.id === 'shop')} · license-Ziel: ${goals.some((g) => g.id === 'license')}`)
+  console.log('  ⇒ Shop-/Lizenz-/Kompost-Ziele sind sichtbar; triviale Dauer-„ready"-Ziele (Lose/Skill) stehen hinten.')
+}
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')

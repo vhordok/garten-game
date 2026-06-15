@@ -138,13 +138,18 @@
       {#each UPGRADES.filter((u) => u.section === section.id) as upgrade (upgrade.id)}
         {@const level = upgradeLevel($gameStore, upgrade.id)}
         {@const cost = nextUpgradeCost(upgrade, $gameStore)}
-        {@const affordable = cost !== null && $gameStore.money >= cost}
-        <li class="row">
-          <span class="icon"><PixelIcon name={upgrade.sprite} scale={3} /></span>
+        {@const unlocked = !upgrade.unlockParcel || $gameStore.parcels >= upgrade.unlockParcel}
+        {@const affordable = unlocked && cost !== null && $gameStore.money >= cost}
+        <li class="row" class:dimmed={!unlocked}>
+          <span class="icon"><PixelIcon name={unlocked ? upgrade.sprite : 'lock'} scale={3} /></span>
           <span class="info">
             <span class="name">
               {upgrade.name}
-              <span class="level num">Stufe {level}/{upgrade.maxLevel}</span>
+              {#if upgrade.repeatable}
+                <span class="level num">Stufe {level}</span>
+              {:else}
+                <span class="level num">Stufe {level}/{upgrade.maxLevel}</span>
+              {/if}
             </span>
             <span class="desc">{upgrade.description}</span>
             <span class="effect num">
@@ -154,7 +159,9 @@
               {/if}
             </span>
           </span>
-          {#if cost === null}
+          {#if !unlocked}
+            <span class="maxed lockmsg num">ab Parzelle {upgrade.unlockParcel}</span>
+          {:else if cost === null}
             <span class="maxed">MAX</span>
           {:else}
             <button class="pxbtn gold num buy" disabled={!affordable} onclick={(e) => handleBuy(e, upgrade.id)}>
@@ -235,6 +242,9 @@
         <span class="info">
           <span class="name">{lic.name}</span>
           <span class="desc">{lic.description}</span>
+          {#if lic.benefit}
+            <span class="effect num">Dauerhaft: <b>{lic.benefit}</b></span>
+          {/if}
           <span class="effect num">Bedingung: {lic.requirementText} {met ? '✓' : '✗'}</span>
         </span>
         {#if owned}
@@ -337,6 +347,13 @@
     font-size: 0.8rem;
     color: var(--c-gold2);
     text-shadow: 0 0 8px rgba(222, 158, 65, 0.5);
+  }
+
+  .lockmsg {
+    color: var(--c-mist);
+    text-shadow: none;
+    font-size: 0.72rem;
+    text-align: right;
   }
 
   .spec-hint {
