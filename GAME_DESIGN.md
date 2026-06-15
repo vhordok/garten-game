@@ -1016,3 +1016,32 @@ Tests 54/54, check/build grün, 14-d-Sim ohne Runaway/NaN (Leveln spürbar
 langsamer, Ökonomie gesund). **Offen → Phase 26:** Prestige-Skip-Grundursache
 (Unlock-Gating am Multiplikator skalieren), Shop-/Kompost-Late-Sinks, Lizenz-
 Tiers, Ziel-Panel-Priorisierung.
+
+### 9.28 Phase 26 — Prestige-Soft-Gate gegen den Leiter-Skip (keine Save-Änderung)
+
+Die seit Phase 15 bekannte Grundursache gezielt entschärft; Shop-/Kompost-/
+Lizenz-Late-Sinks bewusst → Phase 27 (eigene Inhalts-Reworks, nicht halbgar).
+
+- **Prestige-Skip-Fix (Parzellen-Soft-Gate, `PlantDef.unlockParcel`):** die elf
+  sehr späten Pflanzen (Phase 23/24) brauchen jetzt **zusätzlich zur Einnahmen-
+  schwelle eine Mindest-Parzellenzahl** (Traumorchidee P6 … Urweltbaum P36).
+  Parzellen wachsen ~1/Prestige und überstehen den Reset — also **pacet der
+  langsame, persistente Parzellen-Fortschritt die Spitze, während der schnelle
+  Ertrags-Multiplikator weiter beschleunigt**. Diagnose: bei totalEarned = 1 Sx
+  (Multiplikator rast) sind bei Parzelle 12 noch 6 Spitzen-Pflanzen gesperrt,
+  die sich erst mit weiteren Prestiges (Parzelle 16/22/30/40) öffnen → kein
+  Sofort-Skip der ganzen Leiter mehr, aber spürbare Beschleunigung bleibt.
+  **Kein Nerf, keine Strafe:** der Multiplikator wird nicht angetastet; das Gate
+  greift nur beim *neuen* Säen/Auswählen — bereits gepflanzte Beete laufen
+  unberührt weiter (über `plantById`, nie ein Brick), und ältere Pflanzen haben
+  kein Gate.
+- **Soft, transparent, save-safe:** `isPlantUnlocked` prüft das Gate (Hotbar zeigt
+  „Parz. N" statt „???"), `questPool` fragt nie nach einer noch nicht säbaren
+  Pflanze (kein neuer Softlock), und das Ziel-Panel macht aus einer einnahmen-
+  erreichten-aber-parzellen-gegateten Sorte ein **Parzellen-Ziel** („Parzelle N
+  für X"). `unlockParcel` ist reines Daten-Feld → keine Save-Migration.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 27). Tests 55/55, check/build grün,
+14-d-Sim ohne Runaway/NaN/Stall. **Offen → Phase 27:** Shop-Late-Tiers,
+Kompost-/Prestige-Sinks, Lizenz-Tiers, breitere Ziel-Panel-Priorisierung,
+Auftrags-Wirtschaftlichkeit.

@@ -46,6 +46,9 @@ export function isPlantUnlocked(def: PlantDef, state: GameState): boolean {
   // PHASE 22: special plants are gated by seed-lab discovery, not by earnings
   if (def.special) return def.unlockVariant ? state.discoveredVariants.includes(def.unlockVariant) : false
   if (def.requiresLicense && state.licenses < def.requiresLicense) return false
+  // PHASE 26: soft prestige-gate — very-late plants also need leased parcels, so
+  // a racing post-prestige multiplier can't skip the whole ladder at once.
+  if (def.unlockParcel && state.parcels < def.unlockParcel) return false
   return state.totalEarned >= def.unlockAtTotalEarned
 }
 
