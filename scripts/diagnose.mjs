@@ -35,7 +35,7 @@ import { generateQuest, refillQuests } from '../src/lib/game/quests.ts'
 import { xpToNext } from '../src/lib/data/progression.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
 import { get } from 'svelte/store'
-import { toasts, pushTicketToast, pushAggregateToast, clearToasts } from '../src/lib/ui/toasts.ts'
+import { toasts, toastLog, pushTicketToast, pushAggregateToast, clearToasts, clearToastLog } from '../src/lib/ui/toasts.ts'
 
 function fmtN(v) {
   if (!isFinite(v)) return '∞'
@@ -456,5 +456,38 @@ console.log(`  sichtbare Toasts      : ${visible.length} (Render-Deckel 3)`)
 for (const t of visible) console.log(`    • [${t.priority}] ${t.icon} ${t.text} (×${t.count})`)
 console.log(`  ⇒ ${live.length <= 2 && visible.length <= 3 ? 'OK: keine Flut, alles in wenige Meldungen gebündelt' : 'PRÜFEN'}`)
 clearToasts()
+
+// ── PHASE 30: Auftrags-Zeitschätzung & Toast-Verlauf ───────────────────────
+console.log('\n════════ PHASE 30: ZEITSCHÄTZUNG & VERLAUF ════════\n')
+
+console.log('── Auftrags-Empfehlung mit Produktions-Zeit (selber Auftrag, andere Felder) ──')
+function timeCase(label, plotN, amount, over) {
+  const st = buildGoalState({ level: 40, parcels: 22, licenses: 5, ...over })
+  st.plots = Array.from({ length: plotN }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+  const basil = PLANTS.find((p) => p.id === 'basilikum')
+  st.quests = [{
+    id: 1, kind: 'single', items: [{ plantId: 'basilikum', amount }],
+    reward: amount * basil.sellValue, rewardTickets: 0, rewardCompost: 0, xp: 0, tier: 'bronze', client: 'X', skipCooldown: 0,
+  }]
+  const q = activeGoals(st).find((g) => g.id === 'quest')
+  console.log(`  ${label.padEnd(34)}: ${q ? `${q.chore ? 'leise' : 'STARK'} — ${q.why}` : 'nicht angezeigt'}`)
+}
+timeCase('kleiner Auftrag, großes Feld (50)', 50, 20)
+timeCase('großer Auftrag, kleines Feld (2)', 2, 5_000_000)
+timeCase('mittlerer Auftrag, mittleres Feld (12)', 12, 5_000)
+console.log('  ⇒ Lukrativ-aber-Dauergrind wird nur leise gezeigt; schnelle Aufträge stark mit „~Xm".')
+
+console.log('\n── Toast-Verlauf: Burst → eine Log-Zeile je Art (statt N) ──')
+clearToasts(); clearToastLog()
+for (let i = 0; i < 80; i++) {
+  pushAggregateToast({ key: 'levelup', icon: '⭐', priority: 'important', ttlMs: 6000,
+    merge: (prev) => ({ acc: { n: (prev?.n ?? 0) + 1 }, text: `+${(prev?.n ?? 0) + 1} Level` }) })
+  if (i % 2 === 0) pushTicketToast(1)
+}
+const logE = get(toastLog)
+console.log(`  80 Level-Ups + 40 Lose → Verlaufseinträge: ${logE.length}`)
+for (const e of logE) console.log(`    • ${e.icon} ${e.text} (×${e.count})`)
+console.log(`  ⇒ ${logE.length <= 2 ? 'OK: Verlauf bündelt wie die Toasts, kein Spam' : 'PRÜFEN'}`)
+clearToasts(); clearToastLog()
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')

@@ -96,7 +96,7 @@ import { SPRITES } from '../src/lib/ui/pixel/sprites.ts'
 import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceStatus, variantBonus, variantEventBonus } from '../src/lib/game/seedlab.ts'
 import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
 import { get } from 'svelte/store'
-import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts } from '../src/lib/ui/toasts.ts'
+import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
@@ -1953,6 +1953,66 @@ test('PHASE 29: goal board is economic, diverse and explained', () => {
     for (const g of board) {
       assert.ok(Number.isFinite(g.fraction) && g.fraction >= 0 && g.fraction <= 1, `clean fraction for ${g.id}`)
     }
+  })
+})
+
+test('PHASE 30: toast log keeps a readable history without re-spamming', () => {
+  clearToasts()
+  clearToastLog()
+  // a burst of aggregated events collapses to ONE log line each (not N)
+  for (let i = 0; i < 50; i++) {
+    pushAggregateToast({
+      key: 'levelup', icon: '⭐', priority: 'important', ttlMs: 6000,
+      merge: (prev) => ({ acc: { n: (prev?.n ?? 0) + 1 }, text: `+${(prev?.n ?? 0) + 1} Level` }),
+    })
+    pushTicketToast(1)
+  }
+  const log = get(toastLog)
+  assert.equal(log.length, 2, 'aggregated bursts produce one log entry per kind')
+  const lvl = log.find((e) => e.logKey === 'levelup')
+  assert.equal(lvl.count, 50, 'log entry reflects the aggregate count')
+  assert.equal(get(toastLogUnseen) > 0, true, 'unseen badge counts events')
+  markToastLogSeen()
+  assert.equal(get(toastLogUnseen), 0, 'opening the log clears the unseen badge')
+
+  // the log is capped so it never grows without bound
+  clearToastLog()
+  for (let i = 0; i < 60; i++) pushToast(`distinct ${i}`, '·', 6000)
+  assert.ok(get(toastLog).length <= 40, 'history is capped to the most recent few dozen')
+  // newest first
+  assert.match(get(toastLog)[0].text, /distinct 59/, 'most recent entry is on top')
+  clearToasts()
+  clearToastLog()
+})
+
+test('PHASE 30: quest goal weighs real production time', () => {
+  withBoringRng(() => {
+    const bas = PLANTS.find((p) => p.id === 'basilikum')
+    const fewPlots = () => Array.from({ length: 2 }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+    const order = (amount) => ({
+      id: 1, kind: 'single', items: [{ plantId: 'basilikum', amount }],
+      reward: amount * bas.sellValue, rewardTickets: 0, rewardCompost: 0, xp: 0, tier: 'bronze', client: 'X', skipCooldown: 0,
+    })
+
+    // huge order + tiny field + strong license premium → lucrative but a long grind:
+    // shown quietly (chore), and the reason names the long cultivation time
+    const grind = fresh()
+    grind.level = 40; grind.parcels = 22; grind.licenses = 5
+    grind.plots = fewPlots()
+    grind.quests = [order(5_000_000)]
+    const qGrind = activeGoals(grind).find((g) => g.id === 'quest')
+    assert.ok(qGrind, 'a feasible order still appears')
+    assert.ok(qGrind.chore, 'an unrealistically long order is not headlined')
+    assert.match(qGrind.why, /langer Anbau|~/, 'the reason reflects the time cost')
+
+    // small order on a big field → quick and worthwhile, with a time hint
+    const quick = fresh()
+    quick.level = 40; quick.parcels = 22; quick.licenses = 5
+    quick.plots = Array.from({ length: 50 }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+    quick.quests = [order(20)]
+    const qQuick = activeGoals(quick).find((g) => g.id === 'quest')
+    assert.ok(qQuick && !qQuick.chore, 'a quick lucrative order is recommended')
+    assert.match(qQuick.why, /Direktverkauf/, 'reason explains the economic edge')
   })
 })
 

@@ -168,5 +168,10 @@ Rubbellos-Emitter aggregieren); Auftragsziele wirtschaftlich gewichtet
 oder Prämie über Direktverkauf, faltet Lizenz/Mykorrhiza/Variante/Streak vs.
 Marktstand/Welle ein); Build-Entdeckungsziele (buildGoal, discovery-Flag, rotiert
 nach Parzelle); Ziele mit why-Begründung + Typ-Chip; goalBoard komponiert Vielfalt
-(≤1 Chore, ≤1 Build, ≤3/Horizont). Keine Save-Änderung. 53 Sorten (+1 Spezial) in
-8 Kategorien, Stand SAVE_VERSION 28.
+(≤1 Chore, ≤1 Build, ≤3/Horizont). Keine Save-Änderung. Phase 30 (§9.32): Toast-
+Verlauf (toastLog + ToastLogPanel, 🔔-HUD-Button mit unseen-Badge — Session-Historie
+gedeckelt auf 40, aggregiert wie die Toasts, nie gespeichert) macht gebündelte/
+verpasste Meldungen nachlesbar; Auftrags-Zeitschätzung (goals.ts questFulfillSeconds:
+reale Anbauzeit der fehlenden Produkte) — lukrativ-aber-Dauergrind (>2 h) wird nur
+leise gezeigt, schnelle Aufträge stark mit „~Xm" im why. Keine Save-Änderung. 53
+Sorten (+1 Spezial) in 8 Kategorien, Stand SAVE_VERSION 28.
