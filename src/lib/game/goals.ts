@@ -15,7 +15,7 @@ import { CATEGORY_SPECS } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
 import { LICENSES } from '../data/licenses'
 import { compostGain, expectedQuestPayout, isPlantUnlocked, leaseRequirement, nextUpgradeCost, plotsWithPlant, upgradeLevel } from './actions'
-import { gardenBeauty, masteryLevel, masteryThreshold, nextSpecMilestone, sellMultiplier, specializationLevel } from './modifiers'
+import { gardenBeauty, growthMultiplier, masteryLevel, masteryThreshold, nextSpecMilestone, sellMultiplier, specializationLevel, yieldMultiplier } from './modifiers'
 import { availableSkillPoints } from './skills'
 import { crossEligibility, discoverableVariants, produceStatus } from './seedlab'
 import { VARIANTS } from '../data/variants'
@@ -162,6 +162,35 @@ function questSellGold(state: GameState, q: GameState['quests'][number]): number
   return gold
 }
 
+/**
+ * Rough seconds to GROW the produce a quest still needs, dedicating the whole
+ * field to it (PHASE 30). Lines are summed (you grow them in turn). Used to keep
+ * orders that would take an unrealistically long grind from headlining, and to
+ * show a "~Xm" hint. Optimistic on purpose — a lower bound, not a promise.
+ */
+function questFulfillSeconds(state: GameState, q: GameState['quests'][number]): number {
+  const ym = yieldMultiplier(state)
+  const gm = growthMultiplier(state)
+  const plots = Math.max(1, state.plots.length)
+  let total = 0
+  for (const it of q.items) {
+    const remaining = Math.max(0, it.amount - heldFor(state, it))
+    if (remaining <= 0) continue
+    // representative plant: the fastest sowable one for this line
+    const def = it.plantId
+      ? plantById(it.plantId)
+      : PLANTS.filter((p) => p.category === it.category && p.yield > 0 && isPlantUnlocked(p, state)).sort(
+          (a, b) => (a.regrowTime ?? a.growTime) - (b.regrowTime ?? b.growTime)
+        )[0]
+    if (!def || def.yield <= 0) return Infinity
+    const cycle = def.growTime / Math.max(gm, 0.0001)
+    const ratePerSec = (def.yield * ym * plots) / Math.max(cycle, 0.0001)
+    if (ratePerSec <= 0) return Infinity
+    total += remaining / ratePerSec
+  }
+  return total
+}
+
 /** Can the player realistically grow everything this order asks for? */
 function questFeasible(state: GameState, q: GameState['quests'][number]): boolean {
   return q.items.every((it) => {
@@ -205,17 +234,25 @@ function questGoal(state: GameState): Goal | null {
   if (!best) return null
 
   const almostDone = best.frac >= 0.8
-  const worthwhile = best.premium >= 1.3
+  // PHASE 30: a real production-time estimate gates the recommendation — a great
+  // premium that would take an unrealistic grind to fill should not headline.
+  const estSeconds = questFulfillSeconds(state, best.q)
+  const UNREALISTIC = 2 * 3600
+  const worthwhile = best.premium >= 1.3 && estSeconds <= UNREALISTIC
   // not nearly done AND clearly worse than just selling → don't clutter the board
   if (!almostDone && best.premium < 0.95 && best.frac < 0.4) return null
 
+  const mins = (s: number): string =>
+    !Number.isFinite(s) ? '' : s < 60 ? ' · <1m' : s < 3600 ? ` · ~${Math.round(s / 60)}m` : ` · ~${(s / 3600).toFixed(1)}h`
   const synergy =
     state.licenses >= 4 ? ' · Lizenz-Bonus' : state.weather.id ? ' · Event aktiv' : ''
   const why = almostDone
     ? 'Fast fertig — nur noch liefern'
-    : worthwhile
-      ? `Zahlt ~${best.premium.toFixed(1)}× über Direktverkauf${synergy}`
-      : 'Knapp lohnend — Lager nicht blockieren'
+    : best.premium >= 1.3 && estSeconds > UNREALISTIC
+      ? `Lohnend, aber langer Anbau${mins(estSeconds)}`
+      : worthwhile
+        ? `Zahlt ~${best.premium.toFixed(1)}× über Direktverkauf${synergy}${mins(estSeconds)}`
+        : 'Knapp lohnend — Lager nicht blockieren'
 
   return {
     id: 'quest',

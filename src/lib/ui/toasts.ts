@@ -41,6 +41,45 @@ let sweeper: ReturnType<typeof setInterval> | null = null
 
 export const toasts = writable<Toast[]>([])
 
+// PHASE 30 — toast log. Aggregation deliberately hides detail on screen, so keep
+// a short, persistent-in-session HISTORY the player can review ("what did I just
+// miss?"). Never saved; capped to the most recent few dozen. Keyed/aggregated
+// toasts update their single log entry (so the bundle reads as one line), and an
+// unseen counter drives a small HUD badge until the log is opened.
+export interface ToastLogEntry {
+  logKey: string
+  icon: string
+  text: string
+  priority: number
+  count: number
+  at: number
+}
+
+const LOG_MAX = 40
+export const toastLog = writable<ToastLogEntry[]>([])
+export const toastLogUnseen = writable(0)
+
+function logToast(t: { id: number; icon: string; text: string; priority: number; key?: string; count: number }): void {
+  const logKey = t.key ?? `id:${t.id}`
+  const at = Date.now()
+  toastLog.update((log) => {
+    const rest = log.filter((e) => e.logKey !== logKey)
+    return [{ logKey, icon: t.icon, text: t.text, priority: t.priority, count: t.count, at }, ...rest].slice(0, LOG_MAX)
+  })
+  toastLogUnseen.update((n) => Math.min(n + 1, 99))
+}
+
+/** Mark the log as seen (clears the HUD badge) — call when the log panel opens. */
+export function markToastLogSeen(): void {
+  toastLogUnseen.set(0)
+}
+
+/** Wipe the in-session toast history. */
+export function clearToastLog(): void {
+  toastLog.set([])
+  toastLogUnseen.set(0)
+}
+
 /** Drop expired toasts; stop the timer when the screen is clear (test-friendly). */
 function sweep(now = Date.now()): void {
   toasts.update((list) => {
@@ -77,6 +116,7 @@ export function pushToast(text: string, icon = '🌱', ttlMs = 6000, opts: PushO
   ensureSweeper()
   const priority = PRIORITY_WEIGHT[opts.priority ?? 'normal']
   const expires = Date.now() + ttlMs
+  let logged: { id: number; count: number } = { id: 0, count: 1 }
   toasts.update((list) => {
     if (opts.key) {
       const existing = list.find((t) => t.key === opts.key)
@@ -86,11 +126,15 @@ export function pushToast(text: string, icon = '🌱', ttlMs = 6000, opts: PushO
         existing.priority = priority
         existing.count += 1
         existing.expires = expires
+        logged = { id: existing.id, count: existing.count }
         return [...list]
       }
     }
-    return [...list, { id: nextId++, icon, text, priority, key: opts.key, count: 1, expires }]
+    const id = nextId++
+    logged = { id, count: 1 }
+    return [...list, { id, icon, text, priority, key: opts.key, count: 1, expires }]
   })
+  logToast({ id: logged.id, icon, text, priority, key: opts.key, count: logged.count })
 }
 
 export interface AggregateSpec<A> {
@@ -113,6 +157,7 @@ export function pushAggregateToast<A>(spec: AggregateSpec<A>): void {
   ensureSweeper()
   const priority = PRIORITY_WEIGHT[spec.priority ?? 'normal']
   const expires = Date.now() + (spec.ttlMs ?? 6000)
+  let logged: { id: number; text: string; count: number } = { id: 0, text: '', count: 1 }
   toasts.update((list) => {
     const existing = list.find((t) => t.key === spec.key)
     if (existing) {
@@ -123,11 +168,15 @@ export function pushAggregateToast<A>(spec: AggregateSpec<A>): void {
       existing.priority = priority
       existing.count += 1
       existing.expires = expires
+      logged = { id: existing.id, text, count: existing.count }
       return [...list]
     }
     const { acc, text } = spec.merge(null)
-    return [...list, { id: nextId++, icon: spec.icon, text, priority, key: spec.key, count: 1, expires, acc }]
+    const id = nextId++
+    logged = { id, text, count: 1 }
+    return [...list, { id, icon: spec.icon, text, priority, key: spec.key, count: 1, expires, acc }]
   })
+  logToast({ id: logged.id, icon: spec.icon, text: logged.text, priority, key: spec.key, count: logged.count })
 }
 
 /**

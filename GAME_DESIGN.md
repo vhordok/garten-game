@@ -1171,3 +1171,30 @@ intelligenteres Ziel-Panel. Alles UI-/Logik-Politur, keine neue Save-Struktur.
 Keine Save-Format-Änderung (SAVE_VERSION bleibt 28). check/build grün, 14-d-Sim
 sauber. **Offen → Phase 30:** Toast-Historie/„Log"-Panel zum Nachlesen verpasster
 Meldungen; Auftrags-Zeitschätzung anhand realer Produktionsrate.
+
+### 9.32 Phase 30 — Toast-Verlauf & Auftrags-Zeitschätzung (keine Save-Änderung)
+
+Die in 9.31 offengelassenen Folgepunkte umgesetzt; reine UI-/Logik-Politur.
+
+- **Toast-Verlauf/„Log" (`ui/toasts.ts` + `ToastLogPanel.svelte`):** Da die
+  Aggregation Details bewusst auf dem Spielfeld versteckt, hält der Store jetzt
+  eine **kurze Session-Historie** (`toastLog`, gedeckelt auf 40, nie gespeichert).
+  Keyed/aggregierte Toasts aktualisieren **einen** Log-Eintrag → ein 120-Beete-Burst
+  ergibt 2 Zeilen, nicht 120. Ein **🔔-HUD-Button** öffnet den Verlauf (Icon, Text,
+  ×Anzahl, „vor Xm", Priorität); ein `toastLogUnseen`-Zähler treibt ein kleines
+  Badge, das beim Öffnen (`markToastLogSeen`) verschwindet; „Verlauf leeren" räumt
+  auf. Wichtige App-Toasts (neuer Erfolg = critical, neue Pflanze/Willkommen-zurück
+  = important) sind jetzt korrekt priorisiert + keyed.
+- **Auftrags-Zeitschätzung (`goals.ts` `questFulfillSeconds`):** das Ziel-Panel
+  schätzt nun die **reale Anbauzeit** der noch fehlenden Produkte (Ertrag ×
+  Ertrags-Mult × Beete / Wuchszeit, Linien summiert) und faltet sie in die
+  Auftrags-Empfehlung: ein lukrativer Auftrag, der einen **unrealistischen Grind**
+  (> 2 h Vollanbau) bräuchte, wird nur noch *leise* gezeigt; schnelle Aufträge
+  stark, mit „~Xm"-Hinweis im `why`. Diagnose: 20 Stück/50 Beete → „STARK · <1m",
+  5 Mio/2 Beete → „leise · langer Anbau ~2983 h", 5 000/12 Beete → „STARK · ~30m".
+- **G/I:** `diagnose.mjs` um Zeitschätzung + Verlaufs-Bündelung erweitert; zwei
+  Phase-30-Tests (Log-Aggregation/Deckel/Unseen-Badge; Auftrags-Zeit-Gating) → 61/61.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 28). check/build grün, 14-d-Sim
+sauber. **Offen → Phase 31:** Toast-Log optional persistent (letzte Sitzung);
+feinere Build-Empfehlung nach tatsächlich gespieltem Stil.

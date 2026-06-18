@@ -25,6 +25,7 @@
   import SettingsPanel from './lib/ui/SettingsPanel.svelte'
   import ShopPanel from './lib/ui/ShopPanel.svelte'
   import Toasts from './lib/ui/Toasts.svelte'
+  import ToastLogPanel from './lib/ui/ToastLogPanel.svelte'
   import WeatherEvents from './lib/ui/WeatherEvents.svelte'
   import { pushToast } from './lib/ui/toasts'
   import TutorialPanel from './lib/ui/TutorialPanel.svelte'
@@ -33,7 +34,7 @@
   let { offline }: { offline: OfflineReport | null } = $props()
 
   let openPanel = $state<
-    | 'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'goals' | 'skills' | 'seedlab' | 'tutorial' | null
+    | 'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'goals' | 'skills' | 'seedlab' | 'toastlog' | 'tutorial' | null
   >(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
@@ -70,7 +71,7 @@
       if (offline.autoHarvested > 0) parts.push(`Helfer ernteten ${formatNumber(offline.autoHarvested)}×`)
       if (offline.autoEarned > 0) parts.push(`+${formatNumber(offline.autoEarned)} Gold verdient`)
       const summary = parts.length > 0 ? ` — ${parts.join(', ')}!` : '.'
-      pushToast(`Willkommen zurück! Du warst ${formatDuration(offline.awaySeconds)} weg${summary}`, '🌅', 10000)
+      pushToast(`Willkommen zurück! Du warst ${formatDuration(offline.awaySeconds)} weg${summary}`, '🌅', 10000, { priority: 'important' })
       playSound('welcome')
     }
   })
@@ -85,7 +86,7 @@
         const before = knownTiers[def.id] ?? 0
         if (now > before) {
           const tier = TIER_NAMES[now - 1]
-          pushToast(`${def.icon} ${def.name} — ${tier} erreicht!`, '🏆', 8000)
+          pushToast(`${def.icon} ${def.name} — ${tier} erreicht!`, '🏆', 8000, { priority: 'critical', key: `ach-${def.id}` })
           playSound('levelup')
         }
       }
@@ -100,7 +101,7 @@
     if (knownUnlocks !== null) {
       for (const plant of unlocked) {
         if (!knownUnlocks.includes(plant.id)) {
-          pushToast(`Neue Pflanze freigeschaltet: ${plant.name}!`, plant.emoji, 8000)
+          pushToast(`Neue Pflanze freigeschaltet: ${plant.name}!`, plant.emoji, 8000, { priority: 'important', key: `unlock-${plant.id}` })
           playSound('unlock')
         }
       }
@@ -124,6 +125,7 @@
     onOpenGoals={() => (openPanel = 'goals')}
     onOpenSkills={() => (openPanel = 'skills')}
     onOpenSeedLab={() => (openPanel = 'seedlab')}
+    onOpenToastLog={() => (openPanel = 'toastlog')}
   />
   <main bind:this={stageEl}>
     <!-- PHASE 16: in-flow notification zone — event banners reserve space here,
@@ -168,6 +170,8 @@
   <SkillsPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'seedlab'}
   <SeedLabPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'toastlog'}
+  <ToastLogPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'tutorial'}
   <TutorialPanel onClose={closeTutorial} />
 {/if}

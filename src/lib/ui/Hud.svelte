@@ -4,6 +4,7 @@
   import { xpToNext } from '../data/progression'
   import { anyUpgradeAffordable, compostGain, dailyClaimable, leaseRequirement, questFulfillable, sellableValue, sellAll } from '../game/actions'
   import { activeGoals } from '../game/goals'
+  import { toastLogUnseen } from './toasts'
   import { availableSkillPoints } from '../game/skills'
   import { crossEligibility, discoverableVariants } from '../game/seedlab'
   import { comboMultiplier, comboWindowSeconds, marketFactor, maxScratchTickets } from '../game/modifiers'
@@ -25,6 +26,7 @@
     onOpenGoals,
     onOpenSkills,
     onOpenSeedLab,
+    onOpenToastLog,
   }: {
     onOpenInventory: () => void
     onOpenSettings: () => void
@@ -37,6 +39,7 @@
     onOpenGoals: () => void
     onOpenSkills: () => void
     onOpenSeedLab: () => void
+    onOpenToastLog: () => void
   } = $props()
 
   // PHASE 28: only MEANINGFUL ready goals light the badge — trivial chores
@@ -206,6 +209,11 @@
   <button class="pxbtn" onclick={onOpenInventory} aria-label="Lager" title="Lager öffnen">
     <PixelIcon name="basket" scale={2} />
     {#if stockCount > 0}<span class="badge num">{formatNumber(stockCount)}</span>{/if}
+  </button>
+
+  <button class="pxbtn" onclick={onOpenToastLog} aria-label="Verlauf" title="Verlauf — verpasste Meldungen nachlesen">
+    🔔
+    {#if $toastLogUnseen > 0}<span class="badge num">{$toastLogUnseen}</span>{/if}
   </button>
 
     <span class="hud-divider" aria-hidden="true"></span>
