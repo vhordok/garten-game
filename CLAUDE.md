@@ -160,4 +160,13 @@ diagnosegetriebener Politur-Durchlauf — End-to-End-Playtest (scripts/playtest.
 noch-nicht-bezahlbares Upgrade statt „Gießkanne bereit"; Goal.chore-Flag entwertet
 triviale Jederzeit-Ziele in Sortierung/Panel-Optik/HUD-Badge; goalBoard() deckelt
 ≤3 Ziele/Horizont), Fresh-Start/Shop-Kompost-Lizenz-UI/Zahlenformat geprüft & gesund.
-Keine Save-Änderung. 53 Sorten (+1 Spezial) in 8 Kategorien, Stand SAVE_VERSION 28.
+Keine Save-Änderung. Phase 29 (§9.31): Toast-Spam-Fix & Goal-System 2.0 — Toasts
+mit Priorität+Aggregation (key-basiert, pushAggregateToast bündelt 120-Beete-Ernte
+auf ~2 Meldungen), Render-Deckel max 3, feste Ecke unten-rechts (fx/celebrate.ts +
+Rubbellos-Emitter aggregieren); Auftragsziele wirtschaftlich gewichtet
+(expectedQuestPayout geteilt mit fulfillQuest; questGoal nur stark bei fast-fertig
+oder Prämie über Direktverkauf, faltet Lizenz/Mykorrhiza/Variante/Streak vs.
+Marktstand/Welle ein); Build-Entdeckungsziele (buildGoal, discovery-Flag, rotiert
+nach Parzelle); Ziele mit why-Begründung + Typ-Chip; goalBoard komponiert Vielfalt
+(≤1 Chore, ≤1 Build, ≤3/Horizont). Keine Save-Änderung. 53 Sorten (+1 Spezial) in
+8 Kategorien, Stand SAVE_VERSION 28.
