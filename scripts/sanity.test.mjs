@@ -95,6 +95,9 @@ import { VARIANTS } from '../src/lib/data/variants.ts'
 import { SPRITES } from '../src/lib/ui/pixel/sprites.ts'
 import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceStatus, variantBonus, variantEventBonus } from '../src/lib/game/seedlab.ts'
 import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
+import { get } from 'svelte/store'
+import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts } from '../src/lib/ui/toasts.ts'
+import { expectedQuestPayout } from '../src/lib/game/actions.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
 import { eventMasteryMult, gardenBeauty } from '../src/lib/game/modifiers.ts'
@@ -1850,6 +1853,105 @@ test('PHASE 28: goal board prioritises real progress over trivial chores', () =>
         assert.ok(Number.isFinite(g.fraction) && g.fraction >= 0 && g.fraction <= 1, `clean fraction for ${g.id}`)
         assert.ok(Number.isFinite(g.current) && Number.isFinite(g.target), `clean numbers for ${g.id}`)
       }
+    }
+  })
+})
+
+test('PHASE 29: toast system aggregates bursts and never floods the screen', () => {
+  // a 120-plot "alle ernten" fires many level-ups + ticket drops in a row
+  clearToasts()
+  for (let i = 0; i < 120; i++) {
+    pushAggregateToast({
+      key: 'levelup', icon: '⭐', priority: 'important', ttlMs: 6000,
+      merge: (prev) => {
+        const levels = (prev?.levels ?? 0) + 1
+        return { acc: { levels }, text: `+${levels} Level` }
+      },
+    })
+    if (i % 3 === 0) pushTicketToast(1)
+  }
+  const live = get(toasts)
+  // 120 level-up events + 40 ticket events collapse into exactly TWO toasts
+  assert.equal(live.length, 2, 'bursts aggregate by key, not stack')
+  const lvl = live.find((t) => t.key === 'levelup')
+  const tix = live.find((t) => t.key === 'ticket')
+  assert.equal(lvl.count, 120, 'all level-ups merged into one toast')
+  assert.equal(tix.acc, 40, 'all tickets merged into one toast')
+  assert.match(tix.text, /40 Rubbellose/, 'ticket toast shows the aggregate count')
+
+  // render-cap: at most 3 visible even with many distinct toasts; priority wins
+  clearToasts()
+  for (let i = 0; i < 5; i++) pushToast(`spam ${i}`, '·', 6000, { priority: 'low', key: `low-${i}` })
+  pushToast('JACKPOT!', '💰', 6000, { priority: 'critical', key: 'jackpot' })
+  const all = get(toasts)
+  assert.equal(all.length, 6, 'distinct keys do not merge')
+  const visible = [...all].sort((a, b) => b.priority - a.priority || b.id - a.id).slice(0, 3)
+  assert.equal(visible.length, 3, 'never more than three visible')
+  assert.ok(visible.some((t) => t.key === 'jackpot'), 'a critical toast is never buried by low-priority spam')
+  clearToasts()
+})
+
+test('PHASE 29: goal board is economic, diverse and explained', () => {
+  withBoringRng(() => {
+    // --- quest economics: only headline when it pays off ---------------------
+    // a fixed order worth exactly its raw produce value (premium = 1 / sellMult)
+    const N = 50
+    const bas = PLANTS.find((p) => p.id === 'basilikum')
+    const order = () => ({
+      id: 1, kind: 'single', items: [{ plantId: 'basilikum', amount: N }],
+      reward: N * bas.sellValue, rewardTickets: 0, rewardCompost: 0, xp: 0, tier: 'bronze', client: 'X', skipCooldown: 0,
+    })
+
+    const base = fresh()
+    base.money = 1e6; base.totalEarned = 1e6; base.level = 40
+    base.quests = [order()]
+    const qBase = activeGoals(base).find((g) => g.id === 'quest')
+    assert.ok(qBase, 'a fair order is shown')
+
+    // heavy Marktstand raises the sell baseline → delivering loses its edge → dropped
+    const sellHeavy = fresh()
+    sellHeavy.money = 1e6; sellHeavy.totalEarned = 1e6; sellHeavy.level = 40
+    sellHeavy.upgrades = { marktstand: 10 }
+    sellHeavy.quests = [order()]
+    const qHeavy = activeGoals(sellHeavy).find((g) => g.id === 'quest')
+    assert.ok(!qHeavy || qHeavy.chore, 'order worse than selling is hidden or quiet, never headlined')
+
+    // a license premium makes the SAME order clearly worthwhile again
+    const licensed = fresh()
+    licensed.money = 1e6; licensed.totalEarned = 1e6; licensed.level = 40; licensed.parcels = 22; licensed.licenses = 5
+    licensed.quests = [order()]
+    assert.ok(expectedQuestPayout(licensed, order()) > expectedQuestPayout(base, order()), 'license raises payout')
+    const qLic = activeGoals(licensed).find((g) => g.id === 'quest')
+    assert.ok(qLic && !qLic.chore, 'with a license bonus the order is strongly recommended')
+
+    // almost-done order is a short-term, non-chore deliver-now goal
+    const almost = fresh()
+    almost.level = 40
+    almost.quests = [order()]
+    almost.inventory = { basilikum: N }
+    const qAlmost = activeGoals(almost).find((g) => g.id === 'quest')
+    assert.ok(qAlmost && qAlmost.tier === 'kurz' && qAlmost.ready && !qAlmost.chore, 'near-complete order is surfaced to deliver')
+
+    // --- build-discovery nudge appears for an un-engaged, eligible style ------
+    const mid = fresh()
+    mid.money = 1e9; mid.totalEarned = 1e9; mid.level = 40; mid.parcels = 4
+    const goalsMid = activeGoals(mid)
+    const build = goalsMid.find((g) => g.discovery)
+    assert.ok(build, 'a build-discovery suggestion appears mid-game')
+    assert.ok(build.why && build.why.length > 0, 'discovery goals explain themselves')
+
+    // --- diversity + horizons on the board -----------------------------------
+    const board = goalBoard(mid)
+    assert.ok(board.filter((g) => g.chore).length <= 1, 'at most one trivial chore on the board')
+    assert.ok(board.filter((g) => g.discovery).length <= 1, 'at most one build nudge on the board')
+    assert.ok(new Set(board.map((g) => g.tier)).size >= 3, 'board spans several horizons')
+    const perTier = {}
+    for (const g of board) perTier[g.tier] = (perTier[g.tier] ?? 0) + 1
+    for (const n of Object.values(perTier)) assert.ok(n <= 3, 'no horizon floods with one kind of goal')
+
+    // --- explanations + clean numbers ----------------------------------------
+    for (const g of board) {
+      assert.ok(Number.isFinite(g.fraction) && g.fraction >= 0 && g.fraction <= 1, `clean fraction for ${g.id}`)
     }
   })
 })

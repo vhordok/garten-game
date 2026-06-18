@@ -26,14 +26,16 @@ import { BEAUTY_MILESTONES } from '../src/lib/data/beautyMilestones.ts'
 import { VARIANTS } from '../src/lib/data/variants.ts'
 import { variantBonus } from '../src/lib/game/seedlab.ts'
 import { ACHIEVEMENTS, TIER_NAMES } from '../src/lib/data/achievements.ts'
-import { achievementBonus, initAchievementTiers, reachedTier, totalClaimedTiers } from '../src/lib/game/achievements.ts'
+import { achievementBonus, claimAchievements, initAchievementTiers, reachedTier, totalClaimedTiers } from '../src/lib/game/achievements.ts'
 import { SCRATCH_PRIZES, effectiveHarvestValue, scratchPrizeAmount } from '../src/lib/data/scratch.ts'
 import { CONFIG as CFG } from '../src/lib/data/config.ts'
 import { compostGain, isPlantUnlocked } from '../src/lib/game/actions.ts'
-import { activeGoals } from '../src/lib/game/goals.ts'
-import { generateQuest } from '../src/lib/game/quests.ts'
+import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
+import { generateQuest, refillQuests } from '../src/lib/game/quests.ts'
 import { xpToNext } from '../src/lib/data/progression.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
+import { get } from 'svelte/store'
+import { toasts, pushTicketToast, pushAggregateToast, clearToasts } from '../src/lib/ui/toasts.ts'
 
 function fmtN(v) {
   if (!isFinite(v)) return '∞'
@@ -380,5 +382,79 @@ console.log('\n── F. Ziel-Panel: Zusammensetzung im Spät-Game ──')
   console.log(`  shop-Ziel vorhanden: ${goals.some((g) => g.id === 'shop')} · license-Ziel: ${goals.some((g) => g.id === 'license')}`)
   console.log('  ⇒ Shop-/Lizenz-/Kompost-Ziele sind sichtbar; triviale Dauer-„ready"-Ziele (Lose/Skill) stehen hinten.')
 }
+
+// ── PHASE 29: Ziel-Qualität & Toast-Spam ───────────────────────────────────
+console.log('\n════════ PHASE 29: ZIEL-QUALITÄT & TOAST-SPAM ════════\n')
+
+function buildGoalState(over = {}) {
+  const st = createDefaultState()
+  Object.assign(st, over)
+  if (over.maxUnlockEarned === undefined) st.maxUnlockEarned = st.totalEarned
+  if (over.lifetimeEarned === undefined) st.lifetimeEarned = Math.max(st.totalEarned, st.lifetimeEarned)
+  const plotN = over.plotCount ?? Math.min(4 + (st.parcels - 1) * 3, 60)
+  st.plots = Array.from({ length: plotN }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+  refillQuests(st)
+  claimAchievements(st) // mirror the live loop so the achievement goal shows the next OPEN tier
+  return st
+}
+
+const goalScenarios = [
+  ['Fresh Start', buildGoalState({ money: 10, totalEarned: 0, level: 1, parcels: 1 })],
+  ['Midgame P5', buildGoalState({ money: 5e8, totalEarned: 5e8, level: 60, parcels: 5 })],
+  ['Late (Weltenrose)', buildGoalState({ money: 5e15, totalEarned: 8e15, level: 200, parcels: 8, licenses: 3 })],
+  ['570 Qi P12', buildGoalState({ money: 5.7e20, totalEarned: 5.7e20, level: 886, parcels: 12, compost: 3.2e5, licenses: 3 })],
+]
+for (const [name, st] of goalScenarios) {
+  const board = goalBoard(st)
+  const horizons = new Set(board.map((g) => g.tier))
+  const chores = board.filter((g) => g.chore).length
+  const disc = board.filter((g) => g.discovery).length
+  console.log(`■ ${name}: ${board.length} Ziele · Horizonte ${[...horizons].join('/')} · ${chores} Chore · ${disc} Build-Ziel`)
+  for (const g of board.slice(0, 6)) {
+    const why = g.why ? ` — ${g.why}` : ''
+    console.log(`   [${g.tier}] ${g.id}: ${g.label} (${(g.fraction * 100).toFixed(0)}%)${why}`)
+  }
+}
+
+console.log('\n── Auftrags-Wirtschaftlichkeit: zeigt das Panel den Auftrag? ──')
+// same order, no license vs license IV/V vs heavy Marktstand — premium shifts
+function questCase(label, over) {
+  const st = buildGoalState(over)
+  const q = activeGoals(st).find((g) => g.id === 'quest')
+  console.log(`  ${label.padEnd(28)}: ${q ? `${q.chore ? 'leise' : 'STARK'} — ${q.why}` : 'NICHT angezeigt (schlechter als Farmen)'}`)
+}
+questCase('mittel, keine Lizenz', { money: 1e9, totalEarned: 1e9, level: 80, parcels: 4 })
+questCase('mit Lizenz IV+V', { money: 1e17, totalEarned: 1e17, level: 400, parcels: 22, licenses: 5 })
+const heavyMarkt = buildGoalState({ money: 1e12, totalEarned: 1e12, level: 100, parcels: 5 })
+for (const id of ['marktstand', 'handelsflotte']) heavyMarkt.upgrades[id] = 6
+{
+  const q = activeGoals(heavyMarkt).find((g) => g.id === 'quest')
+  console.log(`  ${'starker Marktstand (Verkauf↑)'.padEnd(28)}: ${q ? `${q.chore ? 'leise' : 'STARK'} — ${q.why}` : 'NICHT angezeigt (Verkauf lohnt mehr)'}`)
+}
+
+console.log('\n── Toast-Spam: 120-Beete-„Alle ernten" mit vielen Level-Ups + Losen ──')
+clearToasts()
+// simulate 120 plots: many small level-up bursts + many ticket drops, fired in a row
+const HARVESTS = 120
+for (let i = 0; i < HARVESTS; i++) {
+  // each harvest crosses ~1 level and ~1/3 drops a ticket
+  pushAggregateToast({
+    key: 'levelup', icon: '⭐', priority: 'important', ttlMs: 6000,
+    merge: (prev) => {
+      const levels = (prev?.levels ?? 0) + 1
+      const gold = (prev?.gold ?? 0) + 6.18e9
+      return { acc: { levels, gold }, text: `+${levels} Level · +${gold} Gold` }
+    },
+  })
+  if (i % 3 === 0) pushTicketToast(1)
+}
+const live = get(toasts)
+const visible = [...live].sort((a, b) => b.priority - a.priority || b.id - a.id).slice(0, 3)
+console.log(`  ausgelöste Ereignisse : ${HARVESTS} Ernten (~${HARVESTS} Level-Ups + ~${Math.ceil(HARVESTS / 3)} Lose)`)
+console.log(`  Toasts im Store       : ${live.length} (aggregiert nach Schlüssel)`)
+console.log(`  sichtbare Toasts      : ${visible.length} (Render-Deckel 3)`)
+for (const t of visible) console.log(`    • [${t.priority}] ${t.icon} ${t.text} (×${t.count})`)
+console.log(`  ⇒ ${live.length <= 2 && visible.length <= 3 ? 'OK: keine Flut, alles in wenige Meldungen gebündelt' : 'PRÜFEN'}`)
+clearToasts()
 
 console.log('\n════════ ENDE DIAGNOSE ════════\n')

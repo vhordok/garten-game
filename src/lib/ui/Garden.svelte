@@ -12,7 +12,7 @@
   import { screenShake } from './fx/shake'
   import PixelIcon from './PixelIcon.svelte'
   import Plot from './Plot.svelte'
-  import { pushToast } from './toasts'
+  import { pushTicketToast } from './toasts'
 
   // PHASE 1: tap-to-clear mode — the touch-friendly way to free plots
   let clearMode = $state(false)
@@ -55,13 +55,7 @@
       const [cx, cy] = eventCenter(e)
       celebrateLevelUps(levelUps, cx, cy)
       if (tickets > 0) {
-        pushToast(
-          tickets === 1
-            ? 'Ein Rubbellos lag in der Ernte — oben im HUD rubbeln!'
-            : `${tickets} Rubbellose lagen in der Ernte!`,
-          '🎟️',
-          7000
-        )
+        pushTicketToast(tickets)
         playSound('ticket')
       }
       if (crit === 'legendary') {

@@ -1126,3 +1126,48 @@ Keine Save-Format-Änderung (SAVE_VERSION bleibt 28). Tests 57/57, check/build g
 14-d-Sim ohne Runaway/NaN/Stall, `playtest.mjs`/`diagnose.mjs` sauber. **Offen →
 Phase 29:** echte Inventar-Fülle in Auftrags-Ziel-Wirtschaftlichkeit modellieren,
 optionale „Build-Entdeck"-Ziele für noch nicht begonnene Spielweisen.
+
+### 9.31 Phase 29 — Toast-Spam-Fix & Goal-System 2.0 (keine Save-Änderung)
+
+Zwei Probleme adressiert: der kritische Meldungs-Spam im Late Game, dann ein
+intelligenteres Ziel-Panel. Alles UI-/Logik-Politur, keine neue Save-Struktur.
+
+- **A0 — Toast-Spam behoben (`ui/toasts.ts` + `Toasts.svelte`):** Das Toast-System
+  ist von „jedes Event ein Toast" auf **Aggregation + Priorität + Render-Deckel**
+  umgebaut. Toasts tragen `priority` (low/normal/important/critical) und einen
+  `key`; gleiche Schlüssel **aktualisieren** einen lebenden Toast (Zähler/Summe)
+  statt zu stapeln. `pushAggregateToast` bündelt Bursts: ein 120-Beete-„Alle
+  ernten" erzeugt **genau 2** Toasts („+120 Level · +X Goldbonus" / „+40 Rubbellose
+  gefunden") statt 160. Der Renderer zeigt **max. 3** gleichzeitig, nach Priorität
+  sortiert → seltene Meldungen (Jackpot/neue Variante = critical) werden nie von
+  Spam verdrängt. Position: **feste Ecke unten-rechts**, `pointer-events:none` am
+  Container (klar von Hotbar/Hauptbuttons, die mittig sitzen), kompakter auf Mobile.
+  Level-Up-Fanfare (`fx/celebrate.ts`) und beide Rubbellos-Emitter nutzen jetzt die
+  Aggregation; der Goldbonus wird unverändert im Core vergeben.
+- **A/B — Auftragsziele wirtschaftlich bewertet:** geteilter `expectedQuestPayout`
+  (auch von `fulfillQuest` genutzt) erlaubt dem Ziel-Panel, einen Auftrag exakt wie
+  bei der Erfüllung zu bewerten. `questGoal` zeigt eine Lieferung nur **stark**,
+  wenn sie *fast fertig* ist ODER eine echte **Prämie über dem Direktverkauf** zahlt
+  (`payout / (Produktwert × Verkaufs-Multiplikator)`). Diese eine Kennzahl faltet
+  automatisch alle Synergien ein: Lizenz IV/V, Mykorrhiza/Auftragshumus, Varianten
+  und Streak heben den Payout, Marktstand/Markt-Welle heben die Verkaufs-Basis.
+  Aufträge klar schlechter als Farmen (und kaum begonnen) werden gar nicht gezeigt;
+  parzellen-gegatete/unsäbare Aufträge nie. Diagnose: ohne Lizenz ~1.6×, mit IV+V
+  ~7.7×, bei starkem Marktstand sinkt die Prämie (Verkauf lohnt mehr).
+- **C — Build-Entdeckungsziele (`buildGoal`):** ein **rotierender** weicher Hinweis
+  (Zier / Holz-Offline / Spezialisierung / Glück) für eine noch nicht genutzte,
+  *realistisch spielbare* Spielweise. `discovery`-Flag → eigene Optik, verdrängt nie
+  echte Progression, verschwindet sobald der Build läuft, rotiert nach Parzellenzahl
+  (stabil je Prestige). Keine neue Save-Struktur.
+- **D/E/F — Horizonte, Begründungen, Diversität:** Ziele tragen jetzt ein kurzes
+  `why` (z. B. „Zahlt ~7.7× über Direktverkauf · Lizenz-Bonus", „Bester Langzeit-
+  Sink für gestauten Kompost") und im Panel einen **Typ-Chip** (Pflanze/Shop/
+  Auftrag/Lizenz/Build…). `goalBoard` komponiert für Vielfalt: **≤1 Chore, ≤1
+  Build-Nudge**, ≤3 je Horizont, mehrere Horizonte sichtbar.
+- **G/I — Diagnose & Tests:** `diagnose.mjs` um Ziel-Qualität (Horizonte/Why/Build/
+  Auftrags-Stärke) und eine Toast-Spam-Simulation erweitert; zwei Phase-29-Tests
+  (Toast-Aggregation/Deckel/Priorität; Auftrags-Ökonomie/Build/Diversität) → 59/59.
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 28). check/build grün, 14-d-Sim
+sauber. **Offen → Phase 30:** Toast-Historie/„Log"-Panel zum Nachlesen verpasster
+Meldungen; Auftrags-Zeitschätzung anhand realer Produktionsrate.

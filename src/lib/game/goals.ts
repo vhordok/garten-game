@@ -14,8 +14,8 @@ import { PLANTS, SPECIAL_PLANTS, plantById, produceName } from '../data/plants'
 import { CATEGORY_SPECS } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
 import { LICENSES } from '../data/licenses'
-import { compostGain, isPlantUnlocked, leaseRequirement, nextUpgradeCost, plotsWithPlant, upgradeLevel } from './actions'
-import { gardenBeauty, masteryLevel, masteryThreshold, nextSpecMilestone, specializationLevel } from './modifiers'
+import { compostGain, expectedQuestPayout, isPlantUnlocked, leaseRequirement, nextUpgradeCost, plotsWithPlant, upgradeLevel } from './actions'
+import { gardenBeauty, masteryLevel, masteryThreshold, nextSpecMilestone, sellMultiplier, specializationLevel } from './modifiers'
 import { availableSkillPoints } from './skills'
 import { crossEligibility, discoverableVariants, produceStatus } from './seedlab'
 import { VARIANTS } from '../data/variants'
@@ -41,6 +41,12 @@ export interface Goal {
    * cash a ticket). Useful, but it must never dominate the board or inflate the
    * HUD ready-badge — sorts below substantive goals within its horizon. */
   chore?: boolean
+  /** PHASE 29: one short clause explaining WHY this is worth doing right now
+   * (economic/strategic). Kept terse — no formulas, mobile-friendly. */
+  why?: string
+  /** PHASE 29: a soft suggestion to explore a play-style, not a hard target.
+   * Rendered without a strong progress bar and never displaces real progression. */
+  discovery?: boolean
 }
 
 const clamp01 = (v: number) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0)
@@ -140,9 +146,46 @@ function upgradeGoal(state: GameState): Goal | null {
   }
 }
 
-/** The delivery order closest to completion. */
+/** Gold selling a quest's required produce raw would fetch (the farming baseline). */
+function questSellGold(state: GameState, q: GameState['quests'][number]): number {
+  const sm = sellMultiplier(state)
+  let gold = 0
+  for (const it of q.items) {
+    let rep = 0
+    if (it.plantId) rep = plantById(it.plantId)?.sellValue ?? 0
+    else {
+      const inCat = PLANTS.filter((p) => p.category === it.category)
+      rep = inCat.length ? Math.min(...inCat.map((p) => p.sellValue)) : 0
+    }
+    gold += it.amount * rep * sm
+  }
+  return gold
+}
+
+/** Can the player realistically grow everything this order asks for? */
+function questFeasible(state: GameState, q: GameState['quests'][number]): boolean {
+  return q.items.every((it) => {
+    if (it.plantId) {
+      const d = plantById(it.plantId)
+      return !!d && isPlantUnlocked(d, state)
+    }
+    return PLANTS.some((p) => p.category === it.category && isPlantUnlocked(p, state))
+  })
+}
+
+/**
+ * The single best delivery order to recommend (PHASE 29 economic weighting).
+ * A quest is only headlined when it actually pays off:
+ *  • almost done (you already hold most of it → just deliver), or
+ *  • economically competitive — pays a real premium over simply SELLING the same
+ *    produce. That premium folds in every relevant bonus automatically: licenses
+ *    IV/V, Mykorrhiza/Auftragshumus, variants and the streak raise the payout,
+ *    while Marktstand/Markt-Welle raise the sell baseline.
+ * Orders clearly worse than farming (and barely started) are dropped, infeasible
+ * ones (parcel-gated produce) never headline.
+ */
 function questGoal(state: GameState): Goal | null {
-  let best: { q: GameState['quests'][number]; frac: number; have: number; need: number } | null = null
+  let best: { q: GameState['quests'][number]; frac: number; have: number; need: number; premium: number } | null = null
   for (const q of state.quests) {
     let have = 0
     let need = 0
@@ -150,14 +193,33 @@ function questGoal(state: GameState): Goal | null {
       have += Math.min(heldFor(state, it), it.amount)
       need += it.amount
     }
-    if (need <= 0) continue
+    if (need <= 0 || !questFeasible(state, q)) continue
     const frac = have / need
-    if (!best || frac > best.frac) best = { q, frac, have, need }
+    const premium = expectedQuestPayout(state, q) / Math.max(questSellGold(state, q), 1)
+    // rank: prefer near-complete, then the most economically attractive
+    const score = (frac >= 0.8 ? 1000 : 0) + premium + frac
+    if (!best || score > (best.frac >= 0.8 ? 1000 : 0) + best.premium + best.frac) {
+      best = { q, frac, have, need, premium }
+    }
   }
   if (!best) return null
+
+  const almostDone = best.frac >= 0.8
+  const worthwhile = best.premium >= 1.3
+  // not nearly done AND clearly worse than just selling → don't clutter the board
+  if (!almostDone && best.premium < 0.95 && best.frac < 0.4) return null
+
+  const synergy =
+    state.licenses >= 4 ? ' · Lizenz-Bonus' : state.weather.id ? ' · Event aktiv' : ''
+  const why = almostDone
+    ? 'Fast fertig — nur noch liefern'
+    : worthwhile
+      ? `Zahlt ~${best.premium.toFixed(1)}× über Direktverkauf${synergy}`
+      : 'Knapp lohnend — Lager nicht blockieren'
+
   return {
     id: 'quest',
-    tier: 'mittel',
+    tier: almostDone ? 'kurz' : 'mittel',
     icon: '📜',
     label: 'Auftrag erfüllen',
     reward: 'Gold, XP & Lose',
@@ -165,6 +227,9 @@ function questGoal(state: GameState): Goal | null {
     target: best.need,
     fraction: clamp01(best.frac),
     ready: best.frac >= 1,
+    // marginal orders show, but quietly (chore) so they never displace real goals
+    chore: !almostDone && !worthwhile,
+    why,
   }
 }
 
@@ -207,6 +272,7 @@ function parcelGoal(state: GameState): Goal | null {
     target: need,
     fraction: clamp01(gain / Math.max(need, 1)),
     ready: gain >= need,
+    why: 'Dauerhafte Boni + näher an Endgame-Pflanzen',
   }
 }
 
@@ -249,6 +315,7 @@ function compostGoal(state: GameState): Goal | null {
     target: best.cost,
     fraction: clamp01(state.compost / best.cost),
     ready: state.compost >= best.cost,
+    why: 'Bester Langzeit-Sink für gestauten Kompost',
   }
 }
 
@@ -289,6 +356,7 @@ function licenseGoal(state: GameState): Goal | null {
     target: next.cost,
     fraction: met ? clamp01(state.money / next.cost) : 0,
     ready: met && state.money >= next.cost,
+    why: next.level >= 4 ? 'Erhöht dauerhaft die Auftragsqualität' : 'Schaltet eine Hanf-Sorte frei',
   }
 }
 
@@ -420,6 +488,74 @@ function specialPlantGoal(state: GameState): Goal | null {
   return null
 }
 
+/**
+ * PHASE 29 — build-discovery nudge. The game has many viable play-styles, but a
+ * player won't stumble on them without a hint. This surfaces ONE soft suggestion
+ * for a style the player hasn't engaged yet AND can realistically try now. It
+ * rotates by parcel count (stable within a prestige, varies across them), is
+ * flagged `discovery` so it never displaces real progression, and disappears
+ * once the style is in use. No new save data.
+ */
+function buildGoal(state: GameState): Goal | null {
+  const hasOrnamentalPlanted = state.plots.some((p) => p.plantId && plantById(p.plantId)?.beautyBonus)
+  const hasTimberPlanted = state.plots.some((p) => p.plantId && plantById(p.plantId)?.passiveIncome)
+  const ornamentalUnlocked = PLANTS.some((p) => p.beautyBonus && isPlantUnlocked(p, state))
+  const timberUnlocked = PLANTS.some((p) => p.passiveIncome && isPlantUnlocked(p, state))
+  const anySpec = Object.values(state.specializations).some((l) => l > 0)
+  const luckLevel = state.upgrades['glueckslos'] ?? 0
+
+  type Sug = { id: string; icon: string; label: string; why: string }
+  const candidates: Sug[] = []
+  if (ornamentalUnlocked && gardenBeauty(state) <= 0 && !hasOrnamentalPlanted) {
+    candidates.push({
+      id: 'build-zier',
+      icon: '✿',
+      label: 'Zier-Build testen',
+      why: 'Zierpflanzen geben gartenweite Boni, solange sie blühen',
+    })
+  }
+  if (timberUnlocked && !hasTimberPlanted) {
+    candidates.push({
+      id: 'build-holz',
+      icon: '🌲',
+      label: 'Holz/Offline ausbauen',
+      why: 'Bäume tröpfeln Gold — auch während du weg bist',
+    })
+  }
+  if (state.level >= 30 && !anySpec) {
+    candidates.push({
+      id: 'build-spezial',
+      icon: '⭐',
+      label: 'Eine Kategorie spezialisieren',
+      why: 'Dauerhafter Kategorie-Ertrag, übersteht Prestige',
+    })
+  }
+  if (state.level >= 15 && luckLevel === 0) {
+    candidates.push({
+      id: 'build-glueck',
+      icon: '🍀',
+      label: 'Glücks-/Los-Build testen',
+      why: 'Glückslos lässt öfter Rubbellose in der Ernte liegen',
+    })
+  }
+  if (candidates.length === 0) return null
+  // deterministic rotation: changes across prestiges, stable within one
+  const pick = candidates[state.parcels % candidates.length]
+  return {
+    id: pick.id,
+    tier: 'mittel',
+    icon: pick.icon,
+    label: pick.label,
+    reward: 'Neue Spielweise entdecken',
+    current: 0,
+    target: 1,
+    fraction: 0,
+    ready: false,
+    discovery: true,
+    why: pick.why,
+  }
+}
+
 /** Collection goal: unlock every plant. */
 function collectionGoal(state: GameState): Goal | null {
   const unlocked = PLANTS.filter((p) => isPlantUnlocked(p, state)).length
@@ -522,33 +658,44 @@ export function activeGoals(state: GameState): Goal[] {
     specialPlantGoal(state),
     achievementGoal(state),
     compostGoal(state),
+    buildGoal(state),
     collectionGoal(state),
   ].filter((g): g is Goal => g !== null)
   goals.sort((a, b) => {
     const t = TIER_ORDER[a.tier] - TIER_ORDER[b.tier]
     if (t !== 0) return t
-    // PHASE 28: trivial "anytime" chores (cheap upgrade, cash a ticket, spend a
-    // skill point) sort BELOW substantive goals within the same horizon, so the
-    // board never headlines the same boring point at every stage.
-    const chore = (a.chore ? 1 : 0) - (b.chore ? 1 : 0)
-    if (chore !== 0) return chore
+    // PHASE 28/29: soft nudges sort below real progress within a horizon — first
+    // trivial "anytime" chores (cheap upgrade, cash a ticket), then discovery
+    // suggestions — so the board never headlines a boring or optional point.
+    const rank = (g: Goal) => (g.chore ? 2 : g.discovery ? 1 : 0)
+    const r = rank(a) - rank(b)
+    if (r !== 0) return r
     return b.fraction - a.fraction
   })
   return goals
 }
 
 /**
- * PHASE 28: the goal BOARD shown in the UI — capped per horizon so the panel
- * stays scannable on mobile (was dumping all ~12 goals). Keeps the strongest few
- * of each tier (already sorted), so the player still sees several real options
- * across short → endgame without an overwhelming wall.
+ * The goal BOARD shown in the UI (PHASE 28, diversified in PHASE 29). Capped per
+ * horizon so it stays scannable on mobile, and composed for VARIETY: at most one
+ * trivial chore and at most one build-discovery nudge survive, so the panel never
+ * fills up with "do this anytime" filler and always mixes real horizons.
  */
 export function goalBoard(state: GameState, perTier = 3): Goal[] {
-  const counts: Record<string, number> = {}
-  return activeGoals(state).filter((g) => {
-    counts[g.tier] = (counts[g.tier] ?? 0) + 1
-    return counts[g.tier] <= perTier
-  })
+  const counts: Record<GoalTier, number> = { kurz: 0, mittel: 0, lang: 0, endgame: 0 }
+  let chores = 0
+  let discoveries = 0
+  const out: Goal[] = []
+  for (const g of activeGoals(state)) {
+    if (g.chore && chores >= 1) continue
+    if (g.discovery && discoveries >= 1) continue
+    if (counts[g.tier] >= perTier) continue
+    counts[g.tier] += 1
+    if (g.chore) chores += 1
+    if (g.discovery) discoveries += 1
+    out.push(g)
+  }
+  return out
 }
 
 export const TIER_LABEL: Record<GoalTier, string> = {

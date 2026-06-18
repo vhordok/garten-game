@@ -691,6 +691,30 @@ export function questFulfillable(state: GameState, questId: number): boolean {
 }
 
 /**
+ * Summed permanent quest-reward bonus factor (everything except the streak):
+ * parcel milestones + compost garden + beauty aura + skill + achievements +
+ * variants + licenses. Shared by fulfillQuest and the goal-panel economics so a
+ * quest's value is judged exactly as it pays out (PHASE 29).
+ */
+export function questRewardBonus(s: GameState): number {
+  return (
+    1 +
+    parcelBonus(s.parcels, 'questReward') +
+    compostUpgradeBonus(s, 'questReward') +
+    beautyMilestoneBonus(gardenBeauty(s), 'questReward') +
+    skillBonus(s, 'questReward') +
+    achievementBonus(s, 'questReward') +
+    variantBonus(s, 'questReward') +
+    licenseQuestBonus(s.licenses)
+  )
+}
+
+/** Gold a quest pays right now, including the streak and all permanent boni. */
+export function expectedQuestPayout(s: GameState, quest: { reward: number }): number {
+  return Math.round(quest.reward * (1 + questStreakBonus(s)) * questRewardBonus(s))
+}
+
+/**
  * Deliver a quest from storage: pays money (counts as earnings), grants bonus
  * XP and tickets, and rolls a fresh order into the slot (PHASE 13: multi-line
  * orders, category lines, milestone/compost reward bonus).
@@ -705,18 +729,9 @@ export function fulfillQuest(questId: number): QuestReward | null {
   let delivered = 0
   for (const item of quest.items) delivered += consumeItem(s, item)
 
-  // streak bonus + permanent quest-reward boni (parcel milestone + compost garden
-  // + PHASE 17 beauty-milestone aura + Händlerblick skill)
-  const rewardBonus =
-    1 +
-    parcelBonus(s.parcels, 'questReward') +
-    compostUpgradeBonus(s, 'questReward') +
-    beautyMilestoneBonus(gardenBeauty(s), 'questReward') +
-    skillBonus(s, 'questReward') +
-    achievementBonus(s, 'questReward') +
-    variantBonus(s, 'questReward') +
-    licenseQuestBonus(s.licenses) // PHASE 27: Lizenz IV/V machen Aufträge wieder lohnend
-  const payout = Math.round(quest.reward * (1 + questStreakBonus(s)) * rewardBonus)
+  // streak bonus + permanent quest-reward boni (parcel/compost/beauty/skill/
+  // achievement/variant/license) — shared with the goal-panel economics (PHASE 29)
+  const payout = expectedQuestPayout(s, quest)
   s.money += payout
   s.totalEarned += payout
   s.lifetimeEarned += payout

@@ -42,7 +42,7 @@
       const v = VARIANTS.find((x) => x.id === out.variantId)
       coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 18)
       playSound('levelup')
-      pushToast(`Neue Variante entdeckt: ${v?.emoji} ${v?.name}! (${v?.rarity})`, '🧬', 9000)
+      pushToast(`Neue Variante entdeckt: ${v?.emoji} ${v?.name}! (${v?.rarity})`, '🧬', 9000, { priority: 'critical' })
     } else {
       playSound('error')
     }

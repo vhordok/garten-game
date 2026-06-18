@@ -50,7 +50,7 @@
       playSound('legendary')
       screenShake(1.4)
       legendaryBurst(window.innerWidth / 2, window.innerHeight / 2)
-      pushToast(`Parzelle ${$gameStore.parcels} gepachtet! +${formatNumber(earned)} Kompost`, '🌱', 9000)
+      pushToast(`Parzelle ${$gameStore.parcels} gepachtet! +${formatNumber(earned)} Kompost`, '🌱', 9000, { priority: 'important' })
       onClose()
     }
   }
