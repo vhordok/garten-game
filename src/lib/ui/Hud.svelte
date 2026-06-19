@@ -145,7 +145,7 @@
 
   {#if stockValue > 0}
     <button
-      class="pxbtn gold num"
+      class="pxbtn gold num sell"
       onclick={handleSellAll}
       title="Lager-Überschuss verkaufen — was offene Aufträge brauchen, bleibt liegen"
     >
@@ -164,7 +164,11 @@
       {$gameStore.scratchTickets}
     </button>
   {/if}
+  </div>
 
+  <!-- PHASE 31: the panel buttons live in their OWN row so changing stats
+       (money/market/combo width) can never reshuffle or jump them. -->
+  <div class="row btns">
   <button class="pxbtn" onclick={onOpenDaily} aria-label="Tagesbonus" title="Tagesbonus — jeden Tag ein Geschenk">
     <PixelIcon name="geschenk" scale={1} />
     {#if dailyReady}<span class="dot" aria-hidden="true"></span>{/if}
@@ -262,6 +266,13 @@
     row-gap: 6px;
   }
 
+  /* PHASE 31: the panel buttons sit on their own line, right-aligned, so they
+     keep a stable position no matter how wide the live stats get. */
+  .row.btns {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
   .xp-row {
     display: flex;
     align-items: center;
@@ -331,6 +342,16 @@
     font-weight: 700;
     color: var(--c-gold2);
     text-shadow: 0 0 10px rgba(222, 158, 65, 0.4);
+    /* PHASE 31: stable footprint so the counting-up tween never nudges siblings */
+    display: inline-block;
+    min-width: 4.5ch;
+    text-align: right;
+  }
+
+  /* PHASE 31: fixed-width sell label so "+5.5SP" → "+7.35SP" doesn't reflow */
+  .sell {
+    min-width: 8.5em;
+    text-align: center;
   }
 
   .spacer {
@@ -452,6 +473,9 @@
     padding: 2px 8px;
     font-size: 0.78rem;
     color: var(--c-mist);
+    /* PHASE 31: constant width regardless of "▲ +14 %" vs "▼ -5 %" */
+    min-width: 4.6em;
+    justify-content: center;
   }
 
   .market.up {

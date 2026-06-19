@@ -1198,3 +1198,27 @@ Die in 9.31 offengelassenen Folgepunkte umgesetzt; reine UI-/Logik-Politur.
 Keine Save-Format-Änderung (SAVE_VERSION bleibt 28). check/build grün, 14-d-Sim
 sauber. **Offen → Phase 31:** Toast-Log optional persistent (letzte Sitzung);
 feinere Build-Empfehlung nach tatsächlich gespieltem Stil.
+
+### 9.33 Phase 31 — Topbar-Stabilität & Endgame-Auto-Ernte (keine Save-Änderung)
+
+Zwei gezielte Fixes aus dem Live-Feedback.
+
+- **Topbar verschiebt sich nicht mehr (`Hud.svelte`):** Die Panel-Icon-Buttons
+  liegen jetzt in einer **eigenen Zeile** (`.row.btns`, rechtsbündig) — wenn sich
+  links die Stats ändern (Geld zählt hoch, Marktwert wechselt das Vorzeichen,
+  Ernte-Kette taucht auf), reflowt/springt das Button-Menü nicht mehr. Zusätzlich
+  feste Footprints für die volatilen Stat-Elemente: `.amount` (min-width + rechts,
+  tabular-nums), `.market` (feste Breite, zentriert), `.sell` (min-width), sodass
+  auch die Stats-Zeile selbst kaum noch zittert.
+- **Erntedrohnen — endlose Endgame-Auto-Ernte (`data/upgrades.ts`):** Im späten
+  Prestige reifen die Beete so schnell, dass die gedeckelten Erntehelfer/Erntegilde
+  nicht hinterherkommen (es wurden nur ~3 Beete bedient). Neuer **repeatable**
+  Helfer-Tier `erntedrohnen`: +3 reife Beete/s je Stufe, `unlockParcel` 16, Basis
+  **1e21 (1 Sp)**, `costFactor` 1.4 → wenige Stufen ernten selbst riesige Felder
+  sofort ab (der Tick erntet bis zu `plots.length` reife Beete je Durchlauf), und
+  die geometrischen Kosten machen es zu einem **endlosen Sp-Gold-Sink**. Greift über
+  `effectBonus('autoHarvest')` automatisch — auch offline; reine Daten, kein neuer
+  Code-Pfad. Save-sicher (neue Upgrade-ID defaultet auf Stufe 0).
+
+Keine Save-Format-Änderung (SAVE_VERSION bleibt 28). Tests 62/62, check/build grün.
+**Offen → Phase 32:** Toast-Log optional persistent; feinere Build-Empfehlung.

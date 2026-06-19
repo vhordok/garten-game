@@ -98,6 +98,7 @@ import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
 import { get } from 'svelte/store'
 import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
+import { autoHarvestRate } from '../src/lib/game/modifiers.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
 import { eventMasteryMult, gardenBeauty } from '../src/lib/game/modifiers.ts'
@@ -2013,6 +2014,39 @@ test('PHASE 30: quest goal weighs real production time', () => {
     const qQuick = activeGoals(quick).find((g) => g.id === 'quest')
     assert.ok(qQuick && !qQuick.chore, 'a quick lucrative order is recommended')
     assert.match(qQuick.why, /Direktverkauf/, 'reason explains the economic edge')
+  })
+})
+
+test('PHASE 31: endless Erntedrohnen keep up with a fast endgame field', () => {
+  withBoringRng(() => {
+    const drones = upgradeById('erntedrohnen')
+    assert.ok(drones && drones.repeatable && drones.effect === 'autoHarvest', 'erntedrohnen is a repeatable auto-harvest sink')
+
+    // parcel-gated: not buyable before the endgame, available deep in prestige
+    assert.equal(isUpgradeUnlocked(drones, { ...fresh(), parcels: 4 }), false)
+    assert.equal(isUpgradeUnlocked(drones, { ...fresh(), parcels: 16 }), true)
+
+    // a big field of fast crops, every bed ripe at once
+    const s = fresh()
+    s.totalEarned = 1e15
+    s.parcels = 16
+    s.plots = Array.from({ length: 40 }, () => ({ plantId: 'basilikum', progress: 1e9, waterLeft: 0, regrowing: false }))
+    const ready = () => s.plots.filter((p) => p.plantId !== null).length
+    assert.equal(ready(), 40)
+
+    // without the helper, nothing auto-harvests
+    assert.equal(autoHarvestRate(s), 0)
+    tick(s, 1)
+    assert.equal(ready(), 40, 'no helper → field stays ripe')
+
+    // enough drone levels out-pace the field → one second clears all ripe beds
+    s.upgrades.erntedrohnen = 20 // +3/level = 60 beete/s ≥ 40 plots
+    assert.equal(autoHarvestRate(s), 60, 'rate scales with the repeatable level')
+    tick(s, 1)
+    assert.equal(ready(), 0, 'a high enough rate harvests every ripe bed at once')
+
+    // the cost escalates geometrically → a genuine endless Sp sink
+    assert.ok(drones.baseCost >= 1e21 && drones.costFactor > 1, 'priced as an endgame gold sink')
   })
 })
 

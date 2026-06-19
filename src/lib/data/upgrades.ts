@@ -238,6 +238,24 @@ export const UPGRADES: UpgradeDef[] = [
     unlockParcel: 16,
     repeatable: true,
   },
+  {
+    // PHASE 31: endgame auto-harvest sink. Late prestige plots ripen so fast that
+    // the capped Erntehelfer/Erntegilde fall behind — this endless tier keeps adding
+    // throughput (+3 reife Beete/s je Stufe), so a few levels harvest everything the
+    // moment it's ready, and the geometric gold cost makes it a real Sp-Endgame-Sink.
+    id: 'erntedrohnen',
+    name: 'Erntedrohnen',
+    sprite: 'erntehelfer',
+    description: 'Ein endloser Drohnenschwarm: +3 reife Beete/s je Stufe — erntet selbst riesige Felder sofort ab. Endloser Gold-Sink.',
+    effect: 'autoHarvest',
+    section: 'helfer',
+    perLevel: 3,
+    maxLevel: 999,
+    baseCost: 1e21,
+    costFactor: 1.4,
+    unlockParcel: 16,
+    repeatable: true,
+  },
 ]
 
 const byId = new Map(UPGRADES.map((u) => [u.id, u]))
