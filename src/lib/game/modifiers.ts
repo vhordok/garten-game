@@ -73,12 +73,38 @@ export function growthMultiplier(state: GameState): number {
   )
 }
 
+/**
+ * PHASE 34: the level yield bonus used to HARD-cap at levelYieldMaxBonus, so
+ * past ~level 300 every level was worthless. Now it SOFT-caps: beyond the cap a
+ * square-root term keeps adding (slowly, diminishing) so very high levels (the
+ * 40k+ endgame) stay meaningful, while early/mid pacing is unchanged.
+ */
+export function levelYieldBonus(level: number): number {
+  const raw = CONFIG.levelYieldPerLevel * Math.max(level - 1, 0)
+  const cap = CONFIG.levelYieldMaxBonus
+  return raw <= cap ? raw : cap + Math.sqrt(raw - cap)
+}
+
+/**
+ * PHASE 34 „Hain"-Aura: mature timber trees multiply the whole garden's yield.
+ * Gives Holz a real endgame role (sacrifice plots for a global multiplier);
+ * amplified by the Holz specialisation.
+ */
+export function forestBonus(state: GameState): number {
+  let bonus = 0
+  for (const plot of state.plots) {
+    if (!plot.plantId) continue
+    const def = plantById(plot.plantId)
+    if (def?.forestYield && plot.progress >= def.growTime) {
+      bonus += def.forestYield * (1 + specUniqueBonus(state, def.category, 'wood'))
+    }
+  }
+  return bonus
+}
+
 /** Harvested-units factor: upgrades × compost × permanent level bonus. */
 export function yieldMultiplier(state: GameState): number {
-  const levelBonus = Math.min(
-    CONFIG.levelYieldPerLevel * Math.max(state.level - 1, 0),
-    CONFIG.levelYieldMaxBonus
-  )
+  const levelBonus = levelYieldBonus(state.level)
   // PHASE 13: parcel milestones + compost-garden upgrades add small yield boni
   const perma = 1 + parcelBonus(state.parcels, 'yield') + compostUpgradeBonus(state, 'yield')
   // PHASE 17: beauty-milestone aura + skill-tree (Gartenplanung) yield;
@@ -93,6 +119,7 @@ export function yieldMultiplier(state: GameState): number {
     (1 + CONFIG.compostYieldPerPoint * effectiveCompost(state)) *
     (1 + levelBonus) *
     (1 + achievementBonus(state, 'yield')) *
+    (1 + forestBonus(state)) * // PHASE 34: timber „Hain"-Aura (separate multiplicative factor)
     perma *
     meta *
     event

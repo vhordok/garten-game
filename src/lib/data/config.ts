@@ -83,6 +83,15 @@ export const CONFIG = {
    * cap still prevents runaway. */
   levelYieldPerLevel: 0.01,
   levelYieldMaxBonus: 3.0,
+  /** PHASE 34: minimum REAL cycle time (seconds) for LATE-GAME crops. The runaway
+   * growth multiplier (+millions %) otherwise ripens every plot in <1s, so
+   * harvesters can't keep up and tooltips read nonsense. Applies only to plants
+   * whose growTime ≥ floorGrowTimeThreshold (the very-late tier) so fast early/mid
+   * plants and their growth-speed upgrades are untouched. Per-plant minGrowSeconds
+   * (deliberately-slower top crops) stacks on top via max(). */
+  minCycleFloorSeconds: 8,
+  /** only plants this slow (raw growTime, seconds) get the late-game cycle floor */
+  floorGrowTimeThreshold: 50000,
   /** market wave: sell prices oscillate ±~30 % over this period (seconds) */
   marketPeriodSeconds: 600,
   /** offline simulation cap; later extendable through upgrades (GAME_DESIGN.md §5) */

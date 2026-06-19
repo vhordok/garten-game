@@ -52,6 +52,7 @@ import {
   setAutoSowPlant,
   settleScratchCard,
   skipQuest,
+  scratchAll,
   sowAllEmpty,
   sowPlot,
   startWeather,
@@ -89,6 +90,8 @@ import {
   specUniqueBonus,
   waterCharges,
   yieldMultiplier,
+  forestBonus,
+  levelYieldBonus,
 } from '../src/lib/game/modifiers.ts'
 import { ACHIEVEMENTS } from '../src/lib/data/achievements.ts'
 import { achievementBonus, achievementSkillPoints, reachedTier } from '../src/lib/game/achievements.ts'
@@ -109,7 +112,7 @@ import { availableSkillPoints, skillBonus, skillLevel, totalSkillPoints } from '
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
-import { plotReady, tick } from '../src/lib/game/tick.ts'
+import { plotReady, tick, cycleFloorSeconds, effectiveCycleSeconds } from '../src/lib/game/tick.ts'
 
 /** Reset to a fresh default state and return the live reference. */
 function fresh() {
@@ -2052,6 +2055,49 @@ test('PHASE 31: endless Erntedrohnen keep up with a fast endgame field', () => {
   })
 })
 
+test('PHASE 34: late-cycle floor, truthful time, Holz forest aura, bulk scratch, level softcap', () => {
+  withBoringRng(() => {
+    // --- A: late crops get a real cadence; tooltip time is truthful ----------
+    const s = fresh()
+    s.parcels = 39; s.compost = 1e9; s.licenses = 3; s.level = 44000; s.upgrades = { giesskanne: 10 }
+    const mk = plantById('mondkristall')
+    const sh = plantById('sonnenhanf')
+    // mondkristall has no per-plant floor but is late-game → gets the global floor
+    assert.ok(mk.growTime >= CONFIG.floorGrowTimeThreshold && (mk.minGrowSeconds ?? 0) === 0, 'mondkristall floored only globally')
+    assert.ok(effectiveCycleSeconds(s, mk, true) >= CONFIG.minCycleFloorSeconds, 'no more <1s ripening')
+    // higher tier is never FASTER than the global floor (no inversion)
+    assert.ok(effectiveCycleSeconds(s, sh, true) >= effectiveCycleSeconds(s, mk, true) - 0.01, 'newer crop not faster than old')
+    // a fast early plant is exempt from the late floor
+    const basil = plantById('basilikum')
+    assert.equal(cycleFloorSeconds(basil), 0, 'early plant exempt from the late-game floor')
+
+    // --- B: Holz forest aura is a real, bounded yield multiplier -------------
+    const f = fresh()
+    f.plots = Array.from({ length: 10 }, () => ({ plantId: 'urweltbaum', progress: 1e9, waterLeft: 0, regrowing: false }))
+    const fb = forestBonus(f)
+    assert.ok(fb > 0.3 && fb < 2, `10 mature trees give a meaningful but bounded aura (got +${(fb * 100).toFixed(0)}%)`)
+    // immature trees give nothing
+    const f2 = fresh()
+    f2.plots = [{ plantId: 'urweltbaum', progress: 0, waterLeft: 0, regrowing: false }]
+    assert.equal(forestBonus(f2), 0, 'only MATURE trees contribute the aura')
+
+    // --- C: bulk scratch cashes the whole hoard at once ----------------------
+    const sc = fresh()
+    sc.scratchTickets = 5000
+    sc.totalEarned = 1e18
+    const r = scratchAll()
+    assert.equal(r.scratched, 5000, 'all tickets scratched')
+    assert.equal(getState().scratchTickets, 0, 'hoard cleared')
+    assert.ok(r.gold > 0, 'a lump of gold is paid out')
+
+    // --- D: level yield bonus soft-caps (high levels keep mattering) ---------
+    assert.equal(levelYieldBonus(1), 0, 'level 1 = no bonus')
+    assert.ok(Math.abs(levelYieldBonus(301) - CONFIG.levelYieldMaxBonus) < 0.05, 'hits the old cap around level ~300')
+    assert.ok(levelYieldBonus(44000) > CONFIG.levelYieldMaxBonus * 3, 'level 44k far exceeds the old hard cap')
+    assert.ok(levelYieldBonus(440000) > levelYieldBonus(44000), 'still rising at extreme levels (diminishing, endless)')
+  })
+})
+
 test('PHASE 33: cosmic „Kosmisch" category — plants, sell-spec, distinct sprites', () => {
   withBoringRng(() => {
     // --- the new category exists with its own specialisation perk ------------
@@ -2112,19 +2158,24 @@ test('PHASE 32: endgame growth floor, Hanf ladder, endless skill, zier steps', (
     s.compost = 1e12 // deep-prestige compost → growth multiplier far above the floor ratio
     s.upgrades = { giesskanne: 10 } // meet cannabis watering (care = 1, like a real endgame save)
     const hanf = plantById('ewigkeitshanf')
-    // the floor only matters once the multiplier would otherwise out-pace it
-    assert.ok(growthMultiplier(s) > hanf.growTime / hanf.minGrowSeconds, 'multiplier exceeds the floor ratio')
-    assert.ok(hanf && hanf.minGrowSeconds === 120 && hanf.regrowTime, 'capstone hanf is floored + regrow')
+    assert.ok(hanf && hanf.minGrowSeconds >= 8 && hanf.regrowTime, 'capstone hanf is floored + regrow')
+    const cad = hanf.minGrowSeconds // real cycle seconds at any huge multiplier
     s.plots = [{ plantId: 'ewigkeitshanf', progress: 0, waterLeft: 99, regrowing: false }]
-    tick(s, 60) // half the floor
+    tick(s, cad - 1) // just under the floor
     assert.ok(!plotReady(s.plots[0]), 'floored plant is NOT ripe in a fraction of a second')
-    tick(s, 60) // reach the floor
+    tick(s, 2) // cross the floor
     assert.ok(plotReady(s.plots[0]), 'ripe after ~minGrowSeconds, not before')
 
-    // an un-floored plant ripens instantly under the same multiplier (the problem)
+    // a fast early plant is EXEMPT from the floor — its growth upgrade still works
     s.plots = [{ plantId: 'basilikum', progress: 0, waterLeft: 0, regrowing: false }]
     tick(s, 1)
-    assert.ok(plotReady(s.plots[0]), 'un-floored plant is instant at this multiplier')
+    assert.ok(plotReady(s.plots[0]), 'un-floored early plant stays instant at this multiplier')
+
+    // the old very-late plants are now floored too (no more <1s, no inversion):
+    // Mondkristall (no per-plant floor) gets the global late-game floor and is
+    // never faster than the higher-tier Sonnenhanf
+    assert.ok(plantById('mondkristall').growTime >= CONFIG.floorGrowTimeThreshold, 'mondkristall is late-game')
+    assert.ok(hanf.minGrowSeconds >= CONFIG.minCycleFloorSeconds, 'top hanf cadence ≥ the global late floor (no inversion vs old plants)')
 
     // --- B: new Hanf ladder gated by license + parcels ------------------------
     for (const id of ['sonnenhanf', 'sternenhanf', 'nebelhanf', 'kosmoshanf', 'ewigkeitshanf']) {

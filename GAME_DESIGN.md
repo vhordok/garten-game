@@ -1289,3 +1289,37 @@ Save-sicher (SAVE_VERSION bleibt 28): neue Pflanzen-/Kategorie-IDs defaulten auf
 unbespielt, neuer SpecKind nur additiv. Tests 64/64, check/build grün, 14-d-Sim ohne
 Runaway. **62 Sorten (+1 Spezial) in 9 Kategorien.** **Offen → Phase 34:** Toast-Log
 optional persistent; ggf. eigene Sprites für die Kosmisch-Frühstufen.
+
+### 9.36 Phase 34 — Reife-Zeit-Bug, Holz-Rework, Bulk-Rubbeln, Level-Softcap (keine Save-Änderung)
+
+Vier Endgame-Schmerzpunkte aus dem Live-Feedback (Parzelle 39, +Mio % Tempo).
+
+- **Reife-Zeit-„Bug" (Wahrnehmung) behoben:** Der Hotbar-Tooltip zeigte die ROHE
+  `growTime`/`regrowTime` (z. B. „12 h 46 m"), während das Beet die echte (Mio-fach
+  beschleunigte) Zeit herunterzählte — und die ALTEN Very-Late-Pflanzen hatten gar
+  keinen Boden, reiften also in <1 s (Helfer kamen nicht mit, wirkten „schneller"
+  als die neuen Sorten). Fix: (1) ein **growTime-gegateter Echtzeit-Boden**
+  (`CONFIG.minCycleFloorSeconds` 8 s für Pflanzen mit `growTime ≥ 50000`; schnelle
+  Früh-/Mid-Pflanzen bleiben unberührt, ihre Tempo-Upgrades wirken weiter), sodass
+  ALLE Endgame-Pflanzen eine echte Kadenz haben (8–32 s, monoton steigend, keine
+  Inversion). (2) `effectiveCycleSeconds` + ein **wahrhaftiger Tooltip**, der die
+  reale Reifezeit beim aktuellen Multiplikator zeigt. Per-Pflanze-Böden auf
+  nicht-skalierte Kadenz umgestellt (Hanf 10–20 s, Kosmos 24–32 s).
+- **Holz-Rework — „Hain"-Aura:** passives Holz-Gold war chancenlos (kein
+  Ertrags-Multiplikator). Jetzt skaliert es mit `yieldMultiplier` UND reife Bäume
+  geben eine **separate, multiplikative Ertrags-Aura** für den ganzen Garten
+  (`PlantDef.forestYield`, `forestBonus()`, von der Holz-Spezialisierung verstärkt).
+  Holz wird so ein echter Build (ein paar Beete opfern → ~×1,5 Ertrag im Optimum),
+  statt nutzlos. Sichtbar als 🌲-Chip im Garten-Kopf.
+- **Bulk-Rubbeln:** `scratchAll()` + „Alle Lose auf einmal rubbeln"-Button — der
+  Endgame-Hort (23 000+ Lose) wird in einem Klick zu einem Gold-/Kompost-/Dünger-/
+  XP-Bündel eingelöst (jedes Los zum Nominalwert), statt 23 000-mal Pick-3.
+- **Level-Softcap:** der Level-Ertragsbonus hart bei +300 % gedeckelt → ab ~Lvl 300
+  wertlos. Jetzt **Wurzel-Softcap** (`levelYieldBonus`): jenseits des Caps wächst er
+  per √ weiter (Lvl 44 000 ≈ +2390 %, endlos abnehmend) → hohe Level zählen wieder.
+- **Skills erweitert:** vier neue Zweittier-Knoten (Kompostmeister/Marktimperium/
+  Glücksrausch/Zierkrone) — mehr sinnvolle Ziele für den Skillpunkt-Überschuss.
+
+Save-sicher (SAVE_VERSION bleibt 28): neue Felder/IDs defaulten, reine Daten/Logik.
+Tests 65/65, check/build grün, 14-d-Sim ohne Runaway. **Offen → Phase 35:** Toast-Log
+optional persistent; eigene Sprites für die Kosmisch-Frühstufen.

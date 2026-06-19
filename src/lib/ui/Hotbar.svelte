@@ -2,6 +2,7 @@
   import { PLANTS, SPECIAL_PLANTS, steadyProfitPerSecond } from '../data/plants'
   import { isPlantUnlocked, selectPlant } from '../game/actions'
   import { masteryLevel } from '../game/modifiers'
+  import { effectiveCycleSeconds } from '../game/tick'
   import { CONFIG } from '../data/config'
   import { gameStore } from '../game/state'
   import type { PlantCategory } from '../game/types'
@@ -130,7 +131,7 @@
             <span class="tip-desc">{plant.description}</span>
             <span class="tip-stats num">
               <span><PixelIcon name="coin" scale={1} /> {formatNumber(plant.seedCost)}</span>
-              <span>⏱ {formatDuration(plant.growTime)}</span>
+              <span>⏱ {formatDuration(effectiveCycleSeconds($gameStore, plant, false))}</span>
               <span class="gain">→ {formatNumber(plant.yield * plant.sellValue)}</span>
             </span>
             <span class="tip-profit num">
@@ -141,7 +142,7 @@
               {:else}
                 ≈ {formatNumber(steadyProfitPerSecond(plant))} Gold/s
                 {#if plant.regrowTime}
-                  · wächst alle {formatDuration(plant.regrowTime)} nach
+                  · wächst alle {formatDuration(effectiveCycleSeconds($gameStore, plant, true))} nach
                 {/if}
               {/if}
             </span>

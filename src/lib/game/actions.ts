@@ -918,6 +918,74 @@ export function settleScratchCard(card: ScratchCard, picked: string[]): ScratchO
   return { amount, grade, prizeType: prize.type, symbol: matchedSymbol ?? card.symbol, levelUps }
 }
 
+export interface BulkScratchResult {
+  scratched: number
+  gold: number
+  compost: number
+  fertilizer: number
+  xp: number
+  mastery: number
+  levelUps: LevelUp[]
+}
+
+/**
+ * PHASE 34: cash a whole hoard of scratch tickets at once. The endgame piles up
+ * tens of thousands of tickets — scratching them one pick-3 at a time is absurd.
+ * Each ticket rolls a prize (same weights as a single draw) and pays its NOMINAL
+ * value (no triple bonus, no consolation cut — a fair average), summed into one
+ * lump. Lottery winnings never count as earnings (money added directly).
+ */
+export function scratchAll(limit = 100000): BulkScratchResult {
+  const s = getState()
+  const n = Math.min(s.scratchTickets, Math.max(0, Math.floor(limit)))
+  const res: BulkScratchResult = { scratched: 0, gold: 0, compost: 0, fertilizer: 0, xp: 0, mastery: 0, levelUps: [] }
+  if (n <= 0) return res
+  const totalWeight = SCRATCH_PRIZES.reduce((sum, p) => sum + p.weight, 0)
+  let xpSum = 0
+  for (let i = 0; i < n; i++) {
+    let roll = Math.random() * totalWeight
+    let prize = SCRATCH_PRIZES[0]
+    for (const candidate of SCRATCH_PRIZES) {
+      roll -= candidate.weight
+      if (roll < 0) {
+        prize = candidate
+        break
+      }
+    }
+    const amount = scratchPrizeAmount(prize, s)
+    if (prize.type === 'xp') {
+      xpSum += amount
+      res.xp += amount
+    } else if (prize.type === 'fertilizer') {
+      const before = s.fertilizerCharges
+      s.fertilizerCharges = Math.min(s.fertilizerCharges + amount, 999)
+      res.fertilizer += s.fertilizerCharges - before // report only what was actually added (cap)
+    } else if (prize.type === 'compost') {
+      s.compost += amount
+      res.compost += amount
+    } else if (prize.type === 'mastery') {
+      const id = masteryPrizePlant(s)
+      if (id) {
+        s.mastery[id] = (s.mastery[id] ?? 0) + amount
+        res.mastery += amount
+      } else {
+        s.money += amount
+        res.gold += amount
+      }
+    } else {
+      s.money += amount
+      res.gold += amount
+    }
+  }
+  s.scratchTickets -= n
+  s.stats.scratchesDone += n
+  res.scratched = n
+  if (xpSum > 0) res.levelUps = grantXp(s, xpSum)
+  if (res.gold > s.records.biggestWin) s.records.biggestWin = res.gold
+  notify()
+  return res
+}
+
 /** Give a drawn but unscratched ticket back (panel closed early). */
 export function refundScratchTicket(): void {
   const s = getState()

@@ -133,6 +133,53 @@ export const SKILLS: SkillDef[] = [
     cost: 2,
     prereq: 'gartenplanung',
   },
+  // ── PHASE 34: a deeper second tier per path, so high-prestige players have
+  // more meaningful nodes to pour their point surplus into (not just the endless
+  // capstone). Each sits behind its path's PHASE-18 node.
+  {
+    id: 'kompostmeister',
+    name: 'Kompostmeister',
+    desc: '+8 % Kompost-Gewinn pro Stufe — noch wertvollere Prestiges.',
+    branch: 'kompost',
+    effect: 'compostGain',
+    perLevel: 0.08,
+    maxLevel: 4,
+    cost: 3,
+    prereq: 'tiefwurzel',
+  },
+  {
+    id: 'marktimperium',
+    name: 'Marktimperium',
+    desc: '+10 % Auftragsbelohnung pro Stufe — die Krone des Auftrags-Builds.',
+    branch: 'markt',
+    effect: 'questReward',
+    perLevel: 0.1,
+    maxLevel: 4,
+    cost: 3,
+    prereq: 'grosshandel',
+  },
+  {
+    id: 'gluecksrausch',
+    name: 'Glücksrausch',
+    desc: '+0,05 Los-Chance pro Stufe — Lose regnen aus der Ernte.',
+    branch: 'glueck',
+    effect: 'scratchLuck',
+    perLevel: 0.05,
+    maxLevel: 4,
+    cost: 3,
+    prereq: 'gluecksklee',
+  },
+  {
+    id: 'zierkrone',
+    name: 'Zierkrone',
+    desc: '+30 % Schönheits-Wirkung pro Stufe — vollendet den Zier-Build.',
+    branch: 'zier',
+    effect: 'beauty',
+    perLevel: 0.3,
+    maxLevel: 3,
+    cost: 4,
+    prereq: 'parkanlage',
+  },
   // ── PHASE 32: endless endgame sink. Deep-prestige players pile up far more
   // skill points (1 per parcel/achievement/level-tier) than the finite tree can
   // hold — this capstone absorbs the surplus and turns it into a slowly growing,
