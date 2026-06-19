@@ -200,5 +200,9 @@ roher growTime), Holz-Rework (passives Gold ×yieldMultiplier + reife Bäume geb
 separate multiplikative Ertrags-„Hain"-Aura via PlantDef.forestYield/forestBonus,
 🌲-Chip), Bulk-Rubbeln (scratchAll + „Alle Lose"-Button gegen den 23k-Hort), Level-
 Softcap (levelYieldBonus: √-Wachstum jenseits +300% → Lvl 44k ≈ +2390%), 4 neue
-Skill-Knoten. Save-sicher (reine Daten/Logik). 62 Sorten (+1 Spezial) in 9 Kategorien,
+Skill-Knoten. Save-sicher (reine Daten/Logik). Phase 35 (§9.37): diagnosegetriebener
+Check (playtest/diagnose zeigen kein Gameplay-Bug; „tote" spec/beauty/mastery sind
+multiplikativ-gesund, nur synthetisch unbespielt) → reine Politur: eigene Kosmisch-
+Frühstufen-Sprites (seedlingKosmos/kosmos1/kosmos2, blau-weiße Stern-Optik statt
+Magie-/Kristallbeer-Aliasen). Save-sicher. 62 Sorten (+1 Spezial) in 9 Kategorien,
 Stand SAVE_VERSION 28.

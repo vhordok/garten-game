@@ -2694,6 +2694,65 @@ const urknallfrucht3: SpriteGrid = [
   '................',
 ]
 
+// PHASE 35: distinct cosmic early stages for the „Kosmisch" category (were
+// aliased to the magie seedling / crystal-berry young stages). A shared blue-white
+// star sprout → small bloom → bigger bloom, so the category reads cohesively from
+// sprout to its distinct mature sprites.
+const seedlingKosmos: SpriteGrid = [
+  '................',
+  '................',
+  '................',
+  '......W.W.......',
+  '.......c........',
+  '......cUc.......',
+  '.....WcUcW......',
+  '......cUc.......',
+  '.......c........',
+  '......lGl.......',
+  '......fGf.......',
+  '.......G........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+const kosmos1: SpriteGrid = [
+  '................',
+  '.......W........',
+  '......cUc.......',
+  '.....cUWUc......',
+  '......cUc.......',
+  '.......c........',
+  '......lcl.......',
+  '.....lFcFl......',
+  '......fGf.......',
+  '.......G........',
+  '.......G........',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+const kosmos2: SpriteGrid = [
+  '.......W........',
+  '......cUc.......',
+  '.....cUWUc......',
+  '....cUWWWUc.....',
+  '.....cUWUc......',
+  '......cUc.......',
+  '.....llcll......',
+  '....lFFcFFl.....',
+  '.....lFcFl......',
+  '......fGf.......',
+  '.......G........',
+  '.......G........',
+  '................',
+  '................',
+  '................',
+  '................',
+]
+
 export const SPRITES: Record<string, SpriteGrid> = {
   'seedling': seedling,
   'seedling-kraeuter': seedlingKraeuter,
@@ -2888,17 +2947,16 @@ export const SPRITES: Record<string, SpriteGrid> = {
   'sternenrose-1': weltenrose1,
   'sternenrose-2': weltenrose2,
   'sternenrose-3': sternenrose3,
-  // PHASE 33: „Kosmisch" category — distinct mature sprites, cosmic seedling +
-  // shared young stages (own pixel-art polish can deepen later).
-  'seedling-kosmos': seedlingMagie,
-  'sternensaat-1': kristallbeere1,
-  'sternensaat-2': kristallbeere2,
+  // PHASE 33/35: „Kosmisch" category — distinct cosmic sprites at every stage.
+  'seedling-kosmos': seedlingKosmos,
+  'sternensaat-1': kosmos1,
+  'sternensaat-2': kosmos2,
   'sternensaat-3': sternensaat3,
-  'nebularbluete-1': leuchtlilie1,
-  'nebularbluete-2': leuchtlilie2,
+  'nebularbluete-1': kosmos1,
+  'nebularbluete-2': kosmos2,
   'nebularbluete-3': nebularbluete3,
-  'urknallfrucht-1': kristallbeere1,
-  'urknallfrucht-2': kristallbeere2,
+  'urknallfrucht-1': kosmos1,
+  'urknallfrucht-2': kosmos2,
   'urknallfrucht-3': urknallfrucht3,
   soil,
   'ghost-plot': ghostPlot,

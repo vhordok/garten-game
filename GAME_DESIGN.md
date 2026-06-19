@@ -1323,3 +1323,21 @@ Vier Endgame-Schmerzpunkte aus dem Live-Feedback (Parzelle 39, +Mio % Tempo).
 Save-sicher (SAVE_VERSION bleibt 28): neue Felder/IDs defaulten, reine Daten/Logik.
 Tests 65/65, check/build grün, 14-d-Sim ohne Runaway. **Offen → Phase 35:** Toast-Log
 optional persistent; eigene Sprites für die Kosmisch-Frühstufen.
+
+### 9.37 Phase 35 — Diagnose-Check + Kosmisch-Frühstufen-Sprites (keine Save-Änderung)
+
+Diagnosegetriebener Mini-Durchlauf: erst `playtest.mjs`/`diagnose.mjs` am aktuellen
+Stand laufen lassen. Befund: **kein Gameplay-Bug** — alle 22 Szenarien haben ≥3
+offene Optionen über mehrere Horizonte; die im Tally „toten" Systeme (spec/beauty/
+mastery) sind **multiplikativ und gesund**, nur in den synthetischen Ständen nicht
+bespielt (und die Build-Entdeckungsziele nudgen ohnehin dorthin). Also reine Politur:
+
+- **Eigene Kosmisch-Frühstufen-Sprites:** die in Phase 33 versprochene visuelle
+  Konsequenz. Setzling und beide Jungstufen der Kosmisch-Kategorie (Sternensaat/
+  Nebularblüte/Urknallfrucht) waren auf den Magie-Setzling bzw. Kristallbeeren-
+  Jungstufen aliasiert; jetzt eine eigene **blau-weiße Stern-Optik** (seedlingKosmos
+  → kosmos1 → kosmos2), sodass die Kategorie von Sprössling bis Reife kohärent
+  kosmisch aussieht. Sprite-Validator (16×16, gültige Legend-Chars) + check/build grün.
+
+Keine Save-Änderung (SAVE_VERSION bleibt 28). Tests 65/65. **Offen → Phase 36:**
+Toast-Log optional persistent; weitere Politur nach Spieler-Feedback.
