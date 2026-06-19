@@ -238,7 +238,8 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
         // the cart only ships the surplus — open orders keep their stock (PHASE 2)
         const surplus = count - questReserved(s, plantId)
         if (surplus <= 0) continue
-        const gain = saleValue(s, def.sellValue, surplus)
+        // PHASE 33: Kosmisch specialisation lifts that category's sale price
+        const gain = Math.round(saleValue(s, def.sellValue, surplus) * (1 + specUniqueBonus(s, def.category, 'sell')))
         if (surplus >= count) delete s.inventory[plantId]
         else s.inventory[plantId] = count - surplus
         s.money += gain

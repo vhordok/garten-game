@@ -10,6 +10,7 @@ export type PlantCategory =
   | 'baeume'
   | 'zier'
   | 'cannabis'
+  | 'kosmos'
 
 export interface PlantDef {
   id: string

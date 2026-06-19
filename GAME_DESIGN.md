@@ -1263,3 +1263,29 @@ Save-sicher (SAVE_VERSION bleibt 28): neue Pflanzen-/Skill-IDs defaulten auf 0,
 14-d-Sim ohne Runaway. 59 Sorten (+1 Spezial) in 8 Kategorien. **Offen → Phase 33:**
 eigene Sprites für die Hanf-Spitze; optional eine echte neue Kategorie; Toast-Log
 optional persistent.
+
+### 9.35 Phase 33 — Eigene Hanf-Sprites & neue Endgame-Kategorie „Kosmisch" (keine Save-Änderung)
+
+Beide Folgevorschläge aus Phase 32 umgesetzt.
+
+- **Eigene Sprites für die Hanf-Spitze (sprites.ts):** die fünf Phase-32-Hanfsorten
+  hatten nur aliasierte Goldhanf-Optik. Jetzt **distinkte Reife-Sprites** — dieselbe
+  Cannabis-Fächersilhouette, aber je Sorte eine eigene Blütenfarbe (Sonnenhanf gold,
+  Sternenhanf blau-weiß, Nebelhanf silber, Kosmoshanf violett, Ewigkeitshanf
+  gold-plum) + eigene Sternenrose. Validiert via `scripts/sprite-atlas.mjs`
+  (alle 16×16, gültige Legend-Chars).
+- **Neue Kategorie „Kosmisch" (`kosmos`):** eine echte neue Pflanzen-Kategorie
+  jenseits der Hanf-Linie als finaler Build-Pfad. 3 kosmische Sorten (Sternensaat
+  P64 → Nebularblüte P70 → Urknallfrucht P78, regrow, `minGrowSeconds` 60–90, Unlock
+  1e29→1e31), eigene **Spezialisierung** mit neuem Perk-Typ **`sell`** (+5 %/Stufe
+  Verkaufspreis NUR für diese Kategorie — frischer Build-Axis, gewirkt in
+  `sellInternal`, Auto-Verkauf-Tick und Verkaufsvorschau), eigene **Akzentfarbe**
+  (blau) und eigene Sprites (distinkte Reife-Grids + kosmischer Setzling). Voll
+  datengetrieben: Spezialisierungs-Shop, Quest-Kategorien, Hotbar und Ziel-Panel
+  ziehen die Kategorie automatisch mit; `PlantCategory` + `Record<PlantCategory>`-
+  UI-Maps ergänzt.
+
+Save-sicher (SAVE_VERSION bleibt 28): neue Pflanzen-/Kategorie-IDs defaulten auf 0/
+unbespielt, neuer SpecKind nur additiv. Tests 64/64, check/build grün, 14-d-Sim ohne
+Runaway. **62 Sorten (+1 Spezial) in 9 Kategorien.** **Offen → Phase 34:** Toast-Log
+optional persistent; ggf. eigene Sprites für die Kosmisch-Frühstufen.

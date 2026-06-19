@@ -186,5 +186,11 @@ Nebel-/Kosmos-/Ewigkeitshanf, Lizenz III, regrow, ~3–5× Sprung/Tier, P40→P6
 1e24→1e28, Sprites aliasiert), endloser Skill-Capstone ahnenwissen + buySkillMax/MAX-
 Button gegen den Skillpunkt-Überschuss (Glück-/Labor-Pfade jetzt im Panel sichtbar),
 Zier-Relation neu skaliert (obere beautyBonus steiler + neue Sternenrose, irreführende
-%-Texte qualitativ). Save-sicher (neue IDs→0, reine Daten). 59 Sorten (+1 Spezial)
-in 8 Kategorien, Stand SAVE_VERSION 28.
+%-Texte qualitativ). Save-sicher (neue IDs→0, reine Daten). Phase 33 (§9.35): eigene
+distinkte Reife-Sprites für die 5 Hanf-Endgame-Sorten (je eigene Blütenfarbe) +
+Sternenrose; neue Pflanzen-Kategorie „Kosmisch" (kosmos) als finaler Build-Pfad —
+3 Sorten (Sternensaat/Nebularblüte/Urknallfrucht, P64→P78, regrow+floored, Unlock
+1e29→1e31), eigene Spezialisierung mit neuem SpecKind 'sell' (+5 %/Stufe Verkaufspreis
+nur für die Kategorie, gewirkt in sellInternal/Auto-Verkauf/Vorschau), eigene
+Akzentfarbe + Sprites; voll datengetrieben (Shop/Quest/Hotbar/Ziele ziehen mit).
+Save-sicher. 62 Sorten (+1 Spezial) in 9 Kategorien, Stand SAVE_VERSION 28.
