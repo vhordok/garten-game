@@ -1,6 +1,6 @@
 <script lang="ts">
   import { buyPlot, clearAllPlots, harvestAllReady, maxPlots, nextPlotCost, restorePlots, setAutoSowPlant, sowAllEmpty, waterAllGrowing } from '../game/actions'
-  import { autoSowRate, gardenBeauty } from '../game/modifiers'
+  import { autoSowRate, forestBonus, gardenBeauty } from '../game/modifiers'
   import { nextBeautyMilestone } from '../data/beautyMilestones'
   import { plantById } from '../data/plants'
   import { gameStore } from '../game/state'
@@ -34,6 +34,7 @@
   // so manual picking never hijacks the automation. Control only shows once
   // the gnome exists.
   const beauty = $derived(gardenBeauty($gameStore))
+  const forest = $derived(forestBonus($gameStore))
   const gnomeOwned = $derived(autoSowRate($gameStore) > 0)
   const autoSowPinned = $derived($gameStore.autoSowPlantId)
   const autoSowLabel = $derived(
@@ -136,6 +137,11 @@
         title={`Schönheit ${Math.round(beauty * 100)} % → +${Math.round(beauty * 100)} % Verkaufspreis (Zier-Aura).${nextM ? ` Nächster Bonus bei ${Math.round(nextM.beauty * 100)} %: ${nextM.desc}.` : ' Alle Schönheits-Boni aktiv!'}`}
       >
         ✿ {Math.round(beauty * 100)} %{nextM ? ` → ${Math.round(nextM.beauty * 100)} %` : ' · MAX'}
+      </span>
+    {/if}
+    {#if forest > 0}
+      <span class="chip num forest" title={`Hain-Aura: reife Bäume vervielfachen den Ertrag des ganzen Gartens (×${(1 + forest).toFixed(2)}).`}>
+        🌲 +{Math.round(forest * 100)} % Ertrag
       </span>
     {/if}
     <button class="pxbtn small" disabled={emptyCount === 0} onclick={handleSowAll} title="Gewählte Sorte auf alle leeren Beete säen">
@@ -246,6 +252,11 @@
 
   .garden-head .chip.beauty {
     color: var(--c-plum3);
+    cursor: help;
+  }
+
+  .garden-head .chip.forest {
+    color: var(--c-leaf4);
     cursor: help;
   }
 

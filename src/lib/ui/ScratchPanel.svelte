@@ -4,11 +4,13 @@
   import {
     drawScratchCard,
     refundScratchTicket,
+    scratchAll,
     settleScratchCard,
     type ScratchCard,
     type ScratchOutcome,
   } from '../game/actions'
   import { gameStore } from '../game/state'
+  import { pushToast } from './toasts'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
   import { celebrateLevelUps } from './fx/celebrate'
@@ -85,6 +87,26 @@
     outcome = null
     playSound('click')
   }
+
+  // PHASE 34: cash the whole hoard at once (endgame piles up tens of thousands).
+  function handleScratchAll() {
+    const r = scratchAll()
+    if (r.scratched <= 0) {
+      playSound('error')
+      return
+    }
+    const parts: string[] = []
+    if (r.gold > 0) parts.push(`+${formatNumber(r.gold)} Gold`)
+    if (r.compost > 0) parts.push(`+${formatNumber(r.compost)} Kompost`)
+    if (r.fertilizer > 0) parts.push(`+${formatNumber(r.fertilizer)} Dünger`)
+    if (r.xp > 0) parts.push(`+${formatNumber(r.xp)} XP`)
+    if (r.mastery > 0) parts.push(`+${formatNumber(r.mastery)} Meister-XP`)
+    pushToast(`${formatNumber(r.scratched)} Lose gerubbelt — ${parts.join(' · ') || 'Kleinkram'}`, '🎟️', 9000, {
+      priority: 'important',
+    })
+    playSound('sell')
+    onClose()
+  }
 </script>
 
 <Overlay title="Rubbellos" {onClose}>
@@ -129,12 +151,23 @@
         <button class="pxbtn primary full" onclick={onClose}>Zurück in den Garten</button>
       {/if}
     {/if}
+
+    {#if $gameStore.scratchTickets > 1}
+      <button class="pxbtn full num scratch-all" onclick={handleScratchAll} title="Alle übrigen Lose auf einmal einlösen">
+        🎟️ Alle {formatNumber($gameStore.scratchTickets)} Lose auf einmal rubbeln
+      </button>
+    {/if}
   {:else}
     <p class="hint">Kein Los übrig — beim Ernten und bei Gold-Aufträgen findest du neue. 🍀</p>
   {/if}
 </Overlay>
 
 <style>
+  .scratch-all {
+    margin-top: 10px;
+    opacity: 0.92;
+  }
+
   .board {
     display: grid;
     grid-template-columns: repeat(3, 64px);

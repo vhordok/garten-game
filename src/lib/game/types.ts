@@ -39,6 +39,11 @@ export interface PlantDef {
   /** timber trees: no harvest — while mature they trickle this much gold
    * per second (sold as wood, so sell multipliers apply) */
   passiveIncome?: number
+  /** PHASE 34 „Hain"-Aura: while mature, a timber tree multiplies the WHOLE
+   * garden's yield by this fraction (a separate, multiplicative factor). Gives
+   * Holz a real endgame role beyond passive gold: sacrifice plots for a global
+   * harvest multiplier. Amplified by the Holz specialisation. */
+  forestYield?: number
   /** harvested units per harvest */
   yield: number
   /** money per harvested unit when sold */

@@ -32,6 +32,31 @@ export function cycleTime(plot: PlotState, def: PlantDef): number {
 }
 
 /**
+ * PHASE 34: minimum REAL seconds a cycle may take, regardless of the growth
+ * multiplier. Late-game crops (growTime ≥ threshold) get a flat floor so they
+ * never ripen in <1s; fast early/mid plants are exempt (their growth-speed
+ * upgrades stay meaningful). A plant's own minGrowSeconds can raise the floor
+ * further (the deliberately-slower top crops). Applies to grow AND regrow.
+ */
+export function cycleFloorSeconds(def: PlantDef): number {
+  const global = def.growTime >= CONFIG.floorGrowTimeThreshold ? CONFIG.minCycleFloorSeconds : 0
+  return Math.max(global, def.minGrowSeconds ?? 0)
+}
+
+/**
+ * The REAL seconds the plot's current cycle takes at the live multipliers (what
+ * the player actually sees on the tile) — the multiplier-shortened time, never
+ * below the floor. Drives truthful tooltips (PHASE 34). Care/spec speed are ~1
+ * for the endgame grower, so this is a faithful estimate for the UI.
+ */
+export function effectiveCycleSeconds(state: GameState, def: PlantDef, regrowing: boolean): number {
+  const target = regrowing && def.regrowTime ? def.regrowTime : def.growTime
+  const mult = growthMultiplier(state)
+  const real = mult > 0 ? target / mult : target
+  return Math.max(cycleFloorSeconds(def), real)
+}
+
+/**
  * Advance the simulation by dtSeconds. Single source of truth for time-based
  * progress — the live loop AND offline catch-up both run through here
  * (see CLAUDE.md rule 2). Returns true if anything changed.
@@ -61,11 +86,12 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
         specUniqueBonus(state, def.category, 'growth') +
         (plot.regrowing ? specUniqueBonus(state, def.category, 'regrow') : 0)
       let inc = grownSeconds * care * specSpeed
-      // PHASE 32: endgame growth floor — never fill a full growTime of progress
-      // faster than minGrowSeconds (regrow cycles scale down with it). Keeps the
-      // runaway speed multiplier from making high-yield endgame crops instant.
-      if (def.minGrowSeconds && def.minGrowSeconds > 0) {
-        const maxInc = (def.growTime * dtSeconds) / def.minGrowSeconds
+      // PHASE 32/34: growth floor — a late-game cycle can never fill faster than
+      // its floor, so the runaway multiplier can't make endgame crops instant
+      // (harvesters keep up). Early/mid plants are exempt (see cycleFloorSeconds).
+      const floorSecs = cycleFloorSeconds(def)
+      if (floorSecs > 0) {
+        const maxInc = (target * dtSeconds) / floorSecs
         if (inc > maxInc) inc = maxInc
       }
       plot.progress = Math.min(plot.progress + inc, target)
@@ -93,6 +119,10 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
     const gain =
       def.passiveIncome *
       dtSeconds *
+      // PHASE 34: passive timber income now scales with the yield multiplier too,
+      // so trees keep pace with the late-game prestige/compost power instead of
+      // falling hopelessly behind active harvests.
+      yieldMultiplier(state) *
       sellMultiplier(state) *
       (1 + compostUpgradeBonus(state, 'passive')) *
       (1 + specUniqueBonus(state, def.category, 'wood')) *

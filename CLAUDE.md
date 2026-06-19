@@ -193,4 +193,12 @@ Sternenrose; neue Pflanzen-Kategorie „Kosmisch" (kosmos) als finaler Build-Pfa
 1e29→1e31), eigene Spezialisierung mit neuem SpecKind 'sell' (+5 %/Stufe Verkaufspreis
 nur für die Kategorie, gewirkt in sellInternal/Auto-Verkauf/Vorschau), eigene
 Akzentfarbe + Sprites; voll datengetrieben (Shop/Quest/Hotbar/Ziele ziehen mit).
-Save-sicher. 62 Sorten (+1 Spezial) in 9 Kategorien, Stand SAVE_VERSION 28.
+Save-sicher. Phase 34 (§9.36): Reife-Zeit-Bug behoben (growTime-gegateter Echtzeit-
+Boden CONFIG.minCycleFloorSeconds für Pflanzen ≥50000 growTime → keine <1s-Reife,
+monoton steigende Kadenz; effectiveCycleSeconds + wahrhaftiger Hotbar-Tooltip statt
+roher growTime), Holz-Rework (passives Gold ×yieldMultiplier + reife Bäume geben
+separate multiplikative Ertrags-„Hain"-Aura via PlantDef.forestYield/forestBonus,
+🌲-Chip), Bulk-Rubbeln (scratchAll + „Alle Lose"-Button gegen den 23k-Hort), Level-
+Softcap (levelYieldBonus: √-Wachstum jenseits +300% → Lvl 44k ≈ +2390%), 4 neue
+Skill-Knoten. Save-sicher (reine Daten/Logik). 62 Sorten (+1 Spezial) in 9 Kategorien,
+Stand SAVE_VERSION 28.
