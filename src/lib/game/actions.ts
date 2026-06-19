@@ -577,6 +577,28 @@ export function buySkill(id: string): boolean {
 }
 
 /**
+ * Buy as many levels of a skill as the available points allow in one go (PHASE 32).
+ * Essential for the endless `ahnenwissen` sink — deep-prestige players hold
+ * thousands of surplus points and shouldn't have to click them away one by one.
+ * Returns the number of levels bought; notifies once.
+ */
+export function buySkillMax(id: string): number {
+  const s = getState()
+  const def = skillById(id)
+  if (!def) return 0
+  if (def.prereq !== null && skillLevel(s, def.prereq) <= 0) return 0
+  if (def.cost <= 0) return 0
+  let level = skillLevel(s, id)
+  const affordable = Math.floor(availableSkillPoints(s) / def.cost)
+  const room = def.maxLevel - level
+  const buy = Math.max(0, Math.min(affordable, room))
+  if (buy <= 0) return 0
+  s.skills[id] = level + buy
+  notify()
+  return buy
+}
+
+/**
  * Reset all skills (PHASE 18) for a compost fee — points return to the pool
  * (they're derived from progress, so clearing `skills` frees them). Costs
  * compost so it can't be spammed, but never locks a player in. True on success.

@@ -178,5 +178,13 @@ leise gezeigt, schnelle Aufträge stark mit „~Xm" im why. Keine Save-Änderung
 Breiten → kein Reflow/Springen bei Stat-Änderungen) und endlose Endgame-Auto-Ernte
 (data/upgrades.ts erntedrohnen: repeatable autoHarvest, +3 Beete/s je Stufe, ab
 Parzelle 16, Basis 1 Sp, costFactor 1.4 → erntet riesige Felder sofort + Gold-Sink;
-greift über effectBonus, auch offline). Keine Save-Änderung. 53 Sorten (+1 Spezial)
+greift über effectBonus, auch offline). Keine Save-Änderung. Phase 32 (§9.34):
+Endgame-Tiefe — Wachstums-Boden (PlantDef.minGrowSeconds floort die Echtzeit-Reife,
+tick.ts: maxInc = growTime·dt/minGrowSeconds → Endgame-Pflanzen brauchen wieder
+30–120 s statt <1 s trotz Mio-%-Tempo), neue Hanf-Spitze (5 Sorten Sonnen-/Sternen-/
+Nebel-/Kosmos-/Ewigkeitshanf, Lizenz III, regrow, ~3–5× Sprung/Tier, P40→P60, Unlock
+1e24→1e28, Sprites aliasiert), endloser Skill-Capstone ahnenwissen + buySkillMax/MAX-
+Button gegen den Skillpunkt-Überschuss (Glück-/Labor-Pfade jetzt im Panel sichtbar),
+Zier-Relation neu skaliert (obere beautyBonus steiler + neue Sternenrose, irreführende
+%-Texte qualitativ). Save-sicher (neue IDs→0, reine Daten). 59 Sorten (+1 Spezial)
 in 8 Kategorien, Stand SAVE_VERSION 28.

@@ -20,6 +20,7 @@ import {
   buyLicense,
   buyPlot,
   buySkill,
+  buySkillMax,
   buySpecialization,
   buyUpgrade,
   catchFirefly,
@@ -2047,6 +2048,59 @@ test('PHASE 31: endless Erntedrohnen keep up with a fast endgame field', () => {
 
     // the cost escalates geometrically → a genuine endless Sp sink
     assert.ok(drones.baseCost >= 1e21 && drones.costFactor > 1, 'priced as an endgame gold sink')
+  })
+})
+
+test('PHASE 32: endgame growth floor, Hanf ladder, endless skill, zier steps', () => {
+  withBoringRng(() => {
+    // --- A: minGrowSeconds floors real maturation despite a huge multiplier ---
+    const s = fresh()
+    s.totalEarned = 1e30
+    s.parcels = 60
+    s.licenses = 3
+    s.compost = 1e12 // deep-prestige compost → growth multiplier far above the floor ratio
+    s.upgrades = { giesskanne: 10 } // meet cannabis watering (care = 1, like a real endgame save)
+    const hanf = plantById('ewigkeitshanf')
+    // the floor only matters once the multiplier would otherwise out-pace it
+    assert.ok(growthMultiplier(s) > hanf.growTime / hanf.minGrowSeconds, 'multiplier exceeds the floor ratio')
+    assert.ok(hanf && hanf.minGrowSeconds === 120 && hanf.regrowTime, 'capstone hanf is floored + regrow')
+    s.plots = [{ plantId: 'ewigkeitshanf', progress: 0, waterLeft: 99, regrowing: false }]
+    tick(s, 60) // half the floor
+    assert.ok(!plotReady(s.plots[0]), 'floored plant is NOT ripe in a fraction of a second')
+    tick(s, 60) // reach the floor
+    assert.ok(plotReady(s.plots[0]), 'ripe after ~minGrowSeconds, not before')
+
+    // an un-floored plant ripens instantly under the same multiplier (the problem)
+    s.plots = [{ plantId: 'basilikum', progress: 0, waterLeft: 0, regrowing: false }]
+    tick(s, 1)
+    assert.ok(plotReady(s.plots[0]), 'un-floored plant is instant at this multiplier')
+
+    // --- B: new Hanf ladder gated by license + parcels ------------------------
+    for (const id of ['sonnenhanf', 'sternenhanf', 'nebelhanf', 'kosmoshanf', 'ewigkeitshanf']) {
+      const p = plantById(id)
+      assert.ok(p && p.category === 'cannabis' && p.requiresLicense === 3 && p.minGrowSeconds > 0, `${id} is a floored licensed hanf`)
+    }
+    const top = plantById('ewigkeitshanf')
+    assert.equal(isPlantUnlocked(top, { ...fresh(), totalEarned: 1e30, licenses: 3, parcels: 5 }), false, 'parcel-gated past the current top')
+    assert.equal(isPlantUnlocked(top, { ...fresh(), totalEarned: 1e30, licenses: 3, parcels: 60 }), true, 'unlocks with enough parcels')
+
+    // --- C: endless skill absorbs a big point surplus in one MAX buy ----------
+    const sk = fresh()
+    sk.parcels = 200 // deep prestige → big point surplus
+    sk.skills = { gartenplanung: 1, erntefokus: 1, ueppige_ernte: 1 }
+    const before = availableSkillPoints(sk)
+    assert.ok(before > 100, 'deep prestige yields a big point surplus')
+    const bought = buySkillMax('ahnenwissen')
+    assert.ok(bought > 100, 'MAX buy dumps the surplus into the endless skill')
+    assert.equal(availableSkillPoints(getState()), before - bought, 'points spent exactly')
+
+    // --- D: ornamental beauty steps scale with tier (proportional) -----------
+    assert.ok(plantById('galaxieorchidee').beautyBonus > plantById('mohn').beautyBonus * 5, 'top ornamental is a far bigger step than a low one')
+    const z = fresh()
+    const orn = plantById('galaxieorchidee')
+    z.plots = Array.from({ length: 14 }, () => ({ plantId: 'galaxieorchidee', progress: orn.growTime, waterLeft: 0, regrowing: false }))
+    const topMs = BEAUTY_MILESTONES[BEAUTY_MILESTONES.length - 1].beauty
+    assert.ok(gardenBeauty(z) >= topMs, 'an endgame zier field can reach the top beauty milestone')
   })
 })
 

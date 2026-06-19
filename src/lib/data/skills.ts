@@ -133,6 +133,22 @@ export const SKILLS: SkillDef[] = [
     cost: 2,
     prereq: 'gartenplanung',
   },
+  // ── PHASE 32: endless endgame sink. Deep-prestige players pile up far more
+  // skill points (1 per parcel/achievement/level-tier) than the finite tree can
+  // hold — this capstone absorbs the surplus and turns it into a slowly growing,
+  // permanent yield bonus. Additive, so it never out-scales the prestige/compost
+  // multiplier (no explosion) but always gives "one more thing" to invest in.
+  {
+    id: 'ahnenwissen',
+    name: 'Ahnenwissen',
+    desc: '+5 % Ertrag pro Stufe — endlos. Verwandelt überschüssige Skillpunkte in dauerhaften Ertrag.',
+    branch: 'ernte',
+    effect: 'yield',
+    perLevel: 0.05,
+    maxLevel: 99999,
+    cost: 1,
+    prereq: 'ueppige_ernte',
+  },
 ]
 
 const byId = new Map(SKILLS.map((s) => [s.id, s]))

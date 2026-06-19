@@ -1222,3 +1222,44 @@ Zwei gezielte Fixes aus dem Live-Feedback.
 
 Keine Save-Format-Änderung (SAVE_VERSION bleibt 28). Tests 62/62, check/build grün.
 **Offen → Phase 32:** Toast-Log optional persistent; feinere Build-Empfehlung.
+
+### 9.34 Phase 32 — Endgame-Tiefe: Wachstums-Boden, Hanf-Spitze, Skill-Sink, Zier-Relation (keine Save-Änderung)
+
+Aus konkretem Live-Feedback eines Parzelle-39-Spielstands (1B Kompost, +3,4 Mio %
+Tempo): Pflanzen reifen in Sekundenbruchteilen, Helfer kommen nicht hinterher, die
+letzte Pflanze bringt kaum Sprung, Skills sind längst max, Zier-Schritte sind
+unverhältnismäßig.
+
+- **Wachstums-Boden (`PlantDef.minGrowSeconds`, tick.ts):** der wichtigste Fix.
+  Der davongelaufene Tempo-Multiplikator macht sonst jede Pflanze instant. Ein
+  per-Pflanze **Echtzeit-Boden** begrenzt, wie schnell sich `growTime` füllen kann
+  (`maxInc = growTime·dt/minGrowSeconds`), Regrow-Zyklen skalieren proportional mit.
+  Damit brauchen Endgame-Pflanzen wieder **spürbar Zeit** (30–120 s statt <1 s) —
+  hoher Ertrag lohnt, Erntehelfer/-drohnen kommen mit, jede Ernte ist ein echter
+  Brocken. Greift nur, wenn der Multiplikator den Boden übersteigt (früh wirkungslos).
+- **Neue Hanf-Endgame-Leiter (5 Sorten):** Sonnenhanf (P40) → Sternenhanf (P44) →
+  Nebelhanf (P48) → Kosmoshanf (P54) → Ewigkeitshanf (P60), alle Lizenz III, regrow,
+  `minGrowSeconds` 30→120, jenseits des Urweltbaums (Unlock 1e24→1e28). Pro Tier
+  **~3–5× Einkommenssprung** (Diagnose @1B Kompost: Sonnenhanf 237 Qa/Ernte →
+  Ewigkeitshanf 142 Qi/Ernte). Parzellen-Gates (≈1/Prestige) pacen die Spitze;
+  Sprites vorerst auf die Cannabis-Linie aliasiert (eigene Pixel-Art später).
+- **Endloser Skill-Sink + versteckte Pfade (`ahnenwissen`):** Tief-Prestige häuft
+  weit mehr Skillpunkte an, als der endliche Baum fasst (Spieler: 1961 frei). Neuer
+  endloser Capstone „Ahnenwissen" (+5 % Ertrag/Stufe, maxLevel 99999) absorbiert den
+  Überschuss; additiv → übertrumpft den Prestige-Multiplikator nie (keine Explosion).
+  Neue **`buySkillMax`**-Aktion + „MAX"-Button leeren den Punkte-Berg in einem Klick.
+  Außerdem: die Glück-/Labor-Pfade waren definiert, aber nie gerendert — jetzt im
+  Skill-Panel sichtbar (mehr zum Investieren).
+- **Zier-Verhältnismäßigkeit:** die Schönheits-Schritte wuchsen kaum (0,02→0,25)
+  bei Mrd.-fachem Kosten-Sprung. Obere Zierpflanzen steil neu skaliert
+  (Galaxieorchidee 0,25→0,70 usw.) + neue Endgame-Zier **Sternenrose** (0,9, P42),
+  sodass ein Zier-Feld jetzt die Spitzen-Meilenstein-Schwelle erreicht
+  (Softcap deckelt → keine Explosion). Irreführende „+X %"-Beschreibungen durch
+  qualitative Texte ersetzt (genau die Zahlen, die der Spieler als unverhältnismäßig
+  empfand).
+
+Save-sicher (SAVE_VERSION bleibt 28): neue Pflanzen-/Skill-IDs defaulten auf 0,
+`minGrowSeconds`/Beauty-Rescale sind reine Daten. Tests 63/63, check/build grün,
+14-d-Sim ohne Runaway. 59 Sorten (+1 Spezial) in 8 Kategorien. **Offen → Phase 33:**
+eigene Sprites für die Hanf-Spitze; optional eine echte neue Kategorie; Toast-Log
+optional persistent.
