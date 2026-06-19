@@ -173,5 +173,10 @@ Verlauf (toastLog + ToastLogPanel, 🔔-HUD-Button mit unseen-Badge — Session-
 gedeckelt auf 40, aggregiert wie die Toasts, nie gespeichert) macht gebündelte/
 verpasste Meldungen nachlesbar; Auftrags-Zeitschätzung (goals.ts questFulfillSeconds:
 reale Anbauzeit der fehlenden Produkte) — lukrativ-aber-Dauergrind (>2 h) wird nur
-leise gezeigt, schnelle Aufträge stark mit „~Xm" im why. Keine Save-Änderung. 53
-Sorten (+1 Spezial) in 8 Kategorien, Stand SAVE_VERSION 28.
+leise gezeigt, schnelle Aufträge stark mit „~Xm" im why. Keine Save-Änderung. Phase
+31 (§9.33): Topbar-Stabilität (Panel-Buttons in eigener .row.btns + feste Stat-
+Breiten → kein Reflow/Springen bei Stat-Änderungen) und endlose Endgame-Auto-Ernte
+(data/upgrades.ts erntedrohnen: repeatable autoHarvest, +3 Beete/s je Stufe, ab
+Parzelle 16, Basis 1 Sp, costFactor 1.4 → erntet riesige Felder sofort + Gold-Sink;
+greift über effectBonus, auch offline). Keine Save-Änderung. 53 Sorten (+1 Spezial)
+in 8 Kategorien, Stand SAVE_VERSION 28.
