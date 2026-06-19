@@ -13,7 +13,7 @@
 import type { PlantCategory } from '../game/types'
 
 /** The single per-category perk kinds. Each maps to one hook in the core. */
-export type SpecKind = 'growth' | 'regrow' | 'crit' | 'ticket' | 'wood' | 'beauty' | 'mastery'
+export type SpecKind = 'growth' | 'regrow' | 'crit' | 'ticket' | 'wood' | 'beauty' | 'mastery' | 'sell'
 
 export interface CategorySpecDef {
   id: PlantCategory
@@ -123,6 +123,19 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
       format: (l) => `+${pct(0.2 * l)} Meister-XP`,
     },
     milestoneDesc: 'Meilenstein verstärkt die Meister-XP',
+  },
+  // PHASE 33: the cosmic endgame category — its produce fetches ever-higher
+  // prices (a fresh build axis: invest in Kosmisch for a per-category sell bonus).
+  {
+    id: 'kosmos',
+    label: 'Kosmisch',
+    unique: {
+      kind: 'sell',
+      perLevel: 0.05,
+      desc: 'kosmische Ernten erzielen Höchstpreise',
+      format: (l) => `+${pct(0.05 * l)} Verkaufspreis`,
+    },
+    milestoneDesc: 'Meilenstein verstärkt die Verkaufspreise',
   },
 ]
 

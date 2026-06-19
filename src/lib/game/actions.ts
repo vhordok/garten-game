@@ -369,7 +369,8 @@ function sellInternal(s: GameState, plantId: string, amount?: number): number {
   const count = s.inventory[plantId] ?? 0
   const toSell = Math.min(Math.floor(amount ?? count), count)
   if (!def || toSell <= 0) return 0
-  const gain = saleValue(s, def.sellValue, toSell)
+  // PHASE 33: the Kosmisch specialisation lifts that category's sale price
+  const gain = Math.round(saleValue(s, def.sellValue, toSell) * (1 + specUniqueBonus(s, def.category, 'sell')))
   if (toSell >= count) delete s.inventory[plantId]
   else s.inventory[plantId] = count - toSell
   s.money += gain
@@ -420,7 +421,7 @@ export function sellableValue(state: GameState, fraction = 1): number {
   let sum = 0
   for (const plant of PLANTS) {
     const amount = quickSellAmount(state, plant.id, fraction)
-    if (amount > 0) sum += saleValue(state, plant.sellValue, amount)
+    if (amount > 0) sum += saleValue(state, plant.sellValue, amount) * (1 + specUniqueBonus(state, plant.category, 'sell'))
   }
   return sum
 }

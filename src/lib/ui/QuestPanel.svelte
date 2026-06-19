@@ -36,6 +36,7 @@
     zier: 'Zier',
     cannabis: 'Hanf',
     magie: 'Magie',
+    kosmos: 'Kosmisch',
   }
   const KIND_LABEL: Partial<Record<QuestKind, string>> = {
     combi: 'Kombi',

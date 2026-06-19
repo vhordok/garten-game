@@ -94,6 +94,7 @@ import { ACHIEVEMENTS } from '../src/lib/data/achievements.ts'
 import { achievementBonus, achievementSkillPoints, reachedTier } from '../src/lib/game/achievements.ts'
 import { VARIANTS } from '../src/lib/data/variants.ts'
 import { SPRITES } from '../src/lib/ui/pixel/sprites.ts'
+import { categorySpecById } from '../src/lib/data/specializations.ts'
 import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceStatus, variantBonus, variantEventBonus } from '../src/lib/game/seedlab.ts'
 import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
 import { get } from 'svelte/store'
@@ -2048,6 +2049,56 @@ test('PHASE 31: endless Erntedrohnen keep up with a fast endgame field', () => {
 
     // the cost escalates geometrically → a genuine endless Sp sink
     assert.ok(drones.baseCost >= 1e21 && drones.costFactor > 1, 'priced as an endgame gold sink')
+  })
+})
+
+test('PHASE 33: cosmic „Kosmisch" category — plants, sell-spec, distinct sprites', () => {
+  withBoringRng(() => {
+    // --- the new category exists with its own specialisation perk ------------
+    const spec = categorySpecById('kosmos')
+    assert.ok(spec && spec.unique.kind === 'sell', 'Kosmisch has a sell-price specialisation')
+
+    // --- 3 cosmic plants, floored, parcel-gated beyond the Hanf spike --------
+    for (const id of ['sternensaat', 'nebularbluete', 'urknallfrucht']) {
+      const p = plantById(id)
+      assert.ok(p && p.category === 'kosmos' && p.minGrowSeconds > 0 && p.regrowTime, `${id} is a floored cosmic crop`)
+    }
+    const top = plantById('urknallfrucht')
+    assert.equal(isPlantUnlocked(top, { ...fresh(), totalEarned: 1e40, parcels: 40 }), false, 'gated past current reach')
+    assert.equal(isPlantUnlocked(top, { ...fresh(), totalEarned: 1e40, parcels: 78 }), true, 'unlocks with enough parcels')
+
+    // --- the sell perk lifts ONLY the cosmic category's sale price -----------
+    assert.ok(specUniqueBonus({ ...fresh(), specializations: { kosmos: 10 } }, 'kosmos', 'sell') > 0, 'kosmos sell perk active')
+    assert.equal(specUniqueBonus({ ...fresh(), specializations: { kosmos: 10 } }, 'magie', 'sell'), 0, 'perk is per-category')
+
+    const plain = fresh()
+    plain.inventory = { sternensaat: 1000 }
+    const g0 = sellPlant('sternensaat', 1000)
+    const boosted = fresh()
+    boosted.specializations = { kosmos: 10 }
+    boosted.inventory = { sternensaat: 1000 }
+    const g1 = sellPlant('sternensaat', 1000)
+    assert.ok(g1 > g0, 'Kosmisch specialisation raises the cosmic sale price')
+
+    const ctrl = fresh()
+    ctrl.specializations = { kosmos: 10 }
+    ctrl.inventory = { basilikum: 1000 }
+    const ck = sellPlant('basilikum', 1000)
+    const ref = fresh()
+    ref.inventory = { basilikum: 1000 }
+    const cr = sellPlant('basilikum', 1000)
+    assert.equal(ck, cr, 'kosmos spec never touches other categories')
+
+    // --- each new endgame plant has a DISTINCT mature sprite -----------------
+    const matureKeys = ['sonnenhanf-3', 'sternenhanf-3', 'nebelhanf-3', 'kosmoshanf-3', 'ewigkeitshanf-3', 'sternenrose-3', 'sternensaat-3', 'nebularbluete-3', 'urknallfrucht-3']
+    const grids = matureKeys.map((k) => SPRITES[k])
+    for (const k of matureKeys) {
+      assert.ok(Array.isArray(SPRITES[k]) && SPRITES[k].length === 16, `${k} sprite present & 16 rows`)
+    }
+    assert.ok(SPRITES['seedling-kosmos'], 'cosmic seedling sprite present')
+    // the five Hanf colas are not all the same grid (distinct mature art)
+    const hanf = ['sonnenhanf-3', 'sternenhanf-3', 'nebelhanf-3', 'kosmoshanf-3', 'ewigkeitshanf-3'].map((k) => SPRITES[k])
+    assert.equal(new Set(hanf).size, 5, 'each Hanf tier has its own distinct cola sprite')
   })
 })
 
