@@ -60,7 +60,15 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
         1 +
         specUniqueBonus(state, def.category, 'growth') +
         (plot.regrowing ? specUniqueBonus(state, def.category, 'regrow') : 0)
-      plot.progress = Math.min(plot.progress + grownSeconds * care * specSpeed, target)
+      let inc = grownSeconds * care * specSpeed
+      // PHASE 32: endgame growth floor — never fill a full growTime of progress
+      // faster than minGrowSeconds (regrow cycles scale down with it). Keeps the
+      // runaway speed multiplier from making high-yield endgame crops instant.
+      if (def.minGrowSeconds && def.minGrowSeconds > 0) {
+        const maxInc = (def.growTime * dtSeconds) / def.minGrowSeconds
+        if (inc > maxInc) inc = maxInc
+      }
+      plot.progress = Math.min(plot.progress + inc, target)
       changed = true
     }
   }

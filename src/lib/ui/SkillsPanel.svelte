@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
   import { BRANCH_LABEL, skillById, SKILLS, type SkillDef } from '../data/skills'
-  import { buySkill, respecSkills } from '../game/actions'
+  import { buySkill, buySkillMax, respecSkills } from '../game/actions'
   import { availableSkillPoints, skillStatus, totalSkillPoints } from '../game/skills'
   import { gameStore } from '../game/state'
   import { playSound } from './fx/audio'
@@ -13,7 +13,18 @@
   const available = $derived(availableSkillPoints($gameStore))
   const total = $derived(totalSkillPoints($gameStore))
 
-  const BRANCHES: SkillDef['branch'][] = ['wurzel', 'ernte', 'markt', 'zier', 'kompost']
+  // PHASE 32: include glueck + labor (previously defined but never rendered)
+  const BRANCHES: SkillDef['branch'][] = ['wurzel', 'ernte', 'markt', 'zier', 'kompost', 'glueck', 'labor']
+
+  function handleBuyMax(e: MouseEvent, id: string) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    if (buySkillMax(id) > 0) {
+      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 16)
+      playSound('buy')
+    } else {
+      playSound('error')
+    }
+  }
 
   function handleBuy(e: MouseEvent, id: string) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -70,9 +81,16 @@
           {#if st.maxed}
             <span class="s-max">MAX</span>
           {:else}
-            <button class="pxbtn small num" disabled={!st.canBuy} onclick={(e) => handleBuy(e, skill.id)}>
-              ✦ {st.cost}
-            </button>
+            <span class="s-buy">
+              <button class="pxbtn small num" disabled={!st.canBuy} onclick={(e) => handleBuy(e, skill.id)}>
+                ✦ {st.cost}
+              </button>
+              {#if skill.maxLevel > 50}
+                <button class="pxbtn small num" disabled={!st.canBuy} onclick={(e) => handleBuyMax(e, skill.id)} title="So viele Stufen kaufen, wie Punkte reichen">
+                  MAX
+                </button>
+              {/if}
+            </span>
           {/if}
         </li>
       {/each}
@@ -187,5 +205,13 @@
 
   .pxbtn.small {
     flex: none;
+  }
+
+  .s-buy {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
   }
 </style>

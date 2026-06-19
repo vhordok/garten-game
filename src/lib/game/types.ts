@@ -24,6 +24,12 @@ export interface PlantDef {
   seedCost: number
   /** seconds from sowing until harvestable */
   growTime: number
+  /** PHASE 32 endgame floor: the REAL maturation time can never drop below this,
+   * no matter how huge the growth multiplier gets. Late-prestige speed (+millions %)
+   * otherwise ripens everything in <1s; a floor keeps high-yield endgame crops on a
+   * meaningful cadence so auto-harvesters keep up and each harvest is a real payout.
+   * Regrow cycles scale down proportionally. Default: no floor (multiplier applies). */
+  minGrowSeconds?: number
   /** if set, the plant stays after harvest and re-ripens in this many seconds */
   regrowTime?: number
   /** ornamental plants: no harvest — while mature they add this fraction
