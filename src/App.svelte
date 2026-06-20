@@ -224,6 +224,18 @@
     padding-top: 3vh;
   }
 
+  /* PHASE 45: on phones the fixed HUD is tall, so the stacked breathing room
+     (app clearance + main 3vh) left a big empty band under the topbar. Pull the
+     garden up: tighter clearance, no extra main gap. */
+  @media (max-width: 640px) {
+    .app {
+      padding-top: calc(var(--safe-top, 0px) + var(--hud-h, 76px) + 4px);
+    }
+    main {
+      padding-top: 0;
+    }
+  }
+
   /* reserves vertical space only while an event banner is present; empty = 0px */
   .notify-zone {
     width: 100%;

@@ -1503,3 +1503,20 @@ gewählt.
 
 check/build grün, Tests 69/69 (neuer Phase-44-Test + drei Beauty-Tests auf die Sammlung
 umgestellt).
+
+### 9.47 Phase 45 — Mobile-Layout: Feld füllt den Bildschirm, weniger toter Raum (keine Save-Änderung)
+
+Feedback aus dem Geräte-Screenshot: das Spielfeld war nur ein Bruchteil des Bildschirms,
+zwischen Topbar und Inhalt klaffte eine große Lücke, alles nahm zu viel Platz.
+
+- **Lücke unter der Topbar geschlossen:** auf dem Handy stapelten sich App-Clearance
+  (`--hud-h` + 26 px) und `main` (3vh) zu einem leeren Band. Mobil jetzt nur noch
+  `--hud-h` + 4 px Clearance und `main` ohne zusätzlichen `padding-top`.
+- **Feld füllt die Breite:** das Grid nutzt `repeat(auto-fill, minmax(var(--cell), 1fr))`
+  und die Beete (`.plot`/Kauf-Kachel) werden mobil `width:100% + aspect-ratio:1` → die
+  Pflanzen strecken sich über die ganze Bildschirmbreite statt klein zentriert.
+- **Kompaktere Aktionsleiste:** die Garten-Buttons (säen/gießen/roden/ernten) sind mobil
+  kleiner (Font/Padding) → weniger Zeilen, mehr Platz fürs Feld.
+
+Reine CSS-/Layout-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 29). check/build grün,
+Tests 69/69. ⚠️ Ohne Headless-Browser nicht am Viewport gegengeprüft — bitte am Gerät verifizieren.
