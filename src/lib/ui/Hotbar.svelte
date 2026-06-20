@@ -259,6 +259,10 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    /* let long single words (e.g. "Schnittlauch") break onto the 2nd line
+       instead of being clipped mid-word (PHASE 42) */
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .pname.locked-name {
