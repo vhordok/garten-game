@@ -1412,3 +1412,23 @@ Seltenheit: Bronze 0,3 → Legendär 1,8; kein Ertrag), max. 3 je Sorte, gegated
 `discoveredVariants`. Integriert wie die Prachtorchidee allein über `plantById`
 (Plot/Beauty/Save/Hotbar generisch); Sprites thematisch aliasiert (eigene Pixel-Art
 später). 10 statt 1 Spezial-Pflanze. Keine Save-Änderung (SAVE_VERSION 28), 68/68.
+
+### 9.42 Phase 40 — Mobile-UX nach Geräte-Screenshot (keine Save-Änderung)
+
+Konkrete Handy-Probleme aus einem echten Screenshot behoben.
+
+- **Pflanzennamen sichtbar:** auf dem Handy gibt es kein Hover → man sah nicht, WAS
+  eine Pflanze ist. Jede Hotbar-Kachel zeigt jetzt den **Namen direkt** (2-zeilig,
+  Ellipsis); die nutzlose Tastatur-Nummer (1–4) ist weg, Kachel etwas höher.
+- **Topbar kompakter:** die Panel-Buttons stehen auf dem Handy in **einer
+  horizontal scrollbaren Leiste** (statt 2–3 Zeilen) mit Rand-Fade als Wisch-Hinweis;
+  „Verkaufen"-Button niedriger, HUD-Abstände enger → deutlich weniger Höhe.
+- **Kategorien als scrollbar erkennbar:** die Tab-Leiste bekommt einen **Rand-Fade**
+  + Scroll-Snap, damit klar ist, dass rechts mehr Kategorien kommen.
+- **Prestige immer auffindbar:** der Prestige-Button war versteckt, bis Prestige
+  möglich war (Spieler fand ihn nicht). Jetzt **immer sichtbar** (gedimmt, solange
+  noch nicht möglich); das Panel erklärt die Kompost-Bedingung.
+
+Reine CSS-/Layout-/Discoverability-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28).
+check/build grün, Tests 68/68. ⚠️ Ohne Headless-Browser nicht selbst am Viewport
+gegengeprüft — bitte auf dem Gerät verifizieren.

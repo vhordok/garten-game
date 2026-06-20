@@ -184,12 +184,12 @@
     {#if questHint}<span class="dot quest" aria-hidden="true"></span>{/if}
   </button>
 
-  {#if showPrestige}
-    <button class="pxbtn" onclick={onOpenPrestige} aria-label="Prestige — neue Parzelle" title="Neue Parzelle pachten — Kompost wirkt für immer">
-      <PixelIcon name="duenger" scale={1} />
-      {#if prestigeReady}<span class="dot prestige" aria-hidden="true"></span>{/if}
-    </button>
-  {/if}
+  <!-- PHASE 40: always visible so it's discoverable (was hidden until available —
+       players couldn't find it). The panel itself explains the compost requirement. -->
+  <button class="pxbtn" class:dim={!showPrestige} onclick={onOpenPrestige} aria-label="Prestige — neue Parzelle" title="Prestige — neue Parzelle pachten (Kompost wirkt für immer)">
+    <PixelIcon name="duenger" scale={1} />
+    {#if prestigeReady}<span class="dot prestige" aria-hidden="true"></span>{/if}
+  </button>
 
   <button class="pxbtn" onclick={onOpenGoals} aria-label="Ziele" title="Ziele — woran du als Nächstes arbeitest">
     <PixelIcon name="sparkle" scale={1} />
@@ -508,31 +508,61 @@
     }
   }
 
+  .dim {
+    opacity: 0.6;
+  }
+
   @media (max-width: 640px) {
     h1 {
       display: none;
     }
 
-    /* drop the push-spacer so the crowded action cluster wraps naturally
-       across full lines instead of being shoved off-screen (PHASE 5) */
     .spacer {
       display: none;
     }
 
-    .row {
-      gap: 8px;
-      justify-content: center;
+    /* PHASE 40: the topbar ate too much height on phones. Tighten everything and
+       put the panel buttons into ONE horizontally-scrollable strip instead of
+       wrapping to 2–3 rows — the partial last button signals "swipe for more". */
+    .hud {
+      gap: 3px;
+      padding: 2px 6px 5px;
     }
 
-    /* PHASE 38: centre the wrapped panel-button cluster (was right-pushed) so
-       both stat and button rows read as tidy centred lines on a phone */
-    .row.btns {
+    .row {
+      gap: 7px;
       justify-content: center;
+      row-gap: 4px;
+    }
+
+    .row.btns {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      justify-content: flex-start;
       gap: 6px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      /* fade the right edge as a "more here" affordance */
+      -webkit-mask-image: linear-gradient(to right, #000 88%, transparent);
+      mask-image: linear-gradient(to right, #000 88%, transparent);
+    }
+
+    .row.btns::-webkit-scrollbar {
+      display: none;
+    }
+
+    .row.btns .pxbtn {
+      flex: 0 0 auto;
+    }
+
+    /* the primary sell button no longer needs to be a tall full-width slab */
+    .sell {
+      min-width: 0;
+      padding: 1px 10px 4px;
     }
 
     .amount {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
     }
   }
 </style>
