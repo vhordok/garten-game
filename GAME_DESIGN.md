@@ -1351,3 +1351,34 @@ gedrosselt (ein 120-Event-Burst → ein Write), der Unseen-Badge startet beim La
 bei 0 (Alt-Einträge sind zum Nachlesen, nicht zum Nerven). `ToastLogPanel` zeigt
 relative Zeiten jetzt auch in Tagen. Test deckt den Reload-Roundtrip ab (66/66).
 Keine Save-Änderung (SAVE_VERSION bleibt 28).
+
+### 9.39 Phase 37 — Endgame-Paket: Kadenz-Fix, bezahlbare/Massen-Felder, Zier permanent, neue Sorten, Kreuzungen (keine Save-Änderung)
+
+Großes Spieler-Feedback-Paket aus dem Very-Late-Game.
+
+- **Kadenz-Bug behoben:** die neuen Endgame-Pflanzen liefen viel langsamer als die
+  alten (Phase-34-Eskalation 10–32 s vs. 8 s). Jetzt teilen sich ALLE Endgame-Pflanzen
+  den **einen globalen 8-s-Boden** (per-Pflanze-`minGrowSeconds` entfernt) → höhere
+  Sorten sind nie langsamer, nur ertragreicher. Keine Inversion mehr.
+- **Bezahlbare Felder + „Alle Felder kaufen":** die 1,5×-Beetkurve explodierte über
+  die 150+ Beete eines Tief-Prestige-Gartens (Beet 164 ≈ 2,5e30 → unkaufbar). Neue
+  **piecewise-Kurve** (steil bis Beet 20, danach 1,12× sanft) → bei Parzelle 39
+  kostet das letzte Beet jetzt ~908 B statt 2,5e30. Plus `buyAllPlots()` +
+  **„Alle Felder kaufen"-Button** — kein ewiges Klick-für-Klick nach jedem Prestige.
+- **Zierpflanzen permanent + stärker:** „Alles roden" lässt Zierpflanzen jetzt stehen
+  (nur Einzel-Roden entfernt sie) → das Schönheitsfeld bleibt beim Crop-Wechsel
+  erhalten. Obere Zier-`beautyBonus` deutlich angehoben (Sternenrose 0,9→1,8 u. a.)
+  + Beauty-Softcap-Exp 0,5→0,6 → spürbar höherer Verkaufspreis-Boost.
+- **Mehr/teurere Sorten:** 4 neue kosmische Spitzen (Singularitätsblume P83 →
+  Quasarkern P88 → Leerenblüte P93 → Schöpfungskern P98, Unlock 3e32→1e37) mit
+  **~×10 Ertragssprung je Sorte** und **ROI ~0,4** (Saat = 2,5× pro-Ernte), sodass
+  ein volles Feld eine echte Investition ist statt sofort gekauft; auch die
+  bestehenden Endgame-Saatpreise auf ROI ~0,4 angehoben.
+- **Eigene Kategorie „Kreuzungen":** Saatlabor-Spezialpflanzen (Prachtorchidee)
+  bekommen einen **eigenen Hotbar-Tab** statt unten in einer Fremdkategorie zu
+  hängen. Special-only (nicht im Spezialisierungs-Shop), erscheint erst nach
+  Entdeckung. PlantCategory + UI-Maps + Setzling-Sprite ergänzt.
+
+Save-sicher (SAVE_VERSION bleibt 28): neue IDs/Kategorie defaulten, reine Daten/Logik;
+bestehende Beete laufen via plantById weiter. Tests 67/67, check/build grün, 14-d-Sim
+ohne Runaway. 66 Sorten (+1 Spezial) in 9 Kategorien + „Kreuzungen" (Saatlabor).

@@ -426,10 +426,17 @@ export function sellableValue(state: GameState, fraction = 1): number {
   return sum
 }
 
-/** Cost of the next plot — exponential curve, see GAME_DESIGN.md §3. */
+/**
+ * Cost of the next plot — piecewise exponential (PHASE 37). Up to the knee it uses
+ * the steep early factor (plots stay a real sink); beyond it a much gentler factor,
+ * so the 150+ plots of a deep-prestige garden remain buyable instead of exploding.
+ */
 export function nextPlotCost(state: GameState): number {
   const bought = state.plots.length - CONFIG.startPlots
-  return Math.floor(CONFIG.plotBaseCost * Math.pow(CONFIG.plotCostFactor, bought))
+  const knee = CONFIG.plotSoftKnee
+  if (bought <= knee) return Math.floor(CONFIG.plotBaseCost * Math.pow(CONFIG.plotCostFactor, bought))
+  const atKnee = CONFIG.plotBaseCost * Math.pow(CONFIG.plotCostFactor, knee)
+  return Math.floor(atKnee * Math.pow(CONFIG.plotLateCostFactor, bought - knee))
 }
 
 /** Current plot cap — every leased parcel extends it. */
@@ -497,6 +504,27 @@ export function buyPlot(): boolean {
   s.plots.push(emptyPlot())
   notify()
   return true
+}
+
+/**
+ * PHASE 37: buy as many plots as money allows, up to the parcel cap, in one go.
+ * After a prestige the player otherwise clicks plot-by-plot for ages — this fills
+ * the field instantly with whatever is affordable. Returns how many were bought.
+ */
+export function buyAllPlots(): number {
+  const s = getState()
+  const cap = maxPlots(s)
+  let count = 0
+  // guard against pathological loops; the cap is the natural bound
+  while (s.plots.length < cap && count < 100000) {
+    const cost = nextPlotCost(s)
+    if (s.money < cost) break
+    s.money -= cost
+    s.plots.push(emptyPlot())
+    count += 1
+  }
+  if (count > 0) notify()
+  return count
 }
 
 /** Current level of an upgrade (0 = not owned). */

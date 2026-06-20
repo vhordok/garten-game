@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { buyPlot, clearAllPlots, harvestAllReady, maxPlots, nextPlotCost, restorePlots, setAutoSowPlant, sowAllEmpty, waterAllGrowing } from '../game/actions'
+  import { buyAllPlots, buyPlot, clearAllPlots, harvestAllReady, maxPlots, nextPlotCost, restorePlots, setAutoSowPlant, sowAllEmpty, waterAllGrowing } from '../game/actions'
   import { autoSowRate, forestBonus, gardenBeauty } from '../game/modifiers'
   import { nextBeautyMilestone } from '../data/beautyMilestones'
   import { plantById } from '../data/plants'
@@ -21,7 +21,9 @@
   let undo = $state<ReturnType<typeof clearAllPlots> | null>(null)
   let undoTimer: ReturnType<typeof setTimeout> | undefined
 
-  const plantedCount = $derived($gameStore.plots.filter((p) => p.plantId !== null).length)
+  // PHASE 37: ornamentals are permanent — "Alles roden" never removes them
+  const isOrnamental = (id: string | null) => !!(id && plantById(id)?.beautyBonus)
+  const clearableCount = $derived($gameStore.plots.filter((p) => p.plantId !== null && !isOrnamental(p.plantId)).length)
   const readyCount = $derived($gameStore.plots.filter(plotReady).length)
   const emptyCount = $derived($gameStore.plots.filter((p) => p.plantId === null).length)
   const waterableCount = $derived(
@@ -106,8 +108,21 @@
     }
   }
 
+  function handleBuyAllPlots(e: MouseEvent) {
+    const [cx, cy] = eventCenter(e)
+    const n = buyAllPlots()
+    if (n > 0) {
+      leafBurst(cx, cy, Math.min(12 + n, 40))
+      playSound('buy')
+      screenShake(0.8)
+    } else {
+      playSound('error')
+    }
+  }
+
   function handleClearAll(e: MouseEvent) {
-    const res = clearAllPlots()
+    // PHASE 37: never mass-rode ornamentals — they stay as a permanent beauty field
+    const res = clearAllPlots((_, def) => !def.beautyBonus)
     if (res.count > 0) {
       const [cx, cy] = eventCenter(e)
       leafBurst(cx, cy, Math.min(8 + res.count * 2, 30))
@@ -144,6 +159,11 @@
         🌲 +{Math.round(forest * 100)} % Ertrag
       </span>
     {/if}
+    {#if canBuyMore}
+      <button class="pxbtn small gold" onclick={handleBuyAllPlots} title="So viele Beete kaufen, wie Gold reicht — spart das Klicken nach jedem Prestige">
+        Alle Felder kaufen
+      </button>
+    {/if}
     <button class="pxbtn small" disabled={emptyCount === 0} onclick={handleSowAll} title="Gewählte Sorte auf alle leeren Beete säen">
       Alle säen{emptyCount > 0 ? ` (${emptyCount})` : ''}
     </button>
@@ -163,11 +183,11 @@
     </button>
     <button
       class="pxbtn small"
-      disabled={plantedCount === 0}
+      disabled={clearableCount === 0}
       onclick={handleClearAll}
-      title="Alle bepflanzten Beete auf einmal roden — 50 % Saatpreis zurück, kurz rückgängig machbar"
+      title="Alle bepflanzten Beete roden (Zierpflanzen bleiben permanent stehen) — 50 % Saatpreis zurück, kurz rückgängig machbar"
     >
-      Alles roden{plantedCount > 0 ? ` (${plantedCount})` : ''}
+      Alles roden{clearableCount > 0 ? ` (${clearableCount})` : ''}
     </button>
     {#if gnomeOwned}
       <button

@@ -31,6 +31,7 @@
     cannabis: 'Hanf',
     magie: 'Magie',
     kosmos: 'Kosmisch',
+    kreuzungen: 'Kreuzungen',
   }
 
   // PHASE 15 visual identity: a distinct palette accent per category so the
@@ -45,6 +46,7 @@
     cannabis: 'var(--c-leaf4)',
     magie: 'var(--c-blue2)',
     kosmos: 'var(--c-blue1)',
+    kreuzungen: 'var(--c-plum1)',
   }
 
   function handleBuySpec(e: MouseEvent, category: string) {

@@ -9,6 +9,12 @@ export const CONFIG = {
   /** plot n (0-based beyond the free ones) costs plotBaseCost * plotCostFactor^n */
   plotBaseCost: 25,
   plotCostFactor: 1.5,
+  /** PHASE 37: piecewise plot cost. The 1.5× curve explodes over the 150+ plots a
+   * deep-prestige garden unlocks (plot 164 ≈ 2.5e30 → unbuyable). Past the knee the
+   * cost grows with a much gentler factor, so EVERY unlocked plot stays affordable
+   * at endgame while early plots keep their meaningful price. */
+  plotSoftKnee: 20,
+  plotLateCostFactor: 1.12,
   /** active watering: charges per sown crop, growth skip per splash */
   waterChargesPerCrop: 3,
   waterProgressBoost: 0.15,
@@ -139,7 +145,7 @@ export const CONFIG = {
    * beauty is compressed (^exp) so a Zier build stays strong but can't dominate
    * outright (diminishing returns, no hard wall, no devaluation). */
   beautySoftcap: 0.8,
-  beautySoftcapExp: 0.5,
+  beautySoftcapExp: 0.6,
   /** PHASE 18 skill respec: clearing all skills costs this much compost (so it
    * isn't free-spammable, but new players are never locked in). */
   skillRespecCompost: 100,

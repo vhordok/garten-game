@@ -206,5 +206,11 @@ multiplikativ-gesund, nur synthetisch unbespielt) → reine Politur: eigene Kosm
 Frühstufen-Sprites (seedlingKosmos/kosmos1/kosmos2, blau-weiße Stern-Optik statt
 Magie-/Kristallbeer-Aliasen). Save-sicher. Phase 36 (§9.38): Toast-Verlauf über
 Reloads persistent (eigener localStorage-Key, vom Save entkoppelt, gedrosselt; Unseen-
-Badge startet bei 0; Panel zeigt Tage). Keine Save-Änderung. 62 Sorten (+1 Spezial)
-in 9 Kategorien, Stand SAVE_VERSION 28.
+Badge startet bei 0; Panel zeigt Tage). Keine Save-Änderung. Phase 37 (§9.39):
+Endgame-Paket — Kadenz-Fix (alle Endgame-Pflanzen teilen den globalen 8-s-Boden, keine
+Inversion mehr), bezahlbare Felder (piecewise Beetkurve, Beet 164 ~908B statt 2,5e30)
++ buyAllPlots/„Alle Felder kaufen", Zierpflanzen permanent (Alles-Roden überspringt
+beautyBonus) + stärker (obere beautyBonus ×~2, Softcap-Exp 0,5→0,6), 4 neue Kosmos-
+Spitzen (P83→P98, ~×10/Tier, ROI ~0,4) + Endgame-Saatpreise ROI ~0,4, eigene Kategorie
+„Kreuzungen" für Saatlabor-Specials (eigener Hotbar-Tab, special-only). Save-sicher.
+66 Sorten (+1 Spezial) in 9 Kategorien + Kreuzungen, Stand SAVE_VERSION 28.
