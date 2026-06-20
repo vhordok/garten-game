@@ -217,4 +217,7 @@ Spitzen (P83→P98, ~×10/Tier, ROI ~0,4) + Endgame-Saatpreise ROI ~0,4, eigene 
 Usability — Spielfeld-Grid passt sich an (auto-fill statt fixe 7 Spalten → kein
 horizontaler Überlauf mehr), Overlay-Header sticky (Schließen immer erreichbar),
 Topbar-/Garten-Buttons zentriert umgebrochen, body overflow-x hidden. Reine CSS,
-keine Save-Änderung. Stand SAVE_VERSION 28.
+keine Save-Änderung. Phase 39 (§9.41): alle 10 Saatlabor-Varianten als pflanzbare
+Kreuzungen (vorher nur Prachtorchidee) — Schau-Exemplare in Kategorie „Kreuzungen",
+Schönheit nach Seltenheit (0,3→1,8), max. 3/Sorte, via discoveredVariants gegated,
+Sprites aliasiert. Keine Save-Änderung. Stand SAVE_VERSION 28.

@@ -1402,3 +1402,13 @@ Gezielte Behebung der gemeldeten schlechten Handy-Bedienung.
 Reine CSS-/Layout-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28). check/build
 grün, Tests 67/67. **Offen → Phase 39:** eigene Sprites für die 4 neuen Sorten; weitere
 Mobile-Feinheiten nach Test auf echtem Gerät.
+
+### 9.41 Phase 39 — Alle Saatlabor-Kreuzungen pflanzbar (keine Save-Änderung)
+
+Lücke geschlossen: die Kategorie „Kreuzungen" enthielt nur die Prachtorchidee,
+obwohl das Saatlabor 10 Varianten kennt. Jetzt ist **jede entdeckte Variante ein
+pflanzbares Schau-Exemplar** in „Kreuzungen" — reine Zier-Utility (Schönheit nach
+Seltenheit: Bronze 0,3 → Legendär 1,8; kein Ertrag), max. 3 je Sorte, gegated über
+`discoveredVariants`. Integriert wie die Prachtorchidee allein über `plantById`
+(Plot/Beauty/Save/Hotbar generisch); Sprites thematisch aliasiert (eigene Pixel-Art
+später). 10 statt 1 Spezial-Pflanze. Keine Save-Änderung (SAVE_VERSION 28), 68/68.
