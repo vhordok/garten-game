@@ -229,4 +229,7 @@ Reine CSS. Keine Save-Änderung. Phase 41 (§9.43): Pflanzennamen lesbar (Label 
 0,72rem, fett, weiß statt blassgrün; Kacheln breiter 72→80 / Handy 66→78px, höher
 96px) und größere/klarere Topbar-Icons (alle Panel-Buttons scale 1→2 = 32px, Shop
 giesskanne→marktstand, Prestige duenger scale 2, Handy 50px-Tap-Targets). Reine CSS/
-Icon. Keine Save-Änderung. Stand SAVE_VERSION 28.
+Icon. Keine Save-Änderung. Phase 42 (§9.44): lange Pflanzennamen brechen um statt
+abzuschneiden (.pname overflow-wrap:anywhere + word-break:break-word → „Schnittlauch"
+fließt zweizeilig statt „Schnittla"). Reine CSS. Keine Save-Änderung. Stand
+SAVE_VERSION 28.

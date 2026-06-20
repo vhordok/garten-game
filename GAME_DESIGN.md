@@ -1450,3 +1450,14 @@ Icons zu klein/undeutlich.
 Reine CSS-/Icon-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28). check/build
 grün, Tests 68/68. ⚠️ Ohne Headless-Browser nicht selbst am Viewport gegengeprüft —
 bitte auf dem Gerät verifizieren.
+
+### 9.44 Phase 42 — Lange Pflanzennamen brechen um statt abzuschneiden (keine Save-Änderung)
+
+Folge-Feedback: einzelne lange Wörter wie „Schnittlauch" wurden mitten im Wort
+abgeschnitten („Schnittla"), weil ein Wort ohne Leerzeichen keine Umbruchstelle hat
+und so einzeilig im 2-Zeilen-Clamp hängenblieb. `.pname` bekommt
+`overflow-wrap: anywhere` + `word-break: break-word` → lange Einzelwörter fließen auf
+die zweite Zeile, erst danach greift die Ellipsis.
+
+Reine CSS-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28). check/build grün,
+Tests 68/68.
