@@ -41,6 +41,14 @@ body {
   }
 }
 
+/* PHASE 38: denser field on small phones → fewer rows to scroll, still a
+   comfortable ≥44px tap target. Auto-fill packs more columns into the width. */
+@media (max-width: 430px) {
+  :root {
+    --cell: 56px;
+  }
+}
+
 body {
   font-family: 'Pixelify Sans', 'Courier New', monospace;
   color: var(--c-white, #ebede9);
