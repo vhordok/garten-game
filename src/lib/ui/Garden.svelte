@@ -222,7 +222,7 @@
     </div>
   {/if}
 
-  <div class="grid" style:grid-template-columns={`repeat(${cols}, var(--cell))`}>
+  <div class="grid" style:--grid-cols={cols}>
     {#each $gameStore.plots as plot, index (index)}
       <Plot {plot} {index} selectedId={$gameStore.selectedPlantId} money={$gameStore.money} {clearMode} />
     {/each}
@@ -262,6 +262,17 @@
     margin-bottom: 14px;
   }
 
+  /* PHASE 38: the action buttons (säen/gießen/roden/kaufen/ernten) wrap to
+     several rows on a phone — left-align with even gaps instead of stretching
+     each wrapped row edge-to-edge (space-between looks broken when wrapped). */
+  @media (max-width: 640px) {
+    .garden-head {
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+  }
+
   .garden-head .chip {
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -292,8 +303,22 @@
 
   .grid {
     display: grid;
+    grid-template-columns: repeat(var(--grid-cols, 4), var(--cell));
     gap: 14px;
     justify-content: center;
+  }
+
+  /* PHASE 38: on phones a fixed 7-col field (≈530px) overflowed horizontally.
+     Pack as many --cell columns as actually fit the screen, tighter gaps. */
+  @media (max-width: 640px) {
+    .garden {
+      width: 100%;
+    }
+    .grid {
+      grid-template-columns: repeat(auto-fill, var(--cell));
+      gap: 8px;
+      width: 100%;
+    }
   }
 
   .ghost {

@@ -11,6 +11,9 @@ html,
 body {
   margin: 0;
   padding: 0;
+  /* PHASE 38: never let a stray wide element cause whole-page horizontal scroll
+     on mobile (the garden field used to overflow). Layout fits within the width. */
+  overflow-x: hidden;
 }
 
 :root {

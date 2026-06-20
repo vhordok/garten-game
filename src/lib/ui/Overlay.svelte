@@ -66,11 +66,30 @@
     padding: 6px 10px 12px;
   }
 
+  /* PHASE 38: keep the title + ✕ pinned while a long panel scrolls, so the close
+     button is always reachable on mobile (Shop/Skills/Erfolge get long). */
   header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 8px;
+    margin: -6px -10px 8px;
+    padding: 6px 10px 8px;
+    background: var(--c-panel, #151d28);
+    border-bottom: 1px solid var(--c-edge, #202e37);
+  }
+
+  header h2 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  header .pxbtn {
+    flex: none;
   }
 </style>

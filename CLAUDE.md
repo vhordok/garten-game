@@ -213,4 +213,8 @@ Inversion mehr), bezahlbare Felder (piecewise Beetkurve, Beet 164 ~908B statt 2,
 beautyBonus) + stärker (obere beautyBonus ×~2, Softcap-Exp 0,5→0,6), 4 neue Kosmos-
 Spitzen (P83→P98, ~×10/Tier, ROI ~0,4) + Endgame-Saatpreise ROI ~0,4, eigene Kategorie
 „Kreuzungen" für Saatlabor-Specials (eigener Hotbar-Tab, special-only). Save-sicher.
-66 Sorten (+1 Spezial) in 9 Kategorien + Kreuzungen, Stand SAVE_VERSION 28.
+66 Sorten (+1 Spezial) in 9 Kategorien + Kreuzungen. Phase 38 (§9.40): Mobile-
+Usability — Spielfeld-Grid passt sich an (auto-fill statt fixe 7 Spalten → kein
+horizontaler Überlauf mehr), Overlay-Header sticky (Schließen immer erreichbar),
+Topbar-/Garten-Buttons zentriert umgebrochen, body overflow-x hidden. Reine CSS,
+keine Save-Änderung. Stand SAVE_VERSION 28.

@@ -1382,3 +1382,23 @@ Großes Spieler-Feedback-Paket aus dem Very-Late-Game.
 Save-sicher (SAVE_VERSION bleibt 28): neue IDs/Kategorie defaulten, reine Daten/Logik;
 bestehende Beete laufen via plantById weiter. Tests 67/67, check/build grün, 14-d-Sim
 ohne Runaway. 66 Sorten (+1 Spezial) in 9 Kategorien + „Kreuzungen" (Saatlabor).
+
+### 9.40 Phase 38 — Mobile-Usability (keine Save-Änderung)
+
+Gezielte Behebung der gemeldeten schlechten Handy-Bedienung.
+
+- **Spielfeld-Überlauf behoben (der Haupt-Bug):** das Feld nutzte fixe Spalten
+  (`repeat(7, var(--cell))` ≈ 530 px) → auf einem Telefon **horizontaler
+  Seiten-Scroll**, alles verrutschte. Jetzt packt das Grid auf ≤640 px so viele
+  `--cell`-Spalten, wie tatsächlich passen (`auto-fill`, engere Gaps, Breite 100 %)
+  → kein Überlauf mehr. Zusätzlich `overflow-x: hidden` auf `body` als Netz.
+- **Modal-Schließen immer erreichbar:** der Overlay-Header (Titel + ✕) ist jetzt
+  `sticky` — bei langen Panels (Shop/Skills/Erfolge) scrollt der Schließen-Knopf
+  nicht mehr weg.
+- **Aufgeräumte Button-Reihen:** die Topbar-Panel-Buttons und die Garten-Kopf-
+  Aktionen (säen/gießen/roden/kaufen/ernten) werden auf dem Handy **zentriert
+  umgebrochen** (vorher rechts-/space-between-gestreckt = kaputt wirkend).
+
+Reine CSS-/Layout-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28). check/build
+grün, Tests 67/67. **Offen → Phase 39:** eigene Sprites für die 4 neuen Sorten; weitere
+Mobile-Feinheiten nach Test auf echtem Gerät.
