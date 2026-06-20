@@ -9,7 +9,7 @@
 //   • are render-capped to the few most important (see Toasts.svelte),
 //   • live in a fixed corner, away from the hotbar and main buttons.
 
-import { writable } from 'svelte/store'
+import { get, writable } from 'svelte/store'
 
 export type ToastPriority = 'low' | 'normal' | 'important' | 'critical'
 
@@ -56,8 +56,67 @@ export interface ToastLogEntry {
 }
 
 const LOG_MAX = 40
-export const toastLog = writable<ToastLogEntry[]>([])
+// PHASE 36: the log now survives a reload. Stored under its OWN localStorage key,
+// completely separate from the game save (no SAVE_VERSION coupling). On load the
+// unseen badge starts at 0 — old entries are for reviewing, not nagging.
+const LOG_KEY = 'garten-imperium-toastlog'
+
+function loadPersistedLog(): ToastLogEntry[] {
+  try {
+    if (typeof localStorage === 'undefined') return []
+    const raw = localStorage.getItem(LOG_KEY)
+    if (!raw) return []
+    const arr = JSON.parse(raw)
+    if (!Array.isArray(arr)) return []
+    return arr
+      .filter((e) => e && typeof e.text === 'string' && typeof e.logKey === 'string')
+      .map((e) => ({
+        logKey: String(e.logKey),
+        icon: typeof e.icon === 'string' ? e.icon : '🔔',
+        text: String(e.text),
+        priority: Number.isFinite(e.priority) ? e.priority : 1,
+        count: Number.isFinite(e.count) ? e.count : 1,
+        at: Number.isFinite(e.at) ? e.at : Date.now(),
+      }))
+      .slice(0, LOG_MAX)
+  } catch {
+    return []
+  }
+}
+
+export const toastLog = writable<ToastLogEntry[]>(loadPersistedLog())
 export const toastLogUnseen = writable(0)
+
+/** Write the current log to its localStorage key (synchronous). */
+export function flushToastLog(): void {
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(LOG_KEY, JSON.stringify(get(toastLog)))
+  } catch {
+    /* ignore (private mode / quota / SSR) */
+  }
+}
+
+// throttle persistence: a 120-event burst updates ONE log entry but would call
+// this 120×; coalesce into one write.
+let persistPending = false
+function schedulePersist(): void {
+  if (typeof setTimeout !== 'function') {
+    flushToastLog()
+    return
+  }
+  if (persistPending) return
+  persistPending = true
+  const t = setTimeout(() => {
+    persistPending = false
+    flushToastLog()
+  }, 800)
+  ;(t as { unref?: () => void })?.unref?.()
+}
+
+/** Re-read the persisted log into the store (used on boot / by tests). */
+export function reloadToastLog(): void {
+  toastLog.set(loadPersistedLog())
+}
 
 function logToast(t: { id: number; icon: string; text: string; priority: number; key?: string; count: number }): void {
   const logKey = t.key ?? `id:${t.id}`
@@ -67,6 +126,7 @@ function logToast(t: { id: number; icon: string; text: string; priority: number;
     return [{ logKey, icon: t.icon, text: t.text, priority: t.priority, count: t.count, at }, ...rest].slice(0, LOG_MAX)
   })
   toastLogUnseen.update((n) => Math.min(n + 1, 99))
+  schedulePersist()
 }
 
 /** Mark the log as seen (clears the HUD badge) — call when the log panel opens. */
@@ -74,10 +134,11 @@ export function markToastLogSeen(): void {
   toastLogUnseen.set(0)
 }
 
-/** Wipe the in-session toast history. */
+/** Wipe the toast history (also clears the persisted copy). */
 export function clearToastLog(): void {
   toastLog.set([])
   toastLogUnseen.set(0)
+  flushToastLog()
 }
 
 /** Drop expired toasts; stop the timer when the screen is clear (test-friendly). */

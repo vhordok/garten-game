@@ -1341,3 +1341,13 @@ bespielt (und die Build-Entdeckungsziele nudgen ohnehin dorthin). Also reine Pol
 
 Keine Save-Änderung (SAVE_VERSION bleibt 28). Tests 65/65. **Offen → Phase 36:**
 Toast-Log optional persistent; weitere Politur nach Spieler-Feedback.
+
+### 9.38 Phase 36 — Toast-Log über Reloads persistent (keine Save-Änderung)
+
+Der Toast-Verlauf (Phase 30) war session-only. Jetzt überlebt er ein Neuladen:
+gespeichert unter **eigenem localStorage-Key** (`garten-imperium-toastlog`),
+komplett vom Spielsave entkoppelt (kein SAVE_VERSION-Bezug). Schreiben ist
+gedrosselt (ein 120-Event-Burst → ein Write), der Unseen-Badge startet beim Laden
+bei 0 (Alt-Einträge sind zum Nachlesen, nicht zum Nerven). `ToastLogPanel` zeigt
+relative Zeiten jetzt auch in Tagen. Test deckt den Reload-Roundtrip ab (66/66).
+Keine Save-Änderung (SAVE_VERSION bleibt 28).
