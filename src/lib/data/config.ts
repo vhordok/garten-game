@@ -149,4 +149,12 @@ export const CONFIG = {
   /** PHASE 18 skill respec: clearing all skills costs this much compost (so it
    * isn't free-spammable, but new players are never locked in). */
   skillRespecCompost: 100,
+  /** PHASE 44 Ziergalerie: ornamentals are bought into a permanent collection
+   * instead of planted. Each further copy of the same ornamental costs
+   * galleryCopyFactor× more (escalating gold sink); galleryMaxCopies caps the
+   * stack; galleryBeautyCostMul anchors the base price to the ornamental's
+   * beauty (more beauty = pricier). */
+  galleryCopyFactor: 1.7,
+  galleryMaxCopies: 12,
+  galleryBeautyCostMul: 30000,
 } as const

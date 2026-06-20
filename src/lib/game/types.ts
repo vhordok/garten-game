@@ -209,6 +209,11 @@ export interface GameState {
   /** discovered seed-lab variant ids; survives prestige. Each grants a small
    * permanent passive bonus and counts toward the collection (PHASE 20). */
   discoveredVariants: string[]
+  /** Ziergalerie (PHASE 44): owned ornamental count per plant id. Ornamentals
+   * are no longer planted on the field — they're a permanent beauty collection
+   * (survives prestige) that feeds gardenBeauty without taking plot space or
+   * grow time. */
+  ornamentals: Record<string, number>
   /** gardener level (starts at 1); gates quest slots and future QoL */
   level: number
   /** progress within the current level (resets each level-up) */

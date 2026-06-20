@@ -8,6 +8,7 @@ import { CONFIG } from '../data/config'
 import { ACHIEVEMENTS, TIER_NAMES } from '../data/achievements'
 import { claimedTier } from './achievements'
 import { nextBeautyMilestone } from '../data/beautyMilestones'
+import { isOrnamental, ownsAnyOrnamental } from './gallery'
 import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
 import { nextMilestone } from '../data/milestones'
 import { PLANTS, SPECIAL_PLANTS, plantById, produceName } from '../data/plants'
@@ -505,10 +506,25 @@ function variantGoal(state: GameState): Goal | null {
   }
 }
 
-/** Plant a freshly unlocked seed-lab special plant for the first time (PHASE 22). */
+/** Collect a freshly discovered seed-lab special plant for the first time
+ * (PHASE 22; PHASE 44: ornamental specials go into the Ziergalerie). */
 function specialPlantGoal(state: GameState): Goal | null {
   for (const sp of SPECIAL_PLANTS) {
     if (!isPlantUnlocked(sp, state)) continue
+    if (isOrnamental(sp)) {
+      if ((state.ornamentals[sp.id] ?? 0) > 0) continue
+      return {
+        id: 'specialplant',
+        tier: 'mittel',
+        icon: sp.emoji,
+        label: `${sp.name} in die Galerie holen`,
+        reward: 'Spezial-Zierpflanze — starke Schönheit',
+        current: 0,
+        target: 1,
+        fraction: 0,
+        ready: true,
+      }
+    }
     if (plotsWithPlant(state, sp.id) > 0) continue
     return {
       id: 'specialplant',
@@ -534,7 +550,7 @@ function specialPlantGoal(state: GameState): Goal | null {
  * once the style is in use. No new save data.
  */
 function buildGoal(state: GameState): Goal | null {
-  const hasOrnamentalPlanted = state.plots.some((p) => p.plantId && plantById(p.plantId)?.beautyBonus)
+  const hasOrnamentalPlanted = ownsAnyOrnamental(state)
   const hasTimberPlanted = state.plots.some((p) => p.plantId && plantById(p.plantId)?.passiveIncome)
   const ornamentalUnlocked = PLANTS.some((p) => p.beautyBonus && isPlantUnlocked(p, state))
   const timberUnlocked = PLANTS.some((p) => p.passiveIncome && isPlantUnlocked(p, state))
@@ -547,8 +563,8 @@ function buildGoal(state: GameState): Goal | null {
     candidates.push({
       id: 'build-zier',
       icon: '✿',
-      label: 'Zier-Build testen',
-      why: 'Zierpflanzen geben gartenweite Boni, solange sie blühen',
+      label: 'Ziergalerie starten',
+      why: 'Zierpflanzen in der Galerie sammeln → dauerhafte gartenweite Boni',
     })
   }
   if (timberUnlocked && !hasTimberPlanted) {
@@ -652,11 +668,7 @@ function beautyGoal(state: GameState): Goal | null {
   const m = nextBeautyMilestone(beauty)
   if (!m) return null
   // only surface this once the player has started a beauty garden, or owns zier
-  const hasOrnamental = state.plots.some((p) => {
-    const def = p.plantId ? plantById(p.plantId) : null
-    return def?.beautyBonus
-  })
-  if (beauty <= 0 && !hasOrnamental) return null
+  if (beauty <= 0 && !ownsAnyOrnamental(state)) return null
   return {
     id: 'beauty',
     tier: 'lang',

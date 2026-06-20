@@ -263,12 +263,14 @@ export function specUniqueBonus(state: GameState, category: string, kind: SpecKi
  */
 export function gardenBeauty(state: GameState): number {
   let bonus = 0
-  for (const plot of state.plots) {
-    if (!plot.plantId) continue
-    const def = plantById(plot.plantId)
-    if (def?.beautyBonus && plot.progress >= def.growTime) {
+  // PHASE 44: beauty comes from the Ziergalerie collection (owned copies), not
+  // from plants on the field — no plot space, no grow time, survives prestige.
+  for (const [id, count] of Object.entries(state.ornamentals)) {
+    if (count <= 0) continue
+    const def = plantById(id)
+    if (def?.beautyBonus) {
       // PHASE 14: the Zier specialisation makes ornamentals worth more beauty
-      bonus += def.beautyBonus * (1 + specUniqueBonus(state, def.category, 'beauty'))
+      bonus += def.beautyBonus * count * (1 + specUniqueBonus(state, def.category, 'beauty'))
     }
   }
   // PHASE 17: the Schaugarten skill amplifies the whole beauty stat

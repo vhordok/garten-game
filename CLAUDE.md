@@ -235,4 +235,12 @@ fließt zweizeilig statt „Schnittla"). Reine CSS. Keine Save-Änderung. Phase 
 Namens-Umbruch wirklich gefixt — overflow-wrap bricht ein Einzelwort in einem
 -webkit-box (line-clamp) nicht, daher .pname jetzt normaler Block (kein -webkit-box)
 mit max-height:2.3em+overflow:hidden → „Schnittlauch" bricht endlich zweizeilig. Reine
-CSS. Keine Save-Änderung. Stand SAVE_VERSION 28.
+CSS. Keine Save-Änderung. Phase 44 (§9.46): Ziergalerie — Zierpflanzen (alle mit
+beautyBonus, inkl. Saatlabor-Specials/Kreuzungen) werden nicht mehr gesät, sondern in
+einer permanenten Sammlung gekauft (neues State-Feld ornamentals: Record<string,number>,
+game/gallery.ts, ui/GalleryPanel.svelte, HUD ✿). Jede Kopie addiert beautyBonus zu
+gardenBeauty ohne Beet/Wachstumszeit, übersteht Prestige; Kosten skalieren mit
+Schönheit × galleryCopyFactor pro Kopie (Cap galleryMaxCopies). Feld hält nie mehr
+Zier → „Alles roden" wieder ohne Ausnahme, Hotbar blendet Zier/Kreuzungen aus,
+selectPlant/sowPlot weisen Zier ab. SAVE_VERSION 29: Migration faltet im Feld stehende
+Zierpflanzen in die Sammlung (Beet frei, keine Schönheit verloren). Stand SAVE_VERSION 29.

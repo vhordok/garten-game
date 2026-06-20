@@ -24,25 +24,31 @@
     kreuzungen: 'Kreuzungen',
   }
 
-  // PHASE 37: seed-lab specials get their OWN „Kreuzungen" tab (their category),
-  // appended after the regular ladder — but only once at least one is discovered.
+  // PHASE 44: ornamentals (beautyBonus) moved to the Ziergalerie — they're no
+  // longer sown on the field, so their categories drop out of the hotbar tabs.
+  const isBeauty = (p: { beautyBonus?: number }) => (p.beautyBonus ?? 0) > 0
+
+  // PHASE 37: seed-lab specials get their OWN tab (their category), appended
+  // after the regular ladder — but only once at least one is discovered.
   const specialCats = $derived([
-    ...new Set(SPECIAL_PLANTS.filter((p) => isPlantUnlocked(p, $gameStore)).map((p) => p.category)),
+    ...new Set(
+      SPECIAL_PLANTS.filter((p) => !isBeauty(p) && isPlantUnlocked(p, $gameStore)).map((p) => p.category)
+    ),
   ])
-  const baseCategories = [...new Set(PLANTS.map((p) => p.category))]
+  const baseCategories = [...new Set(PLANTS.filter((p) => !isBeauty(p)).map((p) => p.category))]
   const categories = $derived([
     ...baseCategories,
     ...specialCats.filter((c) => !baseCategories.includes(c)),
   ])
 
   let activeCat = $state<PlantCategory>(
-    PLANTS.find((p) => p.id === $gameStore.selectedPlantId)?.category ?? 'kraeuter'
+    PLANTS.find((p) => p.id === $gameStore.selectedPlantId && !isBeauty(p))?.category ?? 'kraeuter'
   )
 
   // PHASE 22: discovered seed-lab special plants appear in their category slot
   const slots = $derived([
-    ...PLANTS.filter((p) => p.category === activeCat),
-    ...SPECIAL_PLANTS.filter((p) => p.category === activeCat && isPlantUnlocked(p, $gameStore)),
+    ...PLANTS.filter((p) => p.category === activeCat && !isBeauty(p)),
+    ...SPECIAL_PLANTS.filter((p) => p.category === activeCat && !isBeauty(p) && isPlantUnlocked(p, $gameStore)),
   ])
 
   function catUnlocked(cat: PlantCategory): boolean {

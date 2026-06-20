@@ -1473,3 +1473,33 @@ brechen sauber auf die zweite Zeile, Höhe bleibt stabil.
 
 Reine CSS-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28). check/build grün,
 Tests 68/68.
+
+### 9.46 Phase 44 — Ziergalerie: Zierpflanzen als Sammlung statt Feldpflanzen (SAVE_VERSION 29)
+
+Problem aus dem Feedback: Zierpflanzen lagen im selben Feld wie alles andere, waren
+seit Phase 38 „permanent" (nur einzeln rodbar) und fraßen viel Platz. Auf Nachfrage
+(mehrere Lösungsvarianten zur Auswahl gestellt) hat der Spieler die **Sammlung**
+gewählt.
+
+- **Neues Modell:** Jede Pflanze mit `beautyBonus` (Zier-Kategorie + Saatlabor-Specials/
+  Kreuzungen) wird **nicht mehr gesät**, sondern in der **Ziergalerie** gekauft. Neues
+  State-Feld `ornamentals: Record<string, number>` (Besitz-Anzahl je Sorte). Jede
+  gekaufte Kopie addiert ihren `beautyBonus` zu `gardenBeauty` — **ohne Beet, ohne
+  Wachstumszeit, übersteht Prestige** (permanente Sammlung).
+- **Kosten/Sink:** `nextOrnamentalCost` skaliert den Basispreis mit der Schönheit der
+  Pflanze (stärker = teurer) und multipliziert pro bereits besessener Kopie mit
+  `galleryCopyFactor` (1,7); Deckel `galleryMaxCopies` (12). Endloser, build-treibender
+  Gold-Sink mit Schönheits-Softcap als natürlicher Bremse.
+- **Aufgeräumt:** `gardenBeauty` liest jetzt die Sammlung statt der Beete; das Feld hält
+  nie mehr Zierpflanzen → „Alles roden" braucht keine Zier-Ausnahme mehr (Phase-37/38-
+  Schutz entfernt, alles wieder massen-rodbar). Hotbar blendet die reinen
+  Schönheits-Kategorien (Zier/Kreuzungen) aus; `selectPlant`/`sowPlot`/`sowAllEmpty`
+  weisen Zierpflanzen ab. Neues Panel `GalleryPanel.svelte` (HUD-Button ✿) listet alle
+  Zierpflanzen mit Schönheit, Besitz, Beitrag, eskalierendem Preis und Gating.
+- **Save:** SAVE_VERSION 29, Migration 28→29. `sanitize()` defaultet `ornamentals` auf {}
+  **und faltet alte, noch im Feld stehende Zierpflanzen automatisch in die Sammlung**
+  (Beet wird frei, keine Schönheit verloren). Selected/Auto-Saat fallen von einer
+  Zierpflanze auf eine normale zurück.
+
+check/build grün, Tests 69/69 (neuer Phase-44-Test + drei Beauty-Tests auf die Sammlung
+umgestellt).
