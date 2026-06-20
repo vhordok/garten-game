@@ -257,4 +257,10 @@ gleichmäßig→keine Inversion; Tick-Cap+Tooltip nutzen ihn) → Kompost wirkt 
 konkreter (buildGoal schlägt „… spezialisieren" vor, sobald die erste Stufe kaufbar ist —
 specializationPurchase canBuy auf Level 0 statt Gärtner-Level≥30 — und nennt die
 meistgespielte Kategorie via bestStartableSpec/Meisterschafts-XP). Keine Save-Änderung.
-Stand SAVE_VERSION 29.
+Phase 48 (§9.50): Mini-Kampagne „Der Weg des Meistergärtners" (data/campaign.ts +
+game/campaign.ts) — lineare Kette aus 12 Meilenstein-Kapiteln vom ersten Säen bis tiefes
+Prestige, Einmal-Belohnungen über Erfolge-Währungen (Kompost/Lose/Dünger), claimCampaign
+läuft im Tick (auto, kein Knopf), initCampaign migriert ohne Retro-Flut; campaignGoal
+headlinet das Ziel-Panel (campaign-Flag, von Deckelung ausgenommen, Gold-Chip „Kampagne"),
+Toast bei Abschluss. SAVE_VERSION 30: neues Feld campaign (Index nächstes Kapitel).
+Stand SAVE_VERSION 30.

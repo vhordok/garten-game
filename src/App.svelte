@@ -6,6 +6,7 @@
   import { playSound, startAtmosphere } from './lib/ui/fx/audio'
   import AchievementsPanel from './lib/ui/AchievementsPanel.svelte'
   import { ACHIEVEMENTS, TIER_NAMES } from './lib/data/achievements'
+  import { CAMPAIGN } from './lib/data/campaign'
   import DailyPanel from './lib/ui/DailyPanel.svelte'
   import FxLayer from './lib/ui/fx/FxLayer.svelte'
   import GalleryPanel from './lib/ui/GalleryPanel.svelte'
@@ -93,6 +94,21 @@
       }
     }
     knownTiers = { ...current }
+  })
+
+  // Announce freshly completed campaign chapters (state change drives the toast).
+  let knownCampaign: number | null = null
+  $effect(() => {
+    const now = $gameStore.campaign
+    if (knownCampaign !== null && now > knownCampaign) {
+      // the chapter we just finished is the step at index now-1
+      const step = CAMPAIGN[now - 1]
+      if (step) {
+        pushToast(`Kapitel geschafft: ${step.title} — ${step.rewardDesc}!`, '🎯', 8000, { priority: 'important', key: 'campaign' })
+        playSound('levelup')
+      }
+    }
+    knownCampaign = now
   })
 
   // Announce newly unlocked plants (transition detection, not game logic).

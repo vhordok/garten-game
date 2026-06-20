@@ -101,6 +101,8 @@ import { SPRITES } from '../src/lib/ui/pixel/sprites.ts'
 import { categorySpecById } from '../src/lib/data/specializations.ts'
 import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceStatus, variantBonus, variantEventBonus } from '../src/lib/game/seedlab.ts'
 import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
+import { CAMPAIGN } from '../src/lib/data/campaign.ts'
+import { claimCampaign, currentCampaignStep, initCampaign } from '../src/lib/game/campaign.ts'
 import { get } from 'svelte/store'
 import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog, flushToastLog, reloadToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
@@ -120,7 +122,12 @@ import { plotReady, tick, cycleFloorSeconds, effectiveCycleFloor, effectiveCycle
 /** Reset to a fresh default state and return the live reference. */
 function fresh() {
   replaceState(createDefaultState())
-  return getState()
+  const s = getState()
+  // PHASE 48: start tests with the mini-campaign already finished, so its
+  // auto-claimed one-time rewards never perturb unrelated tick-based assertions.
+  // The campaign test re-opens it explicitly (s.campaign = 0).
+  s.campaign = CAMPAIGN.length
+  return s
 }
 
 let passed = 0
@@ -1422,6 +1429,69 @@ test('PHASE 19: old saves migrate without a reward flood; late game stays open',
     // the goal panel surfaces an achievement target
     const goals = activeGoals(late)
     assert.ok(goals.some((g) => g.id === 'achievement'), 'achievement appears as a goal')
+  })
+})
+
+test('PHASE 48: mini-campaign claims, rewards, migrates, surfaces as a goal', () => {
+  withBoringRng(() => {
+    // ── fresh start: a brand-new save begins at the very first chapter ──
+    assert.equal(createDefaultState().campaign, 0, 'a brand-new save starts at the first chapter')
+
+    // ── auto-claim: meeting a target pays the reward once and advances ──
+    const s = fresh()
+    s.campaign = 0 // re-open the campaign (fresh() finishes it for test isolation)
+    assert.equal(currentCampaignStep(s).id, CAMPAIGN[0].id, 'current step is the first one')
+    s.stats.planted = 5 // first step: säe 5
+    const ticketsBefore = s.scratchTickets
+    const done = claimCampaign(s)
+    assert.ok(done.length >= 1 && done[0].id === 'first-seeds', 'first chapter auto-claims')
+    assert.equal(s.campaign, 1, 'index advanced past the claimed step')
+    assert.equal(s.scratchTickets, ticketsBefore + 3, 'first-seeds paid +3 tickets')
+    // claiming again without new progress does nothing (no double pay)
+    const again = claimCampaign(s)
+    assert.equal(again.length, 0, 'no re-claim without fresh progress')
+    assert.equal(s.scratchTickets, ticketsBefore + 3, 'reward not paid twice')
+
+    // ── several steps at once: a big jump claims a run in one call ──
+    const j = fresh()
+    j.campaign = 0
+    j.stats.planted = 100
+    j.stats.harvested = 100
+    j.totalEarned = 1e6
+    const compostBefore = j.compost
+    const run = claimCampaign(j)
+    assert.ok(run.length >= 3, 'a multi-step jump claims the whole satisfied run')
+    assert.ok(j.compost >= compostBefore, 'compost rewards accrued in the run')
+
+    // ── migration: an old save (no campaign field) inits PAST satisfied steps
+    //    WITHOUT paying rewards (no flood), resuming at the real frontier ──
+    const mid = fresh()
+    mid.stats.planted = 1000
+    mid.stats.harvested = 1000
+    mid.totalEarned = 1e9
+    mid.stats.questsDone = 10
+    mid.scratchTickets = 0
+    mid.compost = 0
+    initCampaign(mid)
+    assert.ok(mid.campaign >= 4, 'migration skips every already-satisfied early chapter')
+    assert.equal(mid.scratchTickets, 0, 'migration pays NO retroactive ticket rewards')
+    assert.equal(mid.compost, 0, 'migration pays NO retroactive compost rewards')
+
+    // a full save roundtrip preserves the campaign index
+    const r = fresh()
+    r.campaign = 4
+    const code = exportSave()
+    fresh()
+    assert.notEqual(importSave(code), null)
+    assert.equal(getState().campaign, 4, 'campaign index survives save/load')
+
+    // ── the campaign chapter headlines the goal board ──
+    const g = fresh()
+    g.campaign = 0
+    const board = goalBoard(g)
+    const camp = board.find((x) => x.id === 'campaign')
+    assert.ok(camp && camp.campaign === true, 'campaign goal is on the board')
+    assert.equal(board[0].id, 'campaign', 'campaign goal headlines (first on the board)')
   })
 })
 

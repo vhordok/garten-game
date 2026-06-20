@@ -11,6 +11,7 @@
 
   // PHASE 29: short type chip so the player sees at a glance WHAT kind of goal it is
   function goalTag(g: Goal): string {
+    if (g.campaign) return 'Kampagne'
     if (g.discovery) return 'Build'
     switch (g.id) {
       case 'plant':
@@ -63,7 +64,7 @@
       <h3 class="tier">{TIER_LABEL[tier]}</h3>
       <ul class="goal-list">
         {#each list as g (g.id)}
-          <li class="goal" class:ready={g.ready} class:chore={g.chore} class:discovery={g.discovery}>
+          <li class="goal" class:ready={g.ready} class:chore={g.chore} class:discovery={g.discovery} class:campaign={g.campaign}>
             <span class="g-icon">{g.icon}</span>
             <span class="g-body">
               <span class="g-head">
@@ -138,6 +139,18 @@
   .goal.discovery {
     border-left-color: var(--c-plum3);
     border-left-style: dashed;
+  }
+
+  /* PHASE 48: the campaign chapter is the headline — gold accent, a touch louder */
+  .goal.campaign {
+    border-left-color: var(--c-gold2);
+    border-left-width: 4px;
+    background: var(--c-night2, var(--c-night1));
+  }
+
+  .goal.campaign .g-tag {
+    background: var(--c-gold2);
+    color: var(--c-night0);
   }
 
   .g-tag {

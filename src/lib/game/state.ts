@@ -38,6 +38,7 @@ export function createDefaultState(now = Date.now()): GameState {
     daily: { lastClaim: 0, streak: 0 },
     weather: { id: null, remaining: 0 },
     achievementTiers: {},
+    campaign: 0,
     licenses: 0,
     records: { bestHarvest: 0, longestCombo: 0, biggestWin: 0, bestBeauty: 0 },
     history: [],
