@@ -18,6 +18,7 @@ import { LICENSES, licenseQuestBonus } from '../src/lib/data/licenses.ts'
 import {
   buyCompostUpgrade,
   buyLicense,
+  buyAllPlots,
   buyPlot,
   buySkill,
   buySkillMax,
@@ -1991,6 +1992,58 @@ test('PHASE 30: toast log keeps a readable history without re-spamming', () => {
   clearToastLog()
 })
 
+test('PHASE 37: affordable plots + bulk-buy, permanent ornamentals, new top plants, Kreuzungen', () => {
+  withBoringRng(() => {
+    // --- plot cost stays buyable across a 150+ plot deep-prestige garden -------
+    const s = fresh()
+    s.parcels = 40 // maxPlots = 16 + 39*4 = 172
+    s.plots = Array.from({ length: 160 }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+    const naive = CONFIG.plotBaseCost * Math.pow(CONFIG.plotCostFactor, 156)
+    assert.ok(nextPlotCost(s) < naive / 1e9, 'late plots are FAR cheaper than the naive 1.5^n curve')
+    // early plots keep the steep price (within the knee)
+    const e = fresh()
+    assert.equal(nextPlotCost(e), CONFIG.plotBaseCost)
+    e.plots.push({ plantId: null, progress: 0, waterLeft: 0, regrowing: false })
+    assert.equal(nextPlotCost(e), Math.floor(CONFIG.plotBaseCost * CONFIG.plotCostFactor))
+
+    // --- buy-all fills the field in one call ---------------------------------
+    const b = fresh()
+    b.parcels = 5 // maxPlots = 16 + 16 = 32
+    b.money = 1e12
+    const before = b.plots.length
+    const bought = buyAllPlots()
+    assert.ok(bought > 0 && getState().plots.length === before + bought, 'buyAllPlots adds many plots at once')
+    assert.equal(getState().plots.length, maxPlots(getState()), 'fills up to the parcel cap when rich')
+
+    // --- ornamentals are permanent: "alle roden" skips them ------------------
+    const g = fresh()
+    g.totalEarned = 1e12
+    g.plots = [
+      { plantId: 'nachtrose', progress: 99999, waterLeft: 0, regrowing: false }, // ornamental
+      { plantId: 'basilikum', progress: 99999, waterLeft: 0, regrowing: false }, // crop
+    ]
+    const res = clearAllPlots((_, def) => !def.beautyBonus)
+    assert.equal(res.count, 1, 'only the crop is roded')
+    assert.equal(getState().plots[0].plantId, 'nachtrose', 'ornamental stays as a permanent beauty field')
+    assert.equal(getState().plots[1].plantId, null, 'crop was cleared')
+
+    // --- new top plants: ascending, parcel-gated, uniform cadence ------------
+    for (const id of ['singularitaetsblume', 'quasarkern', 'leerenbluete', 'schoepfungskern']) {
+      const p = plantById(id)
+      assert.ok(p && p.category === 'kosmos' && p.unlockParcel > 78, `${id} extends the ladder past urknallfrucht`)
+      assert.equal(cycleFloorSeconds(p), cycleFloorSeconds(plantById('urknallfrucht')), `${id} shares the uniform cadence (no slower)`)
+    }
+    const newTop = plantById('schoepfungskern')
+    assert.equal(isPlantUnlocked(newTop, { ...fresh(), totalEarned: 1e40, parcels: 90 }), false, 'gated past current reach')
+    assert.equal(isPlantUnlocked(newTop, { ...fresh(), totalEarned: 1e40, parcels: 98 }), true, 'unlocks with enough parcels')
+
+    // --- seed-lab specials live in their own „Kreuzungen" category ------------
+    const special = SPECIAL_PLANTS.find((p) => p.id === 'spv-prachtorchidee')
+    assert.equal(special.category, 'kreuzungen', 'special plant moved to its own Kreuzungen category')
+    assert.ok(!PLANTS.some((p) => p.category === 'kreuzungen'), 'Kreuzungen is special-only (not in the normal spec ladder)')
+  })
+})
+
 test('PHASE 36: toast log persists across a reload', () => {
   const orig = globalThis.localStorage
   const store = {}
@@ -2136,7 +2189,7 @@ test('PHASE 33: cosmic „Kosmisch" category — plants, sell-spec, distinct spr
     // --- 3 cosmic plants, floored, parcel-gated beyond the Hanf spike --------
     for (const id of ['sternensaat', 'nebularbluete', 'urknallfrucht']) {
       const p = plantById(id)
-      assert.ok(p && p.category === 'kosmos' && p.minGrowSeconds > 0 && p.regrowTime, `${id} is a floored cosmic crop`)
+      assert.ok(p && p.category === 'kosmos' && cycleFloorSeconds(p) >= CONFIG.minCycleFloorSeconds && p.regrowTime, `${id} is a floored cosmic crop`)
     }
     const top = plantById('urknallfrucht')
     assert.equal(isPlantUnlocked(top, { ...fresh(), totalEarned: 1e40, parcels: 40 }), false, 'gated past current reach')
@@ -2187,29 +2240,29 @@ test('PHASE 32: endgame growth floor, Hanf ladder, endless skill, zier steps', (
     s.compost = 1e12 // deep-prestige compost → growth multiplier far above the floor ratio
     s.upgrades = { giesskanne: 10 } // meet cannabis watering (care = 1, like a real endgame save)
     const hanf = plantById('ewigkeitshanf')
-    assert.ok(hanf && hanf.minGrowSeconds >= 8 && hanf.regrowTime, 'capstone hanf is floored + regrow')
-    const cad = hanf.minGrowSeconds // real cycle seconds at any huge multiplier
+    assert.ok(hanf && hanf.regrowTime, 'capstone hanf regrows')
+    // PHASE 37: endgame plants share the GLOBAL floor (no per-plant escalation,
+    // so newer crops are never slower than older ones — no inversion)
+    const cad = cycleFloorSeconds(hanf)
+    assert.equal(cad, CONFIG.minCycleFloorSeconds, 'late crop uses the uniform global floor')
     s.plots = [{ plantId: 'ewigkeitshanf', progress: 0, waterLeft: 99, regrowing: false }]
     tick(s, cad - 1) // just under the floor
     assert.ok(!plotReady(s.plots[0]), 'floored plant is NOT ripe in a fraction of a second')
     tick(s, 2) // cross the floor
-    assert.ok(plotReady(s.plots[0]), 'ripe after ~minGrowSeconds, not before')
+    assert.ok(plotReady(s.plots[0]), 'ripe after ~the floor, not before')
 
     // a fast early plant is EXEMPT from the floor — its growth upgrade still works
     s.plots = [{ plantId: 'basilikum', progress: 0, waterLeft: 0, regrowing: false }]
     tick(s, 1)
     assert.ok(plotReady(s.plots[0]), 'un-floored early plant stays instant at this multiplier')
 
-    // the old very-late plants are now floored too (no more <1s, no inversion):
-    // Mondkristall (no per-plant floor) gets the global late-game floor and is
-    // never faster than the higher-tier Sonnenhanf
-    assert.ok(plantById('mondkristall').growTime >= CONFIG.floorGrowTimeThreshold, 'mondkristall is late-game')
-    assert.ok(hanf.minGrowSeconds >= CONFIG.minCycleFloorSeconds, 'top hanf cadence ≥ the global late floor (no inversion vs old plants)')
+    // no inversion: every late crop has the SAME floor, so higher tier ≥ lower tier
+    assert.equal(cycleFloorSeconds(plantById('mondkristall')), cycleFloorSeconds(plantById('sonnenhanf')), 'old and new late crops share one cadence')
 
     // --- B: new Hanf ladder gated by license + parcels ------------------------
     for (const id of ['sonnenhanf', 'sternenhanf', 'nebelhanf', 'kosmoshanf', 'ewigkeitshanf']) {
       const p = plantById(id)
-      assert.ok(p && p.category === 'cannabis' && p.requiresLicense === 3 && p.minGrowSeconds > 0, `${id} is a floored licensed hanf`)
+      assert.ok(p && p.category === 'cannabis' && p.requiresLicense === 3 && cycleFloorSeconds(p) >= CONFIG.minCycleFloorSeconds, `${id} is a floored licensed hanf`)
     }
     const top = plantById('ewigkeitshanf')
     assert.equal(isPlantUnlocked(top, { ...fresh(), totalEarned: 1e30, licenses: 3, parcels: 5 }), false, 'parcel-gated past the current top')

@@ -11,6 +11,7 @@ export type PlantCategory =
   | 'zier'
   | 'cannabis'
   | 'kosmos'
+  | 'kreuzungen'
 
 export interface PlantDef {
   id: string
