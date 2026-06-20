@@ -1,4 +1,5 @@
 import { claimAchievements } from './achievements'
+import { claimCampaign } from './campaign'
 import { variantBonus } from './seedlab'
 import { CONFIG } from '../data/config'
 import { plantById } from '../data/plants'
@@ -194,6 +195,9 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
   // achievements: claim any newly reached tiers (pays one-time rewards, the UI
   // announces tier-ups by watching achievementTiers)
   if (claimAchievements(state).length > 0) changed = true
+  // campaign: claim any milestone steps now met (pays the one-time reward; the UI
+  // announces completed chapters by watching `campaign`)
+  if (claimCampaign(state).length > 0) changed = true
   return changed
 }
 

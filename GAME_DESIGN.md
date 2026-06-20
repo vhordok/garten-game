@@ -1566,3 +1566,28 @@ tiefsten dauerhaften (prestige-festen) Ertrags-Sink hingewiesen.
 
 Reine Ziel-Projektion, keine neue Persistenz, keine Save-Änderung (SAVE_VERSION 29).
 check/build grün, Tests 69/69.
+
+### 9.50 Phase 48 — Mini-Kampagne „Der Weg des Meistergärtners" (SAVE_VERSION 30)
+
+Mehr Führung (Wunsch des Spielers): eine **lineare Kette aus 12 Meilenstein-Kapiteln**,
+die den Spieler vom ersten Säen bis in tiefes Prestige zieht — immer **ein klares
+Schlagzeilen-Ziel** mit konkreter Belohnung.
+
+- **Daten** (`data/campaign.ts`): geordnete `CampaignStep[]` mit `metric(state)`, `target`
+  und Einmal-Belohnung über **dieselben Währungen wie Erfolge** (Kompost / Rubbellose /
+  Turbo-Dünger) → keine neue Belohnungs-Mechanik. Kapitel z. B.: Erste Saat (5 gesät) →
+  Erste Ernte (25) → Marktgespür (2.000 Gold) → Erster Auftrag → Größerer Garten (12 Beete)
+  → Glückspilz → Neuland (2. Parzelle) → Spezialist → Verschönerer (25 % Schönheit) →
+  Meisterhand (Meisterschaft Lv 5) → Saatforscher (3 Varianten) → Großgärtner (8 Parzellen).
+- **Logik** (`game/campaign.ts`): `claimCampaign(state)` wird **im Tick** aufgerufen
+  (wie `claimAchievements`), zahlt fällige Kapitel automatisch aus und schiebt den
+  persistierten Index `campaign` vor — kein Klick/Knopf nötig. `initCampaign` (Migration)
+  überspringt bereits erfüllte Kapitel **ohne** Belohnung → kein Retro-Flut.
+- **Ziel-Panel** (`goals.ts` + `GoalsPanel.svelte`): neues `campaignGoal` mit `campaign`-Flag
+  steht **immer ganz oben** (von der Per-Horizont-Deckelung ausgenommen, Gold-Akzent,
+  Chip „Kampagne") und zeigt Kapitel-Fortschritt + Belohnung. Toast bei Abschluss
+  (`App.svelte` beobachtet `campaign`).
+
+**SAVE_VERSION 30:** neues Feld `campaign` (Index des nächsten offenen Kapitels). Migration
+29→30: `sanitize` defaultet auf 0 bzw. ruft für Saves ohne Feld `initCampaign` (Frontier
+ohne Belohnung). check/build grün, Tests 70/70.

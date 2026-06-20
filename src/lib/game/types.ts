@@ -249,6 +249,9 @@ export interface GameState {
   /** highest CLAIMED achievement tier per track (0 = none); survives prestige.
    * Permanent rewards + skill points derive from this (PHASE 19). */
   achievementTiers: Record<string, number>
+  /** index of the next unclaimed mini-campaign step (PHASE 48); CAMPAIGN.length
+   * means the chain is finished. Survives prestige (it's career progress). */
+  campaign: number
   /** cannabis license level owned (0–5; IV/V are PHASE 27 trade licenses that
    * boost quest rewards instead of unlocking plants), survives prestige */
   licenses: number

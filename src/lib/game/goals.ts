@@ -6,6 +6,7 @@
 
 import { CONFIG } from '../data/config'
 import { ACHIEVEMENTS, TIER_NAMES } from '../data/achievements'
+import { currentCampaignStep, campaignProgress } from './campaign'
 import { claimedTier } from './achievements'
 import { nextBeautyMilestone } from '../data/beautyMilestones'
 import { isOrnamental, ownsAnyOrnamental } from './gallery'
@@ -48,6 +49,9 @@ export interface Goal {
   /** PHASE 29: a soft suggestion to explore a play-style, not a hard target.
    * Rendered without a strong progress bar and never displaces real progression. */
   discovery?: boolean
+  /** PHASE 48: the headline mini-campaign step. Always shown (exempt from the
+   * per-horizon cap) and rendered with its own chapter styling. */
+  campaign?: boolean
 }
 
 const clamp01 = (v: number) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0)
@@ -315,6 +319,31 @@ function bestStartableSpec(state: GameState): (typeof CATEGORY_SPECS)[number] | 
     if (!best || score > best.score) best = { def: c, score }
   }
   return best?.def ?? null
+}
+
+/**
+ * PHASE 48: the mini-campaign headline — the single current chapter of the guided
+ * chain, with concrete objective + reward. Auto-claimed in tick, so this goal is
+ * never "ready/claimable" by hand; it just shows what to chase next. Null once the
+ * whole chain is finished.
+ */
+function campaignGoal(state: GameState): Goal | null {
+  const step = currentCampaignStep(state)
+  const p = campaignProgress(state)
+  if (!step || !p) return null
+  return {
+    id: 'campaign',
+    tier: 'kurz',
+    icon: '🎯',
+    label: `Kapitel: ${step.title}`,
+    reward: step.rewardDesc,
+    current: p.current,
+    target: p.target,
+    fraction: p.fraction,
+    ready: false,
+    campaign: true,
+    why: step.objective,
+  }
 }
 
 /** Next leasable parcel (prestige) — mid/long bridge. */
@@ -717,6 +746,7 @@ const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endg
  */
 export function activeGoals(state: GameState): Goal[] {
   const goals = [
+    campaignGoal(state),
     plantGoal(state),
     upgradeGoal(state),
     shopGoal(state),
@@ -742,7 +772,7 @@ export function activeGoals(state: GameState): Goal[] {
     // PHASE 28/29: soft nudges sort below real progress within a horizon — first
     // trivial "anytime" chores (cheap upgrade, cash a ticket), then discovery
     // suggestions — so the board never headlines a boring or optional point.
-    const rank = (g: Goal) => (g.chore ? 2 : g.discovery ? 1 : 0)
+    const rank = (g: Goal) => (g.campaign ? -1 : g.chore ? 2 : g.discovery ? 1 : 0)
     const r = rank(a) - rank(b)
     if (r !== 0) return r
     return b.fraction - a.fraction
@@ -762,6 +792,11 @@ export function goalBoard(state: GameState, perTier = 3): Goal[] {
   let discoveries = 0
   const out: Goal[] = []
   for (const g of activeGoals(state)) {
+    // PHASE 48: the campaign headline is always shown, exempt from the per-tier cap
+    if (g.campaign) {
+      out.push(g)
+      continue
+    }
     if (g.chore && chores >= 1) continue
     if (g.discovery && discoveries >= 1) continue
     if (counts[g.tier] >= perTier) continue

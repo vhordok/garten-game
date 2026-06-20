@@ -3,6 +3,8 @@
 
 import { ACHIEVEMENTS } from '../data/achievements'
 import { initAchievementTiers } from './achievements'
+import { initCampaign } from './campaign'
+import { CAMPAIGN } from '../data/campaign'
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES } from '../data/compostUpgrades'
 import { maxScratchTickets } from './modifiers'
@@ -15,7 +17,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 29
+export const SAVE_VERSION = 30
 
 interface SaveEnvelope {
   version: number
@@ -209,6 +211,12 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // folds any beauty plants still sitting on the field (old saves) into the
       // collection, freeing those plots. No beauty is lost.
       return { ...envelope, version: 29 }
+    case 29:
+      // v29 → v30: PHASE 48 mini-campaign — a new `campaign` index (next unclaimed
+      // step). sanitize() defaults it to 0 AND, for saves that arrive without it,
+      // advances it past every already-satisfied step WITHOUT paying rewards
+      // (initCampaign) so existing players resume at their real frontier.
+      return { ...envelope, version: 30 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -511,6 +519,14 @@ function sanitize(raw: unknown): GameState {
   // initialised from the now-loaded stats — claimed = reached, WITHOUT paying the
   // one-time rewards (no retroactive flood, but permanent bonuses apply at once).
   if (!hasTiers) initAchievementTiers(state)
+
+  // PHASE 48 campaign: a save with a stored index keeps it (clamped); one without
+  // (pre-v30) is initialised past every already-satisfied step, no reward flood.
+  if (typeof r.campaign === 'number' && Number.isFinite(r.campaign)) {
+    state.campaign = Math.min(CAMPAIGN.length, Math.max(0, Math.floor(r.campaign)))
+  } else {
+    initCampaign(state)
+  }
 
   return state
 }
