@@ -267,8 +267,22 @@
   @media (max-width: 640px) {
     .garden-head {
       justify-content: center;
-      gap: 6px;
-      margin-bottom: 10px;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    /* PHASE 45: shrink the action buttons so they take fewer rows → more of the
+       screen is left for the actual field */
+    .garden-head .pxbtn.small {
+      font-size: 0.72rem;
+      padding: 4px 8px;
+    }
+    .garden-head .pxbtn.primary {
+      font-size: 0.78rem;
+      padding: 5px 10px;
+    }
+    .garden-head .chip {
+      font-size: 0.7rem;
+      padding: 1px 6px;
     }
   }
 
@@ -313,10 +327,18 @@
     .garden {
       width: 100%;
     }
+    /* PHASE 45: stretch the columns to fill the width (minmax + 1fr) so the
+       plots use the whole screen instead of sitting small and centered */
     .grid {
-      grid-template-columns: repeat(auto-fill, var(--cell));
+      grid-template-columns: repeat(auto-fill, minmax(var(--cell), 1fr));
       gap: 8px;
       width: 100%;
+    }
+    /* match the stretched plots so the "buy plot" tile fills its cell too */
+    .ghost {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1;
     }
   }
 

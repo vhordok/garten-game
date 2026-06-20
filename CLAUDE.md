@@ -243,4 +243,8 @@ gardenBeauty ohne Beet/Wachstumszeit, übersteht Prestige; Kosten skalieren mit
 Schönheit × galleryCopyFactor pro Kopie (Cap galleryMaxCopies). Feld hält nie mehr
 Zier → „Alles roden" wieder ohne Ausnahme, Hotbar blendet Zier/Kreuzungen aus,
 selectPlant/sowPlot weisen Zier ab. SAVE_VERSION 29: Migration faltet im Feld stehende
-Zierpflanzen in die Sammlung (Beet frei, keine Schönheit verloren). Stand SAVE_VERSION 29.
+Zierpflanzen in die Sammlung (Beet frei, keine Schönheit verloren). Phase 45 (§9.47):
+Mobile-Layout — Lücke unter der Topbar geschlossen (App-Clearance auf --hud-h+4px, main
+ohne padding-top), Feld füllt die Breite (Grid minmax(--cell,1fr) + .plot/.ghost mobil
+width:100%+aspect-ratio:1), kompaktere Garten-Aktionsleiste. Reine CSS. Keine Save-
+Änderung. Stand SAVE_VERSION 29.

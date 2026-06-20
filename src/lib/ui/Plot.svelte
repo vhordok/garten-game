@@ -232,6 +232,16 @@
       filter 0.1s ease;
   }
 
+  /* PHASE 45: on phones the grid stretches its columns (minmax + 1fr); let the
+     plot fill its cell (square) so the field uses the whole screen width */
+  @media (max-width: 640px) {
+    .plot {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1;
+    }
+  }
+
   .plot:hover {
     transform: translateY(-2px);
     filter: brightness(1.15);
