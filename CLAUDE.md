@@ -225,4 +225,8 @@ direkt auf den Hotbar-Kacheln (kein Hover am Handy; Tastatur-Nummer weg), Topbar
 Panel-Buttons als horizontal scrollbare Leiste mit Rand-Fade (statt 2–3 Zeilen) +
 kompakterer Verkaufen-Button/HUD, Kategorie-Tabs mit Rand-Fade+Snap (scrollbar
 erkennbar), Prestige-Button immer sichtbar (gedimmt bis verfügbar → auffindbar).
-Reine CSS. Keine Save-Änderung. Stand SAVE_VERSION 28.
+Reine CSS. Keine Save-Änderung. Phase 41 (§9.43): Pflanzennamen lesbar (Label 0,6→
+0,72rem, fett, weiß statt blassgrün; Kacheln breiter 72→80 / Handy 66→78px, höher
+96px) und größere/klarere Topbar-Icons (alle Panel-Buttons scale 1→2 = 32px, Shop
+giesskanne→marktstand, Prestige duenger scale 2, Handy 50px-Tap-Targets). Reine CSS/
+Icon. Keine Save-Änderung. Stand SAVE_VERSION 28.
