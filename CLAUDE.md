@@ -204,5 +204,7 @@ Skill-Knoten. Save-sicher (reine Daten/Logik). Phase 35 (§9.37): diagnosegetrie
 Check (playtest/diagnose zeigen kein Gameplay-Bug; „tote" spec/beauty/mastery sind
 multiplikativ-gesund, nur synthetisch unbespielt) → reine Politur: eigene Kosmisch-
 Frühstufen-Sprites (seedlingKosmos/kosmos1/kosmos2, blau-weiße Stern-Optik statt
-Magie-/Kristallbeer-Aliasen). Save-sicher. 62 Sorten (+1 Spezial) in 9 Kategorien,
-Stand SAVE_VERSION 28.
+Magie-/Kristallbeer-Aliasen). Save-sicher. Phase 36 (§9.38): Toast-Verlauf über
+Reloads persistent (eigener localStorage-Key, vom Save entkoppelt, gedrosselt; Unseen-
+Badge startet bei 0; Panel zeigt Tage). Keine Save-Änderung. 62 Sorten (+1 Spezial)
+in 9 Kategorien, Stand SAVE_VERSION 28.

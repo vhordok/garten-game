@@ -101,7 +101,7 @@ import { categorySpecById } from '../src/lib/data/specializations.ts'
 import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceStatus, variantBonus, variantEventBonus } from '../src/lib/game/seedlab.ts'
 import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
 import { get } from 'svelte/store'
-import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog } from '../src/lib/ui/toasts.ts'
+import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog, flushToastLog, reloadToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
 import { autoHarvestRate } from '../src/lib/game/modifiers.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
@@ -1989,6 +1989,35 @@ test('PHASE 30: toast log keeps a readable history without re-spamming', () => {
   assert.match(get(toastLog)[0].text, /distinct 59/, 'most recent entry is on top')
   clearToasts()
   clearToastLog()
+})
+
+test('PHASE 36: toast log persists across a reload', () => {
+  const orig = globalThis.localStorage
+  const store = {}
+  globalThis.localStorage = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v) },
+    removeItem: (k) => { delete store[k] },
+  }
+  try {
+    clearToastLog()
+    pushToast('persist me', '🔔', 6000, { priority: 'important' })
+    flushToastLog() // force the throttled write
+    assert.ok(get(toastLog).some((e) => e.text === 'persist me'), 'logged in memory')
+    // simulate a reload: drop the in-memory store, then re-read from localStorage
+    toastLog.set([])
+    assert.equal(get(toastLog).length, 0, 'memory cleared')
+    reloadToastLog()
+    assert.ok(get(toastLog).some((e) => e.text === 'persist me'), 'restored from storage after reload')
+    // clearing wipes the persisted copy too
+    clearToastLog()
+    reloadToastLog()
+    assert.equal(get(toastLog).length, 0, 'cleared log stays cleared after reload')
+  } finally {
+    globalThis.localStorage = orig
+    clearToasts()
+    clearToastLog()
+  }
 })
 
 test('PHASE 30: quest goal weighs real production time', () => {

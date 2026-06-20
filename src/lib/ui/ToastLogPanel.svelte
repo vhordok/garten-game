@@ -22,7 +22,9 @@
     const m = Math.floor(s / 60)
     if (m < 60) return `vor ${m}m`
     const h = Math.floor(m / 60)
-    return `vor ${h}h ${m % 60}m`
+    if (h < 24) return `vor ${h}h ${m % 60}m`
+    const d = Math.floor(h / 24)
+    return `vor ${d}d ${h % 24}h`
   }
 
   const PRIO_LABEL = ['niedrig', 'normal', 'wichtig', 'selten']
@@ -31,8 +33,8 @@
 
 <Overlay title="Verlauf — verpasste Meldungen" {onClose}>
   <p class="hint">
-    Die letzten Meldungen, auch wenn sie auf dem Spielfeld nur kurz oder gebündelt erschienen.
-    Wird nicht gespeichert.
+    Die letzten Meldungen, auch wenn sie auf dem Spielfeld nur kurz oder gebündelt erschienen —
+    bleibt auch nach einem Neuladen erhalten.
   </p>
 
   {#if entries.length === 0}
