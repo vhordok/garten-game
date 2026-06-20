@@ -108,7 +108,7 @@
   </div>
 
   <div class="hotbar pxpanel">
-    {#each slots as plant, i (plant.id)}
+    {#each slots as plant (plant.id)}
       {@const earnedMet =
         $gameStore.totalEarned >= plant.unlockAtTotalEarned &&
         (!plant.requiresLicense || $gameStore.licenses >= plant.requiresLicense)}
@@ -124,16 +124,18 @@
         onclick={() => select(plant.id)}
         aria-label={unlocked ? `${plant.name} auswählen` : 'Gesperrte Pflanze'}
       >
-        <span class="key num">{i + 1}</span>
         {#if plant.regrowTime}<span class="regrow" title="Wächst nach der Ernte von selbst nach">⟳</span>{/if}
         {#if unlocked}
-          <img class="px art" src={spriteUrl(`${plant.id}-3`)} width="48" height="48" alt="" />
+          <!-- PHASE 40: the name is shown right on the slot (no hover on touch) -->
+          <span class="pname">{plant.name}</span>
+          <img class="px art" src={spriteUrl(`${plant.id}-3`)} width="44" height="44" alt="" />
           <span class="price num" class:broke={!affordable}>
             <PixelIcon name="coin" scale={1} />
             {formatNumber(plant.seedCost)}
           </span>
         {:else}
-          <span class="art lock"><PixelIcon name="lock" scale={3} /></span>
+          <span class="pname locked-name">Gesperrt</span>
+          <span class="art lock"><PixelIcon name="lock" scale={2} /></span>
           <span class="price num">{parcelLocked ? `Parz. ${plant.unlockParcel}` : '???'}</span>
         {/if}
 
@@ -210,14 +212,14 @@
 
   .slot {
     position: relative;
-    width: 64px;
-    height: 76px;
+    width: 72px;
+    height: 92px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 2px;
-    padding: 4px 2px;
+    padding: 5px 3px;
     cursor: pointer;
     border-style: solid;
     border-width: calc(var(--ui) * 3px);
@@ -243,12 +245,24 @@
     filter: grayscale(0.4) brightness(0.8);
   }
 
-  .key {
-    position: absolute;
-    top: 1px;
-    left: 4px;
-    font-size: 0.72rem;
-    color: var(--c-cloud);
+  /* PHASE 40: plant name on the slot — readable at a glance, no hover needed */
+  .pname {
+    width: 100%;
+    text-align: center;
+    font-size: 0.6rem;
+    line-height: 1.05;
+    font-weight: 700;
+    color: var(--c-leaf5);
+    /* up to two short lines, then ellipsis — keeps the slot height stable */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .pname.locked-name {
+    color: var(--c-mist);
   }
 
   .regrow {
@@ -346,9 +360,10 @@
   }
 
   @media (max-width: 640px) {
+    /* PHASE 40: room for the plant-name label on each slot */
     .slot {
-      width: 56px;
-      height: 70px;
+      width: 66px;
+      height: 90px;
     }
 
     /* keep the hover tooltip from forcing horizontal page-scroll (PHASE 11) */
@@ -367,12 +382,22 @@
       padding: 0 6px;
     }
 
+    /* PHASE 40: fade the right edge so it's obvious the category row scrolls
+       (the categories were getting cut off with no hint) */
     .tabs {
       max-width: 100%;
       overflow-x: auto;
       flex-wrap: nowrap;
       justify-content: flex-start;
       scrollbar-width: none;
+      scroll-snap-type: x proximity;
+      -webkit-mask-image: linear-gradient(to right, #000 90%, transparent);
+      mask-image: linear-gradient(to right, #000 90%, transparent);
+    }
+
+    .tabs .tab {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
     }
 
     .hotbar {

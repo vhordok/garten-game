@@ -220,4 +220,9 @@ Topbar-/Garten-Buttons zentriert umgebrochen, body overflow-x hidden. Reine CSS,
 keine Save-Änderung. Phase 39 (§9.41): alle 10 Saatlabor-Varianten als pflanzbare
 Kreuzungen (vorher nur Prachtorchidee) — Schau-Exemplare in Kategorie „Kreuzungen",
 Schönheit nach Seltenheit (0,3→1,8), max. 3/Sorte, via discoveredVariants gegated,
-Sprites aliasiert. Keine Save-Änderung. Stand SAVE_VERSION 28.
+Sprites aliasiert. Keine Save-Änderung. Phase 40 (§9.42): Mobile-UX — Pflanzennamen
+direkt auf den Hotbar-Kacheln (kein Hover am Handy; Tastatur-Nummer weg), Topbar-
+Panel-Buttons als horizontal scrollbare Leiste mit Rand-Fade (statt 2–3 Zeilen) +
+kompakterer Verkaufen-Button/HUD, Kategorie-Tabs mit Rand-Fade+Snap (scrollbar
+erkennbar), Prestige-Button immer sichtbar (gedimmt bis verfügbar → auffindbar).
+Reine CSS. Keine Save-Änderung. Stand SAVE_VERSION 28.
