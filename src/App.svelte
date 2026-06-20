@@ -196,7 +196,7 @@
     padding:
       calc(var(--safe-top, 0px) + 10px + var(--hud-h, 76px) + 16px)
       calc(var(--safe-right, 0px) + 16px)
-      calc(var(--safe-bottom, 0px) + 130px)
+      calc(var(--safe-bottom, 0px) + var(--hotbar-h, 130px) + 28px)
       calc(var(--safe-left, 0px) + 16px);
   }
 

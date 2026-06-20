@@ -44,6 +44,22 @@ export function cycleFloorSeconds(def: PlantDef): number {
 }
 
 /**
+ * PHASE 46: the actual floor used at runtime — the base floor shrunk by prestige
+ * depth (parcels). Deep prestige buys back speed (down to minCycleFloorMin),
+ * uniformly across all floored crops so their ordering never inverts. Fresh
+ * gardens (parcels = 1) keep the full 8s floor.
+ */
+export function effectiveCycleFloor(state: GameState, def: PlantDef): number {
+  const base = cycleFloorSeconds(def)
+  if (base <= 0) return 0
+  const min = CONFIG.minCycleFloorMin
+  if (base <= min) return base
+  const depth = Math.max(0, state.parcels - 1)
+  const scaled = min + (base - min) * Math.pow(CONFIG.minCycleFloorDecay, depth)
+  return Math.min(base, Math.max(min, scaled))
+}
+
+/**
  * The REAL seconds the plot's current cycle takes at the live multipliers (what
  * the player actually sees on the tile) — the multiplier-shortened time, never
  * below the floor. Drives truthful tooltips (PHASE 34). Care/spec speed are ~1
@@ -53,7 +69,7 @@ export function effectiveCycleSeconds(state: GameState, def: PlantDef, regrowing
   const target = regrowing && def.regrowTime ? def.regrowTime : def.growTime
   const mult = growthMultiplier(state)
   const real = mult > 0 ? target / mult : target
-  return Math.max(cycleFloorSeconds(def), real)
+  return Math.max(effectiveCycleFloor(state, def), real)
 }
 
 /**
@@ -89,7 +105,7 @@ export function tick(state: GameState, dtSeconds: number, opts: { offline?: bool
       // PHASE 32/34: growth floor — a late-game cycle can never fill faster than
       // its floor, so the runaway multiplier can't make endgame crops instant
       // (harvesters keep up). Early/mid plants are exempt (see cycleFloorSeconds).
-      const floorSecs = cycleFloorSeconds(def)
+      const floorSecs = effectiveCycleFloor(state, def)
       if (floorSecs > 0) {
         const maxInc = (target * dtSeconds) / floorSecs
         if (inc > maxInc) inc = maxInc

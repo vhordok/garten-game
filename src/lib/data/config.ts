@@ -96,6 +96,13 @@ export const CONFIG = {
    * plants and their growth-speed upgrades are untouched. Per-plant minGrowSeconds
    * (deliberately-slower top crops) stacks on top via max(). */
   minCycleFloorSeconds: 8,
+  /** PHASE 46: deep prestige buys speed again — the late-game cycle floor shrinks
+   * from minCycleFloorSeconds toward minCycleFloorMin as parcels (= prestige depth)
+   * grow. Uniform across all floored crops (ordering preserved). Each parcel past
+   * the first multiplies the gap-above-min by minCycleFloorDecay:
+   *   floor = min + (8 − min)·decay^(parcels−1)   (≈8s fresh → ~5s @10 → ~3s @30). */
+  minCycleFloorMin: 3,
+  minCycleFloorDecay: 0.9,
   /** only plants this slow (raw growTime, seconds) get the late-game cycle floor */
   floorGrowTimeThreshold: 50000,
   /** market wave: sell prices oscillate ±~30 % over this period (seconds) */

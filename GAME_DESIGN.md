@@ -1520,3 +1520,28 @@ zwischen Topbar und Inhalt klaffte eine große Lücke, alles nahm zu viel Platz.
 
 Reine CSS-/Layout-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 29). check/build grün,
 Tests 69/69. ⚠️ Ohne Headless-Browser nicht am Viewport gegengeprüft — bitte am Gerät verifizieren.
+
+### 9.48 Phase 46 — UI-Fixes + Prestige senkt den Endgame-Reife-Boden (keine Save-Änderung)
+
+Aus einer Screenshot-Rückmeldung: zwei UI-Probleme und eine Gameplay-Frage zum 8s-Boden.
+
+- **Hotbar verdeckte das Feld:** der untere Seitenrand war statisch (`130px`), die fixe
+  Hotbar (Kategorie-Tabs + Slots) ist aber höher → die letzten Beet-Reihen rutschten
+  hinter die Hotbar und ließen sich nicht mehr ins Bild scrollen. Die Hotbar misst jetzt
+  ihre echte Höhe in `--hotbar-h` (wie die Topbar `--hud-h`); `.app` reserviert
+  `--hotbar-h + 28px` unten → nichts wird mehr verdeckt.
+- **„Alle Felder kaufen" verschoben:** der goldene Button saß in der Aktionsleiste und
+  kostete eine Zeile. Er sitzt jetzt als zweite Kachel **direkt neben dem „+1 Beet"-Feld**
+  im Grid (gold umrandet, Beschriftung „Alle") → spart Platz und steht im Kontext.
+- **Prestige senkt den Reife-Boden:** der Spieler empfand den 8s-Boden der sehr späten
+  Sorten als „Kompost bringt nichts mehr für Zeit". Auf Nachfrage (Optionen vorgelegt)
+  gewählt: der Boden **schrumpft mit der Prestige-Tiefe**. Neue Laufzeit-Funktion
+  `effectiveCycleFloor(state, def)` skaliert den Basis-Boden von 8s pro Parzelle um
+  `minCycleFloorDecay` (0,9) Richtung `minCycleFloorMin` (3s):
+  `Boden = 3 + (8−3)·0,9^(Parzellen−1)` (frisch 8s → ~5s @10 → ~3s @30). Gleichmäßig für
+  **alle** geflorten Sorten → keine Reihenfolge-Inversion; frische Gärten behalten 8s.
+  Tick-Cap und der wahrhaftige Hotbar-Tooltip nutzen den neuen Boden. Kompost wirkt damit
+  wieder auf Tempo **und** (wie bisher unbegrenzt) auf Ertrag. Reine Logik, keine Save-Änderung.
+
+UI-/Layout- + Balance-Änderung, keine Save-Änderung (SAVE_VERSION 29). check/build grün,
+Tests 69/69. ⚠️ Ohne Headless-Browser nicht am Viewport gegengeprüft — bitte am Gerät verifizieren.

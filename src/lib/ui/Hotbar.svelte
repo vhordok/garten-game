@@ -91,11 +91,19 @@
     if (!Number.isInteger(slot) || slot < 1 || slot > slots.length) return
     select(slots[slot - 1].id)
   }
+
+  // PHASE 46: publish the real hotbar height (tabs + slots) so the page can
+  // reserve exactly that much space at the bottom — otherwise tall fields slide
+  // behind the fixed hotbar and the last rows can't be scrolled into view.
+  let wrapHeight = $state(0)
+  $effect(() => {
+    document.documentElement.style.setProperty('--hotbar-h', `${wrapHeight}px`)
+  })
 </script>
 
 <svelte:window onkeydown={handleKey} />
 
-<nav class="hotbar-wrap" aria-label="Saatgut">
+<nav class="hotbar-wrap" aria-label="Saatgut" bind:offsetHeight={wrapHeight}>
   <div class="tabs">
     {#each categories as cat (cat)}
       {@const unlocked = catUnlocked(cat)}

@@ -115,7 +115,7 @@ import { availableSkillPoints, skillBonus, skillLevel, totalSkillPoints } from '
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
 import { createDefaultState, getState, replaceState } from '../src/lib/game/state.ts'
-import { plotReady, tick, cycleFloorSeconds, effectiveCycleSeconds } from '../src/lib/game/tick.ts'
+import { plotReady, tick, cycleFloorSeconds, effectiveCycleFloor, effectiveCycleSeconds } from '../src/lib/game/tick.ts'
 
 /** Reset to a fresh default state and return the live reference. */
 function fresh() {
@@ -2200,12 +2200,23 @@ test('PHASE 34: late-cycle floor, truthful time, Holz forest aura, bulk scratch,
     const sh = plantById('sonnenhanf')
     // mondkristall has no per-plant floor but is late-game → gets the global floor
     assert.ok(mk.growTime >= CONFIG.floorGrowTimeThreshold && (mk.minGrowSeconds ?? 0) === 0, 'mondkristall floored only globally')
-    assert.ok(effectiveCycleSeconds(s, mk, true) >= CONFIG.minCycleFloorSeconds, 'no more <1s ripening')
-    // higher tier is never FASTER than the global floor (no inversion)
+    // PHASE 46: deep prestige shrinks the floor (here parcels=39 → near the min),
+    // but it never drops below minCycleFloorMin and never makes ripening instant
+    assert.ok(effectiveCycleSeconds(s, mk, true) >= CONFIG.minCycleFloorMin, 'never below the hard minimum')
+    // higher tier is never FASTER than the (uniform) floor (no inversion)
     assert.ok(effectiveCycleSeconds(s, sh, true) >= effectiveCycleSeconds(s, mk, true) - 0.01, 'newer crop not faster than old')
     // a fast early plant is exempt from the late floor
     const basil = plantById('basilikum')
     assert.equal(cycleFloorSeconds(basil), 0, 'early plant exempt from the late-game floor')
+
+    // PHASE 46: the floor falls with prestige depth (parcels) — fresh = 8s, deep < 8s
+    const fresh1 = fresh()
+    fresh1.parcels = 1
+    assert.equal(effectiveCycleFloor(fresh1, mk), CONFIG.minCycleFloorSeconds, 'fresh garden keeps the full 8s floor')
+    const deep = fresh()
+    deep.parcels = 30
+    assert.ok(effectiveCycleFloor(deep, mk) < CONFIG.minCycleFloorSeconds, 'deep prestige buys speed: floor drops below 8s')
+    assert.ok(effectiveCycleFloor(deep, mk) >= CONFIG.minCycleFloorMin, 'but never past the minimum')
 
     // --- B: Holz forest aura is a real, bounded yield multiplier -------------
     const f = fresh()
@@ -2298,9 +2309,12 @@ test('PHASE 32: endgame growth floor, Hanf ladder, endless skill, zier steps', (
     // PHASE 37: endgame plants share the GLOBAL floor (no per-plant escalation,
     // so newer crops are never slower than older ones — no inversion)
     const cad = cycleFloorSeconds(hanf)
-    assert.equal(cad, CONFIG.minCycleFloorSeconds, 'late crop uses the uniform global floor')
+    assert.equal(cad, CONFIG.minCycleFloorSeconds, 'late crop uses the uniform global BASE floor')
+    // PHASE 46: deep prestige (parcels=60) lowers the REAL floor toward the minimum
+    const eff = effectiveCycleFloor(s, hanf)
+    assert.ok(eff < cad && eff >= CONFIG.minCycleFloorMin, 'deep prestige lowers the floor toward the minimum')
     s.plots = [{ plantId: 'ewigkeitshanf', progress: 0, waterLeft: 99, regrowing: false }]
-    tick(s, cad - 1) // just under the floor
+    tick(s, eff - 1) // just under the real floor
     assert.ok(!plotReady(s.plots[0]), 'floored plant is NOT ripe in a fraction of a second')
     tick(s, 2) // cross the floor
     assert.ok(plotReady(s.plots[0]), 'ripe after ~the floor, not before')

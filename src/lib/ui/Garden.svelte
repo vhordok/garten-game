@@ -43,7 +43,7 @@
     autoSowPinned ? (plantById(autoSowPinned)?.name ?? 'Auswahl') : 'Auswahl'
   )
   // roughly square field, 4–7 columns depending on plot count
-  const tileCount = $derived($gameStore.plots.length + (canBuyMore ? 1 : 0))
+  const tileCount = $derived($gameStore.plots.length + (canBuyMore ? 2 : 0))
   const cols = $derived(Math.min(Math.max(4, Math.ceil(Math.sqrt(tileCount))), 7))
 
   function eventCenter(e: MouseEvent): [number, number] {
@@ -158,11 +158,6 @@
         🌲 +{Math.round(forest * 100)} % Ertrag
       </span>
     {/if}
-    {#if canBuyMore}
-      <button class="pxbtn small gold" onclick={handleBuyAllPlots} title="So viele Beete kaufen, wie Gold reicht — spart das Klicken nach jedem Prestige">
-        Alle Felder kaufen
-      </button>
-    {/if}
     <button class="pxbtn small" disabled={emptyCount === 0} onclick={handleSowAll} title="Gewählte Sorte auf alle leeren Beete säen">
       Alle säen{emptyCount > 0 ? ` (${emptyCount})` : ''}
     </button>
@@ -237,6 +232,17 @@
           <PixelIcon name="coin" scale={1} />
           {formatNumber(plotCost)}
         </span>
+      </button>
+      <!-- PHASE 46: "buy all" sits right next to the single-buy tile (saves a
+           toolbar row) — buys as many beds as the gold allows -->
+      <button
+        class="ghost buy-all num"
+        disabled={$gameStore.money < plotCost}
+        onclick={handleBuyAllPlots}
+        title="So viele Beete kaufen, wie Gold reicht — spart das Klicken nach jedem Prestige"
+      >
+        <PixelIcon name="plus" scale={2} />
+        <span class="ghost-cost">Alle</span>
       </button>
     {/if}
   </div>
@@ -362,6 +368,18 @@
 
   .ghost:hover:not(:disabled) {
     filter: brightness(1.4);
+  }
+
+  /* PHASE 46: the "buy all fields" tile sits beside the single-buy tile,
+     marked gold so it reads as the bulk action */
+  .ghost.buy-all {
+    box-shadow: inset 0 0 0 2px var(--c-gold0);
+  }
+
+  .ghost.buy-all .ghost-cost {
+    color: var(--c-gold2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
   .ghost:disabled {
