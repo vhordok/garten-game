@@ -1461,3 +1461,15 @@ die zweite Zeile, erst danach greift die Ellipsis.
 
 Reine CSS-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28). check/build grün,
 Tests 68/68.
+
+### 9.45 Phase 43 — Namens-Umbruch wirklich gefixt: kein -webkit-box mehr (keine Save-Änderung)
+
+Phase 42 reichte nicht: `overflow-wrap` bricht ein **einzelnes** langes Wort
+**innerhalb eines `display: -webkit-box` (line-clamp)** in Chrome nicht — das Wort blieb
+einzeilig und wurde weiter mitten im Wort abgeschnitten („Schnittla", sogar ohne „…").
+`.pname` ist jetzt ein **normaler Block** (`-webkit-box`/line-clamp entfernt) mit
+`overflow-wrap: anywhere` + `max-height: 2.3em; overflow: hidden` → lange Einzelwörter
+brechen sauber auf die zweite Zeile, Höhe bleibt stabil.
+
+Reine CSS-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28). check/build grün,
+Tests 68/68.

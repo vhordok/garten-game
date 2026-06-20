@@ -253,14 +253,13 @@
     line-height: 1.1;
     font-weight: 700;
     color: var(--c-white);
-    /* up to two short lines, then ellipsis — keeps the slot height stable */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
+    /* PHASE 43: plain block (NOT -webkit-box) so long single words such as
+       "Schnittlauch" actually break onto a 2nd line — inside a -webkit-box
+       line-clamp, overflow-wrap does NOT break a lone word in Chrome, so the
+       word stayed on one line and was clipped mid-word. Cap height at ~2
+       lines and hide the rest to keep slot heights stable. */
+    max-height: 2.3em;
     overflow: hidden;
-    /* let long single words (e.g. "Schnittlauch") break onto the 2nd line
-       instead of being clipped mid-word (PHASE 42) */
     overflow-wrap: anywhere;
     word-break: break-word;
   }

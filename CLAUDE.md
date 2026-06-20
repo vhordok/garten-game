@@ -231,5 +231,8 @@ Reine CSS. Keine Save-Änderung. Phase 41 (§9.43): Pflanzennamen lesbar (Label 
 giesskanne→marktstand, Prestige duenger scale 2, Handy 50px-Tap-Targets). Reine CSS/
 Icon. Keine Save-Änderung. Phase 42 (§9.44): lange Pflanzennamen brechen um statt
 abzuschneiden (.pname overflow-wrap:anywhere + word-break:break-word → „Schnittlauch"
-fließt zweizeilig statt „Schnittla"). Reine CSS. Keine Save-Änderung. Stand
-SAVE_VERSION 28.
+fließt zweizeilig statt „Schnittla"). Reine CSS. Keine Save-Änderung. Phase 43 (§9.45):
+Namens-Umbruch wirklich gefixt — overflow-wrap bricht ein Einzelwort in einem
+-webkit-box (line-clamp) nicht, daher .pname jetzt normaler Block (kein -webkit-box)
+mit max-height:2.3em+overflow:hidden → „Schnittlauch" bricht endlich zweizeilig. Reine
+CSS. Keine Save-Änderung. Stand SAVE_VERSION 28.
