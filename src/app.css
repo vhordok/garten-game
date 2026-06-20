@@ -11,6 +11,9 @@ html,
 body {
   margin: 0;
   padding: 0;
+  /* PHASE 38: never let a stray wide element cause whole-page horizontal scroll
+     on mobile (the garden field used to overflow). Layout fits within the width. */
+  overflow-x: hidden;
 }
 
 :root {
@@ -35,6 +38,14 @@ body {
 @media (max-width: 640px) {
   :root {
     --cell: 64px;
+  }
+}
+
+/* PHASE 38: denser field on small phones → fewer rows to scroll, still a
+   comfortable ≥44px tap target. Auto-fill packs more columns into the width. */
+@media (max-width: 430px) {
+  :root {
+    --cell: 56px;
   }
 }
 

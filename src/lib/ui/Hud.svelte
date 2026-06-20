@@ -524,6 +524,13 @@
       justify-content: center;
     }
 
+    /* PHASE 38: centre the wrapped panel-button cluster (was right-pushed) so
+       both stat and button rows read as tidy centred lines on a phone */
+    .row.btns {
+      justify-content: center;
+      gap: 6px;
+    }
+
     .amount {
       font-size: 1.1rem;
     }
