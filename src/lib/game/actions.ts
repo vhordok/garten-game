@@ -5,6 +5,7 @@ import { CONFIG } from '../data/config'
 import { achievementBonus } from './achievements'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
+import { isOrnamental, nextOrnamentalCost } from './gallery'
 import { parcelBonus } from '../data/milestones'
 import { skillById } from '../data/skills'
 import { PLANTS, plantById } from '../data/plants'
@@ -72,8 +73,28 @@ export function selectPlant(plantId: string): void {
   const s = getState()
   const def = plantById(plantId)
   if (!def || !isPlantUnlocked(def, s)) return
+  // PHASE 44: ornamentals live in the Ziergalerie collection, never on the field
+  if (isOrnamental(def)) return
   s.selectedPlantId = plantId
   notify()
+}
+
+/**
+ * PHASE 44 Ziergalerie: buy one copy of an ornamental into the permanent
+ * collection (survives prestige). Each copy adds its beauty to the garden-wide
+ * aura without taking a plot or grow time. Returns true on success.
+ */
+export function buyOrnamental(plantId: string): boolean {
+  const s = getState()
+  const def = plantById(plantId)
+  if (!def || !isOrnamental(def) || !isPlantUnlocked(def, s)) return false
+  const owned = s.ornamentals[plantId] ?? 0
+  const cost = nextOrnamentalCost(def, owned)
+  if (!Number.isFinite(cost) || s.money < cost) return false
+  s.money -= cost
+  s.ornamentals[plantId] = owned + 1
+  notify()
+  return true
 }
 
 /**
@@ -96,7 +117,7 @@ export function sowPlot(index: number): boolean {
   const plot = s.plots[index]
   const def = plantById(s.selectedPlantId)
   if (!plot || plot.plantId !== null || !def) return false
-  if (!isPlantUnlocked(def, s) || s.money < def.seedCost) return false
+  if (!isPlantUnlocked(def, s) || isOrnamental(def) || s.money < def.seedCost) return false
   // PHASE 22: special plants are capped per garden
   if (def.maxPlots && plotsWithPlant(s, def.id) >= def.maxPlots) return false
   s.money -= def.seedCost
@@ -113,7 +134,7 @@ export function sowPlot(index: number): boolean {
 export function sowAllEmpty(): number {
   const s = getState()
   const def = plantById(s.selectedPlantId)
-  if (!def || !isPlantUnlocked(def, s)) return 0
+  if (!def || !isPlantUnlocked(def, s) || isOrnamental(def)) return 0
   let count = 0
   for (const plot of s.plots) {
     if (plot.plantId !== null || s.money < def.seedCost) continue

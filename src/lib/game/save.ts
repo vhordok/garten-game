@@ -15,7 +15,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 28
+export const SAVE_VERSION = 29
 
 interface SaveEnvelope {
   version: number
@@ -203,6 +203,12 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // upgrades + compost sinks default to level 0 for old saves, licenses IV/V
       // just lift the existing `licenses` clamp from 3 to 5. Pure passthrough.
       return { ...envelope, version: 28 }
+    case 28:
+      // v28 → v29: PHASE 44 Ziergalerie — ornamentals move off the field into a
+      // permanent `ornamentals` collection. sanitize() defaults it to {} AND
+      // folds any beauty plants still sitting on the field (old saves) into the
+      // collection, freeing those plots. No beauty is lost.
+      return { ...envelope, version: 29 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -303,15 +309,43 @@ function sanitize(raw: unknown): GameState {
   state.xp = clampNumber(r.xp, 0)
   state.createdAt = clampNumber(r.createdAt, state.createdAt)
 
+  // PHASE 44 Ziergalerie: owned ornamental counts (permanent collection).
+  const ornamentals: Record<string, number> = {}
+  const addOrnamental = (id: string, n: number) => {
+    const def = plantById(id)
+    if (!def || !(def.beautyBonus && def.beautyBonus > 0)) return
+    const next = Math.min((ornamentals[id] ?? 0) + n, CONFIG.galleryMaxCopies)
+    if (next > 0) ornamentals[id] = next
+  }
+  if (typeof r.ornamentals === 'object' && r.ornamentals !== null) {
+    for (const [id, count] of Object.entries(r.ornamentals as Record<string, unknown>)) {
+      addOrnamental(id, Math.floor(clampNumber(count, 0, 0, CONFIG.galleryMaxCopies)))
+    }
+  }
+
   if (Array.isArray(r.plots)) {
-    const plots = r.plots.slice(0, 1000).map((p): PlotState => {
-      if (typeof p !== 'object' || p === null) return emptyPlot()
+    const plots: PlotState[] = []
+    for (const p of r.plots.slice(0, 1000)) {
+      if (typeof p !== 'object' || p === null) {
+        plots.push(emptyPlot())
+        continue
+      }
       const plot = p as Record<string, unknown>
       const def = typeof plot.plantId === 'string' ? plantById(plot.plantId) : undefined
-      if (!def) return emptyPlot()
+      if (!def) {
+        plots.push(emptyPlot())
+        continue
+      }
+      // PHASE 44 migration: a beauty plant still on the field (old save) becomes
+      // a collection copy and frees its plot — no beauty lost, no clutter kept.
+      if (def.beautyBonus && def.beautyBonus > 0) {
+        addOrnamental(def.id, 1)
+        plots.push(emptyPlot())
+        continue
+      }
       const regrowing = plot.regrowing === true && typeof def.regrowTime === 'number'
       const target = regrowing && def.regrowTime ? def.regrowTime : def.growTime
-      return {
+      plots.push({
         plantId: def.id,
         progress: clampNumber(plot.progress, 0, 0, target),
         // older saves lack the field — be generous and grant full charges
@@ -319,11 +353,13 @@ function sanitize(raw: unknown): GameState {
           clampNumber(plot.waterLeft, CONFIG.waterChargesPerCrop, 0, CONFIG.waterChargesPerCrop)
         ),
         regrowing,
-      }
-    })
+      })
+    }
     while (plots.length < CONFIG.startPlots) plots.push(emptyPlot())
     state.plots = plots
   }
+
+  state.ornamentals = ornamentals
 
   const inventory: Record<string, number> = {}
   if (typeof r.inventory === 'object' && r.inventory !== null) {
@@ -335,11 +371,12 @@ function sanitize(raw: unknown): GameState {
   }
   state.inventory = inventory
 
+  // PHASE 44: ornamentals are gallery-only — never the field selection/auto-sow
   const selected = typeof r.selectedPlantId === 'string' ? plantById(r.selectedPlantId) : undefined
-  state.selectedPlantId = selected ? selected.id : PLANTS[0].id
+  state.selectedPlantId = selected && !selected.beautyBonus ? selected.id : PLANTS[0].id
 
   const autoSow = typeof r.autoSowPlantId === 'string' ? plantById(r.autoSowPlantId) : undefined
-  state.autoSowPlantId = autoSow ? autoSow.id : null
+  state.autoSowPlantId = autoSow && !autoSow.beautyBonus ? autoSow.id : null
 
   const upgrades: Record<string, number> = {}
   if (typeof r.upgrades === 'object' && r.upgrades !== null) {

@@ -109,6 +109,8 @@ import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyM
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
 import { eventMasteryMult, gardenBeauty } from '../src/lib/game/modifiers.ts'
 import { respecSkills } from '../src/lib/game/actions.ts'
+import { buyOrnamental } from '../src/lib/game/actions.ts'
+import { ORNAMENTALS, nextOrnamentalCost, ornamentalCount, ownsAnyOrnamental } from '../src/lib/game/gallery.ts'
 import { availableSkillPoints, skillBonus, skillLevel, totalSkillPoints } from '../src/lib/game/skills.ts'
 import { applyOfflineProgress } from '../src/lib/game/offline.ts'
 import { exportSave, importSave } from '../src/lib/game/save.ts'
@@ -953,16 +955,62 @@ test('PHASE 11: softlock guard sees reserved stock; gnome skips ornamentals', ()
     tick(t, 0.1)
     assert.equal(t.money, 0, 'free stock means no rescue')
 
-    // the Sä-Gnom never auto-sows ornamentals (no money-drain on autopilot)
+    // PHASE 44: ornamentals are gallery-only — never selectable, never sown.
+    // Even with the Sä-Gnom running, the field stays free of beauty plants.
     const g = fresh()
     g.money = 1e9
     g.totalEarned = 1e15
     selectPlant('nachtrose')
+    assert.notEqual(g.selectedPlantId, 'nachtrose', 'ornamentals can never be selected')
     g.upgrades['saegnom'] = 10
     for (const p of g.plots) p.plantId = null
     tick(g, 10)
-    assert.ok(g.plots.every((p) => p.plantId === null), 'gnome leaves the field empty for ornamentals')
+    assert.ok(
+      g.plots.every((p) => !plantById(p.plantId)?.beautyBonus),
+      'gnome never sows ornamentals onto the field'
+    )
   })
+})
+
+test('PHASE 44: Ziergalerie — ornamentals are a permanent collection, not field plants', () => {
+  const s = fresh()
+  s.totalEarned = 1e18 // unlock the whole ladder
+  s.money = 1e18
+
+  // ORNAMENTALS = every plant with a beautyBonus (field plants + lab specials)
+  assert.ok(ORNAMENTALS.length > 0)
+  assert.ok(ORNAMENTALS.every((p) => (p.beautyBonus ?? 0) > 0))
+
+  // buying raises beauty without touching a plot; cost escalates per copy
+  const o = ORNAMENTALS[0]
+  const c0 = nextOrnamentalCost(o, 0)
+  assert.ok(gardenBeauty(s) === 0 && !ownsAnyOrnamental(s))
+  assert.ok(buyOrnamental(o.id))
+  assert.equal(ornamentalCount(s, o.id), 1)
+  assert.ok(ownsAnyOrnamental(s))
+  assert.ok(gardenBeauty(s) > 0, 'a bought ornamental contributes beauty immediately')
+  assert.ok(s.plots.every((p) => p.plantId === null), 'gallery purchases never plant on the field')
+  const c1 = nextOrnamentalCost(o, 1)
+  assert.ok(c1 > c0, 'each further copy costs more')
+
+  // the cap is real
+  s.ornamentals[o.id] = CONFIG.galleryMaxCopies
+  assert.ok(!Number.isFinite(nextOrnamentalCost(o, CONFIG.galleryMaxCopies)))
+  assert.ok(!buyOrnamental(o.id), 'cannot buy past the cap')
+
+  // old saves: a beauty plant left on the field migrates into the collection
+  const m = fresh()
+  m.totalEarned = 1e18
+  const code = exportSave()
+  // hand-craft a save that still has an ornamental sitting on a plot
+  const env = JSON.parse(Buffer.from(code, 'base64').toString('utf8'))
+  env.state.plots = [{ plantId: o.id, progress: o.growTime, waterLeft: 0, regrowing: false }]
+  env.state.ornamentals = {}
+  const migrated = importSave(Buffer.from(JSON.stringify(env), 'utf8').toString('base64'))
+  assert.ok(migrated, 'save with field ornamental still loads')
+  const after = getState()
+  assert.equal(ornamentalCount(after, o.id), 1, 'field ornamental folded into the collection')
+  assert.ok(after.plots.every((p) => p.plantId === null), 'and its plot was freed')
 })
 
 test('PHASE 11 endgame: mastery, specialisation, bulk-clear + undo, survive prestige', () => {
@@ -1250,16 +1298,12 @@ test('PHASE 17: beauty milestones turn Zier into a real aura build', () => {
     assert.equal(gardenBeauty(s), 0)
     assert.equal(beautyMilestoneBonus(0, 'yield'), 0)
 
-    // plant + mature enough ornamentals to cross the first milestone
+    // PHASE 44: own enough ornamentals in the gallery to cross the first milestone
     const ornamentals = PLANTS.filter((p) => p.beautyBonus)
-    let i = 0
-    for (const p of ornamentals) {
-      if (i >= s.plots.length) break
-      s.plots[i] = { plantId: p.id, progress: p.growTime, waterLeft: 0, regrowing: false }
-      i++
-    }
+    for (const p of ornamentals) s.ornamentals[p.id] = CONFIG.galleryMaxCopies
     const beauty = gardenBeauty(s)
-    assert.ok(beauty > 0, 'mature ornamentals create beauty')
+    assert.ok(beauty > 0, 'owned ornamentals create beauty')
+    assert.ok(s.plots.every((p) => p.plantId === null), 'beauty needs no plots')
 
     // crossing a threshold activates its garden-wide aura perk
     const first = BEAUTY_MILESTONES[0]
@@ -1279,13 +1323,14 @@ test('PHASE 18: Zier softcap, scratch scaling, skill expansion + respec, events'
     // ── Zier softcap: high beauty is compressed, the build keeps value ──
     const z = fresh()
     z.totalEarned = 1e18
+    // PHASE 44: stock the gallery with several copies of the strongest ornamentals
     const ornamentals = PLANTS.filter((p) => p.beautyBonus).sort((a, b) => b.beautyBonus - a.beautyBonus)
     let rawSum = 0
-    z.plots = Array.from({ length: 30 }, (_, i) => {
+    for (let i = 0; i < 6; i++) {
       const p = ornamentals[i % ornamentals.length]
-      rawSum += p.beautyBonus
-      return { plantId: p.id, progress: p.growTime, waterLeft: 0, regrowing: false }
-    })
+      z.ornamentals[p.id] = (z.ornamentals[p.id] ?? 0) + 5
+      rawSum += p.beautyBonus * 5
+    }
     const beauty = gardenBeauty(z)
     assert.ok(beauty > CONFIG.beautySoftcap, 'beauty still strong above the cap')
     assert.ok(beauty < rawSum, 'but compressed below the raw sum (softcap, not a wall)')
@@ -1500,62 +1545,48 @@ test('PHASE 21: produce costs (free only), event synergy, skill discount', () =>
   })
 })
 
-test('PHASE 22: plantable special variant (discovery-gated, capped, beauty, save)', () => {
+test('PHASE 22/44: discovery-gated special ornamental lives in the Ziergalerie', () => {
   withBoringRng(() => {
     const sp = SPECIAL_PLANTS.find((p) => p.id === 'spv-prachtorchidee')
     assert.ok(sp && sp.special && sp.unlockVariant === 'prachtorchidee')
     assert.ok(plantById('spv-prachtorchidee'), 'special plant resolves via plantById')
+    assert.ok(ORNAMENTALS.includes(sp), 'PHASE 44: the special ornamental is a gallery item')
 
-    // before discovery: locked — selectPlant refuses it, and sowPlot guards too
+    // before discovery: locked — neither selectable, sowable, nor buyable
     const s = fresh()
     s.money = 1e12
     s.totalEarned = 1e18
     assert.equal(isPlantUnlocked(sp, s), false, 'locked before discovery')
     selectPlant('spv-prachtorchidee')
-    assert.notEqual(s.selectedPlantId, 'spv-prachtorchidee', 'selectPlant refuses a locked special')
-    s.selectedPlantId = 'spv-prachtorchidee' // force it past selectPlant to test the sow guard
-    assert.equal(sowPlot(0), false, 'sowPlot refuses an undiscovered special plant')
+    assert.notEqual(s.selectedPlantId, 'spv-prachtorchidee', 'ornaments are never selectable')
+    assert.equal(buyOrnamental('spv-prachtorchidee'), false, 'cannot buy an undiscovered special')
 
-    // discover the variant → now unlocked and sowable
+    // discover the variant → buyable into the gallery (still never plantable)
     s.discoveredVariants = ['prachtorchidee']
     assert.equal(isPlantUnlocked(sp, s), true, 'unlocked after discovery')
     selectPlant('spv-prachtorchidee')
-    assert.equal(s.selectedPlantId, 'spv-prachtorchidee', 'now selectable')
-    assert.ok(sowPlot(0), 'special plant sows once discovered')
-    assert.equal(s.plots[0].plantId, 'spv-prachtorchidee')
+    assert.notEqual(s.selectedPlantId, 'spv-prachtorchidee', 'still gallery-only, not field')
+    assert.ok(buyOrnamental('spv-prachtorchidee'), 'special ornamental buys into the gallery')
+    assert.equal(ornamentalCount(s, 'spv-prachtorchidee'), 1)
+    assert.ok(s.plots.every((p) => p.plantId === null), 'gallery purchase never plants on the field')
 
-    // cap: max 3 simultaneously
-    assert.ok(sowPlot(1) && sowPlot(2), 'up to the cap')
-    assert.equal(sowPlot(3), false, 'capped at maxPlots (3)')
-    assert.equal(plotsWithPlant(s, 'spv-prachtorchidee'), 3)
-
-    // mature special plant feeds the beauty aura (reuses gardenBeauty)
-    for (let i = 0; i < 3; i++) s.plots[i].progress = sp.growTime
+    // it feeds the beauty aura (reuses gardenBeauty)
     assert.ok(gardenBeauty(s) > 0, 'special ornamental contributes beauty')
 
-    // goal panel offers "plant it" only when discovered & none planted; here all planted
-    assert.ok(!activeGoals(s).some((g) => g.id === 'specialplant'), 'goal gone once planted')
+    // goal gone once it's in the collection
+    assert.ok(!activeGoals(s).some((g) => g.id === 'specialplant'), 'goal gone once collected')
 
-    // save/load keeps the special plant in its plot (s is still the live state)
+    // save/load keeps the gallery copy (s is still the live state)
     const code = exportSave()
     fresh()
     importSave(code)
-    assert.equal(getState().plots[0].plantId, 'spv-prachtorchidee', 'special plant survives save/load')
+    assert.equal(ornamentalCount(getState(), 'spv-prachtorchidee'), 1, 'gallery copy survives save/load')
 
-    // goal shown when discovered but none planted
+    // goal shown when discovered but not yet collected
     const fresh2 = fresh()
     fresh2.discoveredVariants = ['prachtorchidee']
     fresh2.totalEarned = 1e18
-    assert.ok(activeGoals(fresh2).some((g) => g.id === 'specialplant'), 'goal shown when discovered, none planted')
-
-    // bulk clear works with the special plant
-    replaceState(createDefaultState())
-    const c = getState()
-    c.money = 1e12
-    c.discoveredVariants = ['prachtorchidee']
-    selectPlant('spv-prachtorchidee')
-    sowPlot(0)
-    assert.ok(clearAllPlots().count >= 1, 'Alles roden removes the special plant')
+    assert.ok(activeGoals(fresh2).some((g) => g.id === 'specialplant'), 'goal shown when discovered, none collected')
   })
 })
 
@@ -2303,11 +2334,11 @@ test('PHASE 32: endgame growth floor, Hanf ladder, endless skill, zier steps', (
 
     // --- D: ornamental beauty steps scale with tier (proportional) -----------
     assert.ok(plantById('galaxieorchidee').beautyBonus > plantById('mohn').beautyBonus * 5, 'top ornamental is a far bigger step than a low one')
+    // PHASE 44: a maxed Ziergalerie reaches the top beauty milestone
     const z = fresh()
-    const orn = plantById('galaxieorchidee')
-    z.plots = Array.from({ length: 14 }, () => ({ plantId: 'galaxieorchidee', progress: orn.growTime, waterLeft: 0, regrowing: false }))
+    for (const o of ORNAMENTALS) z.ornamentals[o.id] = CONFIG.galleryMaxCopies
     const topMs = BEAUTY_MILESTONES[BEAUTY_MILESTONES.length - 1].beauty
-    assert.ok(gardenBeauty(z) >= topMs, 'an endgame zier field can reach the top beauty milestone')
+    assert.ok(gardenBeauty(z) >= topMs, 'a maxed Ziergalerie can reach the top beauty milestone')
   })
 })
 
@@ -2353,8 +2384,8 @@ test('PHASE 1: clearing refunds half the seed, softlock guard rescues', () => {
     const s = fresh()
     s.money = 1e9
     s.totalEarned = 1e15 // unlock everything
-    selectPlant('nachtrose')
-    const rose = PLANTS.find((p) => p.id === 'nachtrose')
+    selectPlant('kristallbeere')
+    const rose = PLANTS.find((p) => p.id === 'kristallbeere')
     assert.ok(sowPlot(0))
     const before = s.money
     const refund = clearPlot(0)
@@ -2735,28 +2766,26 @@ test('PHASE 13: fair amounts, order types, reservation, milestones, compost gard
   assert.ok(Number.isFinite(yieldMultiplier(g)) && Number.isFinite(growthMultiplier(g)), 'no NaN')
 })
 
-test('ornamentals: never harvestable, beauty raises sell prices', () => {
+test('PHASE 44: ornamentals are gallery-only and their beauty raises sell prices', () => {
   withBoringRng(() => {
     const s = fresh()
     s.money = 1e12
     s.totalEarned = 1e15
-    selectPlant('nachtrose')
-    assert.ok(sowPlot(0))
-    tick(s, 99999)
-    assert.equal(plotReady(s.plots[0]), false, 'ornamentals never become harvestable')
-    assert.equal(harvestPlot(0).units, 0)
-    assert.equal(s.plots[0].plantId, 'nachtrose', 'the rose keeps standing')
 
-    // +5 % on every sale while it stands (market neutralized for exactness)
+    // never sown on the field — selectPlant + sowPlot both refuse ornamentals
+    selectPlant('nachtrose')
+    assert.notEqual(s.selectedPlantId, 'nachtrose', 'ornamentals are never selectable')
+    s.selectedPlantId = 'nachtrose' // force past selectPlant to test the sow guard
+    assert.equal(sowPlot(0), false, 'sowPlot refuses an ornamental')
+
+    // buying it into the gallery raises every sale by its beauty (no plot used)
+    assert.ok(buyOrnamental('nachtrose'))
+    assert.equal(ornamentalCount(s, 'nachtrose'), 1)
+    assert.ok(s.plots.every((p) => p.plantId === null), 'no field plot consumed')
     assert.ok(Math.abs(beautyMultiplier(s) - 1.05) < 1e-9)
     s.marketTime = 0
     s.inventory['basilikum'] = 100
     assert.equal(sellPlant('basilikum'), Math.round(100 * 3 * 1.05))
-
-    // helpers ignore ornamentals
-    s.upgrades['erntehelfer'] = 10
-    tick(s, 60)
-    assert.equal(s.plots[0].plantId, 'nachtrose')
 
     // quests never order ornamentals or timber (no harvest)
     for (let i = 0; i < 25; i++) {
@@ -2769,9 +2798,11 @@ test('ornamentals: never harvestable, beauty raises sell prices', () => {
       }
     }
 
-    // rip out works
-    assert.ok(clearPlot(0))
-    assert.ok(Math.abs(beautyMultiplier(s) - 1) < 1e-9)
+    // beauty survives prestige (the collection is permanent)
+    const beautyBefore = beautyMultiplier(s)
+    s.compost = 1e9
+    leaseParcel()
+    assert.ok(Math.abs(beautyMultiplier(getState()) - beautyBefore) < 1e-9, 'gallery beauty survives prestige')
   })
 })
 

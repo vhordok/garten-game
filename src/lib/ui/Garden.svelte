@@ -21,9 +21,9 @@
   let undo = $state<ReturnType<typeof clearAllPlots> | null>(null)
   let undoTimer: ReturnType<typeof setTimeout> | undefined
 
-  // PHASE 37: ornamentals are permanent — "Alles roden" never removes them
-  const isOrnamental = (id: string | null) => !!(id && plantById(id)?.beautyBonus)
-  const clearableCount = $derived($gameStore.plots.filter((p) => p.plantId !== null && !isOrnamental(p.plantId)).length)
+  // PHASE 44: ornamentals live in the Ziergalerie, never on the field — so
+  // "Alles roden" can clear everything again, no special-casing needed
+  const clearableCount = $derived($gameStore.plots.filter((p) => p.plantId !== null).length)
   const readyCount = $derived($gameStore.plots.filter(plotReady).length)
   const emptyCount = $derived($gameStore.plots.filter((p) => p.plantId === null).length)
   const waterableCount = $derived(
@@ -121,8 +121,7 @@
   }
 
   function handleClearAll(e: MouseEvent) {
-    // PHASE 37: never mass-rode ornamentals — they stay as a permanent beauty field
-    const res = clearAllPlots((_, def) => !def.beautyBonus)
+    const res = clearAllPlots()
     if (res.count > 0) {
       const [cx, cy] = eventCenter(e)
       leafBurst(cx, cy, Math.min(8 + res.count * 2, 30))
@@ -185,7 +184,7 @@
       class="pxbtn small"
       disabled={clearableCount === 0}
       onclick={handleClearAll}
-      title="Alle bepflanzten Beete roden (Zierpflanzen bleiben permanent stehen) — 50 % Saatpreis zurück, kurz rückgängig machbar"
+      title="Alle bepflanzten Beete roden — 50 % Saatpreis zurück, kurz rückgängig machbar"
     >
       Alles roden{clearableCount > 0 ? ` (${clearableCount})` : ''}
     </button>

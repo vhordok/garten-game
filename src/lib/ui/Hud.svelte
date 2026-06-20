@@ -2,7 +2,8 @@
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
   import { xpToNext } from '../data/progression'
-  import { anyUpgradeAffordable, compostGain, dailyClaimable, leaseRequirement, questFulfillable, sellableValue, sellAll } from '../game/actions'
+  import { anyUpgradeAffordable, compostGain, dailyClaimable, isPlantUnlocked, leaseRequirement, questFulfillable, sellableValue, sellAll } from '../game/actions'
+  import { ORNAMENTALS, nextOrnamentalCost, ornamentalCount } from '../game/gallery'
   import { activeGoals } from '../game/goals'
   import { toastLogUnseen } from './toasts'
   import { availableSkillPoints } from '../game/skills'
@@ -26,6 +27,7 @@
     onOpenGoals,
     onOpenSkills,
     onOpenSeedLab,
+    onOpenGallery,
     onOpenToastLog,
   }: {
     onOpenInventory: () => void
@@ -39,6 +41,7 @@
     onOpenGoals: () => void
     onOpenSkills: () => void
     onOpenSeedLab: () => void
+    onOpenGallery: () => void
     onOpenToastLog: () => void
   } = $props()
 
@@ -47,6 +50,15 @@
   const goalsReady = $derived(activeGoals($gameStore).filter((g) => g.ready && !g.chore).length)
   const skillPoints = $derived(availableSkillPoints($gameStore))
   const newCross = $derived(discoverableVariants($gameStore).some((v) => crossEligibility($gameStore, v.parents[0], v.parents[1]).status === 'ok'))
+  // PHASE 44: nudge the gallery when an ornamental you don't own yet is affordable
+  const galleryHint = $derived(
+    ORNAMENTALS.some(
+      (p) =>
+        ornamentalCount($gameStore, p.id) === 0 &&
+        isPlantUnlocked(p, $gameStore) &&
+        $gameStore.money >= nextOrnamentalCost(p, 0)
+    )
+  )
 
   const upgradeHint = $derived(anyUpgradeAffordable($gameStore))
   const questHint = $derived($gameStore.quests.some((q) => questFulfillable($gameStore, q.id)))
@@ -204,6 +216,11 @@
   <button class="pxbtn" onclick={onOpenSeedLab} aria-label="Saatlabor" title="Saatlabor — Pflanzen kreuzen & Varianten sammeln">
     🧬
     {#if newCross}<span class="dot" aria-hidden="true"></span>{/if}
+  </button>
+
+  <button class="pxbtn" onclick={onOpenGallery} aria-label="Ziergalerie" title="Ziergalerie — Zierpflanzen sammeln für dauerhafte Schönheit">
+    ✿
+    {#if galleryHint}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">
