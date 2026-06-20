@@ -247,4 +247,10 @@ Zierpflanzen in die Sammlung (Beet frei, keine Schönheit verloren). Phase 45 (�
 Mobile-Layout — Lücke unter der Topbar geschlossen (App-Clearance auf --hud-h+4px, main
 ohne padding-top), Feld füllt die Breite (Grid minmax(--cell,1fr) + .plot/.ghost mobil
 width:100%+aspect-ratio:1), kompaktere Garten-Aktionsleiste. Reine CSS. Keine Save-
-Änderung. Stand SAVE_VERSION 29.
+Änderung. Phase 46 (§9.48): Hotbar misst echte Höhe in --hotbar-h (wie --hud-h), .app
+reserviert --hotbar-h+28px unten → Feld wird nicht mehr von der fixen Hotbar verdeckt
+(scrollbar bis unten); „Alle Felder kaufen" als zweite Kachel neben dem „+1 Beet"-Feld
+im Grid (gold, „Alle") statt in der Aktionsleiste; Prestige senkt den Endgame-Reife-Boden
+(effectiveCycleFloor(state,def): Boden=3+(8−3)·0,9^(Parzellen−1), frisch 8s→~3s @30,
+gleichmäßig→keine Inversion; Tick-Cap+Tooltip nutzen ihn) → Kompost wirkt wieder auf Tempo
++Ertrag. Keine Save-Änderung. Stand SAVE_VERSION 29.
