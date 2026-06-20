@@ -2044,6 +2044,29 @@ test('PHASE 37: affordable plots + bulk-buy, permanent ornamentals, new top plan
   })
 })
 
+test('PHASE 39: every seed-lab variant is plantable in the Kreuzungen category', () => {
+  withBoringRng(() => {
+    // each discovered variant has a matching plantable cross in „Kreuzungen"
+    for (const v of VARIANTS) {
+      const cross = SPECIAL_PLANTS.find((p) => p.unlockVariant === v.id)
+      assert.ok(cross, `variant ${v.id} has a plantable cross`)
+      assert.equal(cross.category, 'kreuzungen', `${cross.id} lives in Kreuzungen`)
+      assert.ok(cross.special && cross.maxPlots > 0 && cross.beautyBonus > 0, `${cross.id} is a capped beauty cross`)
+    }
+    assert.equal(SPECIAL_PLANTS.length, VARIANTS.length, 'all variants are plantable (not just one)')
+
+    // gated by discovery: locked until the variant is found, then sowable
+    const cross = SPECIAL_PLANTS.find((p) => p.unlockVariant === 'weltenhybride')
+    assert.equal(isPlantUnlocked(cross, { ...fresh(), discoveredVariants: [] }), false, 'locked before discovery')
+    assert.equal(isPlantUnlocked(cross, { ...fresh(), discoveredVariants: ['weltenhybride'] }), true, 'plantable once discovered')
+
+    // higher rarity = more beauty (a reason to plant the rarer crosses)
+    const bronze = SPECIAL_PLANTS.find((p) => p.unlockVariant === 'eilkraut')
+    const legend = SPECIAL_PLANTS.find((p) => p.unlockVariant === 'weltenhybride')
+    assert.ok(legend.beautyBonus > bronze.beautyBonus * 3, 'legendary cross far outshines a bronze one')
+  })
+})
+
 test('PHASE 36: toast log persists across a reload', () => {
   const orig = globalThis.localStorage
   const store = {}
