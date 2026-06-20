@@ -1545,3 +1545,24 @@ Aus einer Screenshot-Rückmeldung: zwei UI-Probleme und eine Gameplay-Frage zum 
 
 UI-/Layout- + Balance-Änderung, keine Save-Änderung (SAVE_VERSION 29). check/build grün,
 Tests 69/69. ⚠️ Ohne Headless-Browser nicht am Viewport gegengeprüft — bitte am Gerät verifizieren.
+
+### 9.49 Phase 47 — Spezialisierungs-Onboarding früher & konkreter (keine Save-Änderung)
+
+Diagnose-/Playtest-Befund: Spezialisierung, Meisterschaft und Schönheit erschienen über
+20+ Szenarien nie im Ziel-Panel. Die Tracker-Ziele (specGoal/masteryGoal/beautyGoal)
+greifen korrekt **nach** dem Einstieg; eingeführt werden die Systeme über `buildGoal`.
+Der Haken lag beim Einstiegs-Nudge der Spezialisierung: er war an **Gärtner-Level ≥ 30**
+gekoppelt, obwohl die erste Stufe schon ab ~5 Mio Gold + 1 Parzelle (Gärtner-Level 1)
+**leistbar** ist. Mittelspiel-Spieler mit Gold, aber unter Level 30, wurden nie auf den
+tiefsten dauerhaften (prestige-festen) Ertrags-Sink hingewiesen.
+
+- **Neuer Gate:** `buildGoal` schlägt „… spezialisieren" jetzt vor, **sobald die erste
+  Stufe wirklich kaufbar ist** (`specializationPurchase(state, cat).canBuy` auf Level 0),
+  nicht mehr ab Level 30.
+- **Konkrete Kategorie:** der Vorschlag nennt die **meistgespielte Kategorie** des Spielers
+  (Helfer `bestStartableSpec`: höchste summierte Meisterschafts-XP als zustandsfreier Proxy)
+  → „Beeren spezialisieren" statt generisch „Eine Kategorie spezialisieren". Sobald eine
+  Kategorie begonnen ist (`anySpec`), übernimmt wieder das Tracker-Ziel `specGoal`.
+
+Reine Ziel-Projektion, keine neue Persistenz, keine Save-Änderung (SAVE_VERSION 29).
+check/build grün, Tests 69/69.
