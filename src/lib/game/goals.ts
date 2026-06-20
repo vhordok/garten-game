@@ -16,7 +16,7 @@ import { CATEGORY_SPECS } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
 import { LICENSES } from '../data/licenses'
 import { compostGain, expectedQuestPayout, isPlantUnlocked, leaseRequirement, nextUpgradeCost, plotsWithPlant, upgradeLevel } from './actions'
-import { gardenBeauty, growthMultiplier, masteryLevel, masteryThreshold, nextSpecMilestone, sellMultiplier, specializationLevel, yieldMultiplier } from './modifiers'
+import { gardenBeauty, growthMultiplier, masteryLevel, masteryThreshold, nextSpecMilestone, sellMultiplier, specializationLevel, specializationPurchase, yieldMultiplier } from './modifiers'
 import { availableSkillPoints } from './skills'
 import { crossEligibility, discoverableVariants, produceStatus } from './seedlab'
 import { VARIANTS } from '../data/variants'
@@ -294,6 +294,27 @@ function specGoal(state: GameState): Goal | null {
     fraction: clamp01((best.level - prev) / (ms - prev)),
     ready: false,
   }
+}
+
+/**
+ * PHASE 47: the player's most-played category whose FIRST specialisation level is
+ * buyable right now (or null). "Most-played" = most accumulated mastery xp — a
+ * robust proxy that needs no new state. Lets the onboarding nudge name a concrete
+ * pick and appear as soon as the sink is affordable (≈5M gold, 1 parcel), instead
+ * of waiting for an arbitrary gardener level.
+ */
+function bestStartableSpec(state: GameState): (typeof CATEGORY_SPECS)[number] | null {
+  let best: { def: (typeof CATEGORY_SPECS)[number]; score: number } | null = null
+  for (const c of CATEGORY_SPECS) {
+    if (specializationLevel(state, c.id) > 0) continue
+    if (!specializationPurchase(state, c.id).canBuy) continue
+    let score = 0
+    for (const [id, xp] of Object.entries(state.mastery)) {
+      if (plantById(id)?.category === c.id) score += xp
+    }
+    if (!best || score > best.score) best = { def: c, score }
+  }
+  return best?.def ?? null
 }
 
 /** Next leasable parcel (prestige) — mid/long bridge. */
@@ -575,13 +596,18 @@ function buildGoal(state: GameState): Goal | null {
       why: 'Bäume tröpfeln Gold — auch während du weg bist',
     })
   }
-  if (state.level >= 30 && !anySpec) {
-    candidates.push({
-      id: 'build-spezial',
-      icon: '⭐',
-      label: 'Eine Kategorie spezialisieren',
-      why: 'Dauerhafter Kategorie-Ertrag, übersteht Prestige',
-    })
+  if (!anySpec) {
+    // PHASE 47: nudge as soon as the first level is actually buyable (far earlier
+    // than the old fixed Lvl-30 gate), naming the most-played category.
+    const startSpec = bestStartableSpec(state)
+    if (startSpec) {
+      candidates.push({
+        id: 'build-spezial',
+        icon: '⭐',
+        label: `${startSpec.label} spezialisieren`,
+        why: 'Dauerhafter Kategorie-Ertrag, übersteht Prestige — erste Stufe ist leistbar',
+      })
+    }
   }
   if (state.level >= 15 && luckLevel === 0) {
     candidates.push({

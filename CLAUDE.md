@@ -253,4 +253,8 @@ reserviert --hotbar-h+28px unten → Feld wird nicht mehr von der fixen Hotbar v
 im Grid (gold, „Alle") statt in der Aktionsleiste; Prestige senkt den Endgame-Reife-Boden
 (effectiveCycleFloor(state,def): Boden=3+(8−3)·0,9^(Parzellen−1), frisch 8s→~3s @30,
 gleichmäßig→keine Inversion; Tick-Cap+Tooltip nutzen ihn) → Kompost wirkt wieder auf Tempo
-+Ertrag. Keine Save-Änderung. Stand SAVE_VERSION 29.
++Ertrag. Keine Save-Änderung. Phase 47 (§9.49): Spezialisierungs-Onboarding früher &
+konkreter (buildGoal schlägt „… spezialisieren" vor, sobald die erste Stufe kaufbar ist —
+specializationPurchase canBuy auf Level 0 statt Gärtner-Level≥30 — und nennt die
+meistgespielte Kategorie via bestStartableSpec/Meisterschafts-XP). Keine Save-Änderung.
+Stand SAVE_VERSION 29.
