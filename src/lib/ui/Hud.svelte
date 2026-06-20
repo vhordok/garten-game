@@ -170,34 +170,34 @@
        (money/market/combo width) can never reshuffle or jump them. -->
   <div class="row btns">
   <button class="pxbtn" onclick={onOpenDaily} aria-label="Tagesbonus" title="Tagesbonus — jeden Tag ein Geschenk">
-    <PixelIcon name="geschenk" scale={1} />
+    <PixelIcon name="geschenk" scale={2} />
     {#if dailyReady}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenShop} aria-label="Shop" title="Shop — dauerhafte Upgrades">
-    <PixelIcon name="giesskanne" scale={1} />
+    <PixelIcon name="marktstand" scale={2} />
     {#if upgradeHint}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenQuests} aria-label="Aufträge" title="Aufträge — liefern lohnt sich">
-    <PixelIcon name="scroll" scale={1} />
+    <PixelIcon name="scroll" scale={2} />
     {#if questHint}<span class="dot quest" aria-hidden="true"></span>{/if}
   </button>
 
   <!-- PHASE 40: always visible so it's discoverable (was hidden until available —
        players couldn't find it). The panel itself explains the compost requirement. -->
   <button class="pxbtn" class:dim={!showPrestige} onclick={onOpenPrestige} aria-label="Prestige — neue Parzelle" title="Prestige — neue Parzelle pachten (Kompost wirkt für immer)">
-    <PixelIcon name="duenger" scale={1} />
+    <PixelIcon name="duenger" scale={2} />
     {#if prestigeReady}<span class="dot prestige" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenGoals} aria-label="Ziele" title="Ziele — woran du als Nächstes arbeitest">
-    <PixelIcon name="sparkle" scale={1} />
+    <PixelIcon name="sparkle" scale={2} />
     {#if goalsReady > 0}<span class="badge num">{goalsReady}</span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenSkills} aria-label="Fähigkeiten" title="Fähigkeiten — dein langfristiger Build">
-    <PixelIcon name="seedling" scale={1} />
+    <PixelIcon name="seedling" scale={2} />
     {#if skillPoints > 0}<span class="badge num">{skillPoints}</span>{/if}
   </button>
 
@@ -207,7 +207,7 @@
   </button>
 
   <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">
-    <PixelIcon name="pokal" scale={1} />
+    <PixelIcon name="pokal" scale={2} />
   </button>
 
   <button class="pxbtn" onclick={onOpenInventory} aria-label="Lager" title="Lager öffnen">
@@ -271,6 +271,14 @@
   .row.btns {
     justify-content: flex-end;
     gap: 8px;
+  }
+
+  /* PHASE 41: bigger, fuller icons in the topbar so they're actually
+     recognisable — less side padding, larger emoji glyphs (🧬/🔔). */
+  .row.btns .pxbtn {
+    padding: 4px 7px;
+    font-size: 1.3rem;
+    line-height: 1;
   }
 
   .xp-row {
@@ -551,8 +559,12 @@
       display: none;
     }
 
+    /* PHASE 41: a touch larger so the bigger icons read clearly and fill them */
     .row.btns .pxbtn {
       flex: 0 0 auto;
+      min-width: 50px;
+      min-height: 50px;
+      padding: 5px;
     }
 
     /* the primary sell button no longer needs to be a tall full-width slab */

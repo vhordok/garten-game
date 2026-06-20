@@ -1432,3 +1432,21 @@ Konkrete Handy-Probleme aus einem echten Screenshot behoben.
 Reine CSS-/Layout-/Discoverability-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28).
 check/build grün, Tests 68/68. ⚠️ Ohne Headless-Browser nicht selbst am Viewport
 gegengeprüft — bitte auf dem Gerät verifizieren.
+
+### 9.43 Phase 41 — Lesbare Pflanzennamen & größere Topbar-Icons (keine Save-Änderung)
+
+Direktes Feedback aus dem nächsten Geräte-Screenshot: Namen kaum lesbar, Topbar-
+Icons zu klein/undeutlich.
+
+- **Pflanzennamen lesbar:** Label-Schrift von 0,6→0,72rem, fett, **weiß** statt
+  blassgrün (`--c-leaf5`→`--c-white`) für klaren Kontrast auf der Kachel; gesperrte
+  Slots bleiben gedimmt (`--c-mist`). Kacheln verbreitert (Basis 72→80px, Handy
+  66→78px) und leicht höher (92/90→96px), damit der zweizeilige Name passt.
+- **Topbar-Icons größer & klarer:** alle Panel-Button-Icons von `scale={1}`→`scale={2}`
+  (32px statt 16px → füllen den Button sichtbar aus); Shop-Icon `giesskanne`→
+  `marktstand`, Prestige `duenger` ebenfalls auf scale 2. Button-Padding/Schriftgröße
+  angepasst, auf dem Handy `min-width/height: 50px` als satte Tap-Targets.
+
+Reine CSS-/Icon-Politur, keine Logik-/Save-Änderung (SAVE_VERSION 28). check/build
+grün, Tests 68/68. ⚠️ Ohne Headless-Browser nicht selbst am Viewport gegengeprüft —
+bitte auf dem Gerät verifizieren.

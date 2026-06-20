@@ -212,8 +212,8 @@
 
   .slot {
     position: relative;
-    width: 72px;
-    height: 92px;
+    width: 80px;
+    height: 96px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -249,10 +249,10 @@
   .pname {
     width: 100%;
     text-align: center;
-    font-size: 0.6rem;
-    line-height: 1.05;
+    font-size: 0.72rem;
+    line-height: 1.1;
     font-weight: 700;
-    color: var(--c-leaf5);
+    color: var(--c-white);
     /* up to two short lines, then ellipsis — keeps the slot height stable */
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -362,8 +362,8 @@
   @media (max-width: 640px) {
     /* PHASE 40: room for the plant-name label on each slot */
     .slot {
-      width: 66px;
-      height: 90px;
+      width: 78px;
+      height: 96px;
     }
 
     /* keep the hover tooltip from forcing horizontal page-scroll (PHASE 11) */
