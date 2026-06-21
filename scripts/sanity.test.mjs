@@ -109,6 +109,7 @@ import { decorationBeauty, decorationCount, ownsAnyDecoration } from '../src/lib
 import { canWeltensaat, starseedGain, starseedBanked, starUpgradeBonus, starUpgradeLevel, worldseedYieldFactor } from '../src/lib/game/worldseed.ts'
 import { buyStarUpgrade } from '../src/lib/game/actions.ts'
 import { STAR_UPGRADES, starUpgradeCost } from '../src/lib/data/starUpgrades.ts'
+import { formatNumber, formatDuration } from '../src/lib/util/format.ts'
 import { get } from 'svelte/store'
 import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog, flushToastLog, reloadToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
@@ -1777,6 +1778,24 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
     assert.ok(getState().campaign < CAMPAIGN.length, 'the endgame chapters remain ahead of a parcel-8 player')
     assert.equal(currentCampaignStep(getState()).id, 'landlord', 'next chapter is the first endgame one')
   })
+})
+
+test('PHASE 59: number/duration formatting is robust at extreme scale', () => {
+  // normal cases
+  assert.equal(formatNumber(999), '999')
+  assert.equal(formatNumber(1500), '1.5K')
+  assert.equal(formatNumber(1e6), '1M')
+  assert.equal(formatDuration(0), '0s')
+  assert.equal(formatDuration(3661), '1h 1m')
+  // extreme scale — the user plays at parcel ~98, 2e47 earnings, ×1e300 factors
+  assert.equal(formatNumber(2.1e47), '2.10e47')
+  assert.equal(formatNumber(1e300), '1.00e300')
+  assert.equal(formatNumber(Infinity), '∞')
+  // the bug: formatDuration must NOT render "Infinityd NaNh" / "NaNd NaNh"
+  assert.equal(formatDuration(Infinity), '∞', 'non-finite duration → ∞, not garbage')
+  assert.equal(formatDuration(NaN), '∞', 'NaN duration → ∞, not garbage')
+  assert.ok(!formatDuration(1e9).includes('NaN'), 'huge finite duration has no NaN')
+  assert.equal(formatDuration(-5), '0s', 'negative clamps to 0s')
 })
 
 test('PHASE 58: Weltensaat achievement track rewards worlds sown', () => {
