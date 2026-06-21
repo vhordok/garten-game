@@ -1,8 +1,9 @@
-// Garten-Deko (PHASE 49): decorations the player BUYS and that are visibly
-// placed around the field — unlike gallery ornamentals (which only live in the
-// collection panel), every owned decoration is drawn as a pixel sprite in the
-// garden, so the screen literally gets prettier as you invest. Mechanically each
-// copy adds beauty (folded into gardenBeauty), so beautifying is also progress.
+// Garten-Deko (PHASE 49, rendering reworked PHASE 50): decorations the player
+// BUYS, which are landscaped INTO the background garden scene (ui/Scene.svelte) —
+// scattered across the ground with depth, not stacked in a shelf. Unlike gallery
+// ornamentals (collection panel only), every owned copy dresses the backdrop, so
+// the screen genuinely gets prettier as you invest. Mechanically each copy adds
+// beauty (folded into gardenBeauty), so beautifying is also progress.
 //
 // Pure data: id, label, a 16×16 sprite id (authored in ui/pixel/sprites.ts),
 // the beauty each copy grants, and the base gold price. Copy/cap scaling lives

@@ -268,4 +268,9 @@ Sprites via scripts/deco-atlas.mjs geprüft) — 8 kaufbare Deko-Objekte (Steinw
 sichtbar als Leiste über den Beeten gezeichnet (Garden.svelte), decorationBeauty fließt in
 gardenBeauty → Deko ist Progress; Kauf-Sektion in der Ziergalerie (kein neuer HUD-Button),
 Gold-Sink mit Cap (decorationMaxCopies 6). SAVE_VERSION 31: neues Feld decorations.
+Phase 50 (§9.52): Deko-Rendering überarbeitet (Spieler-Feedback: Zeile über dem Feld war
+hässlich) — Deko wird jetzt in Scene.svelte ins Hintergrundbild gelandschaftet (über die
+Bodenfläche verteilt, mit Tiefe: hinten klein/blass, vorne groß/deckend; deterministischer
+Hash + Round-Robin; hinter dem Feld → rahmt den Garten), .garden-deco-Leiste entfernt;
+scripts/scene-preview.mjs zur Sichtprüfung. Reine UI, keine Save-Änderung.
 Stand SAVE_VERSION 31.

@@ -1,9 +1,50 @@
 <script lang="ts">
   import PixelIcon from './PixelIcon.svelte'
+  import { DECORATIONS } from '../data/decorations'
+  import { decorationCount } from '../game/decorations'
+  import { gameStore } from '../game/state'
+  import { spriteUrl } from './pixel/render'
+
+  // PHASE 50: decorations are landscaped INTO the background — scattered across
+  // the ground with depth (closer = lower + larger), so buying them genuinely
+  // dresses the scene instead of stacking an ugly shelf above the field.
+  const hash = (n: number) => {
+    const x = Math.sin(n * 127.1 + 11.7) * 43758.5453
+    return x - Math.floor(x) // 0..1, stable per index
+  }
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+  type Placed = { key: string; sprite: string; left: number; top: number; size: number; z: number; dim: number }
+
+  const placements = $derived.by<Placed[]>(() => {
+    // round-robin over kinds so copies interleave across the width (organic mix)
+    const counts = DECORATIONS.map((d) => decorationCount($gameStore, d.id))
+    const items: typeof DECORATIONS = []
+    const maxRound = Math.max(0, ...counts)
+    for (let round = 0; round < maxRound; round++) {
+      DECORATIONS.forEach((d, di) => {
+        if (round < counts[di]) items.push(d)
+      })
+    }
+    const n = items.length
+    if (n === 0) return []
+    return items.map((d, i) => {
+      const h1 = hash(i * 2 + 1)
+      const h2 = hash(i * 2 + 5)
+      // even horizontal spread (so they never pile up) plus a little jitter
+      const baseX = ((i + 0.5) / n) * 92 + 4
+      const left = clamp(baseX + (h1 - 0.5) * 14, 1, 97)
+      // ground depth band 70%..92% — deterministic per copy
+      const top = 70 + h2 * 22
+      const depth = (top - 70) / 22 // 0 (far) .. 1 (near)
+      const size = Math.round((28 + depth * 40)) // 28px far → 68px near
+      return { key: `${d.id}-${i}`, sprite: d.sprite, left, top, size, z: Math.round(top * 10), dim: 0.55 + depth * 0.45 }
+    })
+  })
 </script>
 
 <!-- Fixed night-garden backdrop: sky bands, stars, moon, parallax hedge
-     silhouettes, ground and a soft vignette. Purely decorative. -->
+     silhouettes, ground, landscaped decorations and a soft vignette. -->
 <div class="scene" aria-hidden="true">
   <div class="sky"></div>
   <div class="stars far"></div>
@@ -12,6 +53,19 @@
   <div class="hedge far"></div>
   <div class="hedge near"></div>
   <div class="ground"></div>
+  {#each placements as p (p.key)}
+    <img
+      class="px deco"
+      src={spriteUrl(p.sprite)}
+      style:left={`${p.left}%`}
+      style:top={`${p.top}%`}
+      style:width={`${p.size}px`}
+      style:height={`${p.size}px`}
+      style:z-index={p.z}
+      style:opacity={p.dim}
+      alt=""
+    />
+  {/each}
   <span class="fly" style="left: 18%; top: 58%; animation-duration: 3.2s"></span>
   <span class="fly" style="left: 41%; top: 66%; animation-duration: 4.4s"></span>
   <span class="fly" style="left: 67%; top: 61%; animation-duration: 3.8s"></span>
@@ -105,6 +159,14 @@
     background: linear-gradient(180deg, var(--c-leaf0) 0%, #0d1610 35%, var(--c-night0) 100%);
   }
 
+  /* PHASE 50: landscaped decorations — sit on the ground, anchored by their base,
+     softly shadowed for depth. Positioned/scaled inline (see script). */
+  .deco {
+    image-rendering: pixelated;
+    transform: translate(-50%, -100%);
+    filter: drop-shadow(0 3px 3px rgba(5, 6, 12, 0.55));
+  }
+
   /* firefly: a square pixel with a soft glow, gently pulsing */
   .fly {
     width: 4px;
@@ -112,6 +174,7 @@
     background: var(--c-leaf4);
     box-shadow: 0 0 8px 2px rgba(168, 202, 88, 0.55);
     animation: fly-pulse 4s ease-in-out infinite alternate;
+    z-index: 950;
   }
 
   @keyframes fly-pulse {
@@ -128,5 +191,6 @@
   .vignette {
     inset: 0;
     background: radial-gradient(120% 90% at 50% 38%, transparent 55%, rgba(5, 6, 12, 0.55) 100%);
+    z-index: 1000;
   }
 </style>
