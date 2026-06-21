@@ -1803,3 +1803,20 @@ nicht-endlich werden und diesen Müll anzeigen.
   (∞/NaN-Dauer → „∞", kein „NaN" in großen endlichen Dauern).
 
 Reine Util-Härtung, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 76/76.
+
+### 9.62 Phase 60 — Beet-Timer zeigt echte Sekunden statt Wachstums-Rohunits (keine Save-Änderung)
+
+Aus einem Spieler-Screenshot (Parzelle 98, ×3,3e8 Wachstum): die Beet-Kacheln zeigten **„10h 37m"**,
+obwohl die Kosmos-Pflanze in **~3 echten Sekunden** reif ist. Ursache: `Plot.svelte` rechnete
+`formatDuration(target − progress)`, aber `progress`/`target` sind **wachstums-adjustierte Units**,
+keine Echtzeit-Sekunden — bei riesigem Wachstums-Multiplikator (mit Reife-Boden gekappt) ist die
+Rohdifferenz um Größenordnungen zu groß. Das ließ das Endgame wie Stunden-Wartezeit wirken, obwohl
+die Pflanzen quasi sofort poppen (empirisch: reif nach 4 s).
+
+- **Fix:** `remaining` nutzt jetzt `effectiveCycleSeconds(state, def, regrowing) × (1 − fraction)` —
+  die wahrhaftige Reifezeit (Phase 34), korrekt sowohl im boden-gekappten Endgame als auch im
+  ungekappten Frühspiel (dort = `growTime/Multiplikator`). Kachel-Chip **und** Tooltip ziehen daraus.
+- Beleg per Sim: `effectiveCycleSeconds` = 3,0 s, Plot reif nach 4 realen Sekunden, alter Chip
+  behauptete „2d 2h". Neuer Test `PHASE 60` schützt den Echtzeit-Vertrag.
+
+Reiner UI-Bugfix, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 77/77.

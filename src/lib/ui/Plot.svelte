@@ -2,7 +2,7 @@
   import { plantById } from '../data/plants'
   import { clearPlot, harvestPlot, sowPlot, waterPlot, type CritTier } from '../game/actions'
   import { gameStore } from '../game/state'
-  import { cycleTime } from '../game/tick'
+  import { cycleTime, effectiveCycleSeconds } from '../game/tick'
   import type { PlotState } from '../game/types'
   import { formatDuration, formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -28,7 +28,14 @@
   const mature = $derived(grown && (def?.beautyBonus !== undefined || def?.passiveIncome !== undefined))
   const ready = $derived(grown && def?.beautyBonus === undefined)
   const fraction = $derived(def ? Math.min(plot.progress / target, 1) : 0)
-  const remaining = $derived(def ? Math.max(target - plot.progress, 0) : 0)
+  // REAL seconds left, not raw growth-progress units: progress accumulates
+  // growth-adjusted "seconds", so target−progress is NOT wall-clock time. At a
+  // huge growth multiplier a tile that reads "10h" via the raw value actually
+  // ripens in seconds. effectiveCycleSeconds×(1−fraction) is truthful in both
+  // the floor-capped endgame and the uncapped early game (PHASE 60).
+  const remaining = $derived(
+    def ? effectiveCycleSeconds($gameStore, def, plot.regrowing) * (1 - fraction) : 0
+  )
 
   // four visible growth stages: a per-category sprout (PHASE 10), then
   // per-plant sprites 1–3. Regrowing berries/trees never shrink back below
