@@ -13,6 +13,9 @@
   import PixelIcon from './PixelIcon.svelte'
   import Plot from './Plot.svelte'
   import { pushTicketToast } from './toasts'
+  import { DECORATIONS } from '../data/decorations'
+  import { decorationCount } from '../game/decorations'
+  import { spriteUrl } from './pixel/render'
 
   // PHASE 1: tap-to-clear mode — the touch-friendly way to free plots
   let clearMode = $state(false)
@@ -45,6 +48,15 @@
   // roughly square field, 4–7 columns depending on plot count
   const tileCount = $derived($gameStore.plots.length + (canBuyMore ? 2 : 0))
   const cols = $derived(Math.min(Math.max(4, Math.ceil(Math.sqrt(tileCount))), 7))
+
+  // PHASE 49: placed decorations — one sprite per owned copy, drawn as a band
+  // above the field so the garden visibly gets prettier as you invest
+  const placedDecos = $derived(
+    DECORATIONS.flatMap((d) => {
+      const n = decorationCount($gameStore, d.id)
+      return Array.from({ length: n }, () => d)
+    })
+  )
 
   function eventCenter(e: MouseEvent): [number, number] {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -216,6 +228,16 @@
     </div>
   {/if}
 
+  {#if placedDecos.length > 0}
+    <!-- PHASE 49: the Garten-Deko shelf — every owned decoration shows here,
+         right above the beds, so investing in beauty visibly dresses the garden -->
+    <div class="garden-deco" aria-label="Garten-Deko">
+      {#each placedDecos as d, i (d.id + '-' + i)}
+        <img class="px deco-sprite" src={spriteUrl(d.sprite)} width="36" height="36" alt={d.name} title={d.name} />
+      {/each}
+    </div>
+  {/if}
+
   <div class="grid" style:--grid-cols={cols}>
     {#each $gameStore.plots as plot, index (index)}
       <Plot {plot} {index} selectedId={$gameStore.selectedPlantId} money={$gameStore.money} {clearMode} />
@@ -256,6 +278,27 @@
   .garden {
     width: fit-content;
     max-width: 100%;
+  }
+
+  /* PHASE 49: decoration shelf — a soft earthen strip the deco sprites stand on */
+  .garden-deco {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px 4px;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    background: linear-gradient(180deg, transparent, rgba(52, 28, 39, 0.35));
+    border-bottom: 2px solid var(--c-soil0);
+  }
+
+  .deco-sprite {
+    image-rendering: pixelated;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    filter: drop-shadow(0 2px 2px rgba(5, 6, 12, 0.5));
   }
 
   .garden-head {

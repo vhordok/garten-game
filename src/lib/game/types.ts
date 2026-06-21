@@ -252,6 +252,10 @@ export interface GameState {
   /** index of the next unclaimed mini-campaign step (PHASE 48); CAMPAIGN.length
    * means the chain is finished. Survives prestige (it's career progress). */
   campaign: number
+  /** Garten-Deko (PHASE 49): owned count per decoration id. Decorations are
+   * placed visibly around the field and add beauty (like gallery ornamentals);
+   * survives prestige, no plot space. */
+  decorations: Record<string, number>
   /** cannabis license level owned (0–5; IV/V are PHASE 27 trade licenses that
    * boost quest rewards instead of unlocking plants), survives prestige */
   licenses: number

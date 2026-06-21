@@ -6,6 +6,7 @@ import { achievementBonus } from './achievements'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
 import { isOrnamental, nextOrnamentalCost } from './gallery'
+import { purchaseDecoration } from './decorations'
 import { parcelBonus } from '../data/milestones'
 import { skillById } from '../data/skills'
 import { PLANTS, plantById } from '../data/plants'
@@ -93,6 +94,14 @@ export function buyOrnamental(plantId: string): boolean {
   if (!Number.isFinite(cost) || s.money < cost) return false
   s.money -= cost
   s.ornamentals[plantId] = owned + 1
+  notify()
+  return true
+}
+
+/** PHASE 49: buy one copy of a Garten-Deko (visible on the field, adds beauty). */
+export function buyDecoration(id: string): boolean {
+  const s = getState()
+  if (!purchaseDecoration(s, id)) return false
   notify()
   return true
 }

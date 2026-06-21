@@ -39,6 +39,7 @@ export function createDefaultState(now = Date.now()): GameState {
     weather: { id: null, remaining: 0 },
     achievementTiers: {},
     campaign: 0,
+    decorations: {},
     licenses: 0,
     records: { bestHarvest: 0, longestCombo: 0, biggestWin: 0, bestBeauty: 0 },
     history: [],

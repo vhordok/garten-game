@@ -5,3 +5,5 @@ dist
 
 # generated sprite audit (regenerate via: npx tsx scripts/sprite-atlas.mjs)
 sprite-atlas.png
+# generated decoration audit (regenerate via: npx tsx scripts/deco-atlas.mjs)
+deco-atlas.png
