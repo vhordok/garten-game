@@ -4,7 +4,15 @@
 // is tracked separately (starseedSpent), so starseed+starseedSpent (total ever
 // banked) still drives worldseedYieldFactor. Mirrors the compost-garden pattern.
 
-export type StarEffect = 'yield' | 'growth' | 'compostGain' | 'startParcels'
+export type StarEffect =
+  | 'yield'
+  | 'growth'
+  | 'compostGain'
+  | 'startParcels'
+  | 'sellPrice'
+  | 'offline'
+  | 'questReward'
+  | 'ticketLuck'
 
 export interface StarUpgradeDef {
   id: string
@@ -63,6 +71,49 @@ export const STAR_UPGRADES: StarUpgradeDef[] = [
     maxLevel: 6,
     baseCost: 3,
     costFactor: 2,
+  },
+  // PHASE 62: more Sternensaat sinks with distinct effects, so the Sternenkammer
+  // has variety beyond yield/growth — each wires into an existing modifier point.
+  {
+    id: 'sternenmarkt',
+    name: 'Sternenmarkt',
+    desc: '+5 % Verkaufspreis pro Stufe — endlos, Kosten steigen stetig',
+    effect: 'sellPrice',
+    perLevel: 0.05,
+    maxLevel: 999,
+    baseCost: 1,
+    costFactor: 1.5,
+    repeatable: true,
+  },
+  {
+    id: 'sternengilde',
+    name: 'Sternengilde',
+    desc: '+10 % Auftragsbelohnung pro Stufe',
+    effect: 'questReward',
+    perLevel: 0.1,
+    maxLevel: 10,
+    baseCost: 2,
+    costFactor: 1.6,
+  },
+  {
+    id: 'sternenschlaf',
+    name: 'Sternenschlaf',
+    desc: '+1 h Offline-Wachstum pro Stufe',
+    effect: 'offline',
+    perLevel: 1,
+    maxLevel: 12,
+    baseCost: 2,
+    costFactor: 1.55,
+  },
+  {
+    id: 'sternenglueck',
+    name: 'Sternenglück',
+    desc: '+4 % Los-Chance bei der Ernte pro Stufe',
+    effect: 'ticketLuck',
+    perLevel: 0.04,
+    maxLevel: 10,
+    baseCost: 2,
+    costFactor: 1.6,
   },
 ]
 

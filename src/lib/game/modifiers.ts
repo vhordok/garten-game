@@ -316,7 +316,14 @@ export function marketFactor(state: GameState): number {
 /** Sale price factor (upgrades × garden beauty × market wave × weather). */
 export function sellMultiplier(state: GameState): number {
   const boom = state.weather.id === 'marktboom' ? 1.5 : 1
-  return multiplierFor(state, 'sellPrice') * beautyMultiplier(state) * marketFactor(state) * boom
+  // PHASE 62: Sternenmarkt (Sternenkammer) lifts the sell price permanently
+  return (
+    multiplierFor(state, 'sellPrice') *
+    (1 + starUpgradeBonus(state, 'sellPrice')) *
+    beautyMultiplier(state) *
+    marketFactor(state) *
+    boom
+  )
 }
 
 /** Summed perLevel × level over all owned upgrades with the given effect. */
@@ -366,6 +373,7 @@ export function scratchDropChance(state: GameState, cycleSeconds: number, catego
     CONFIG.scratchDropPerMinute +
     effectBonus(state, 'scratchLuck') +
     parcelBonus(state.parcels, 'ticketLuck') +
+    starUpgradeBonus(state, 'ticketLuck') +
     beautyMilestoneBonus(gardenBeauty(state), 'ticketLuck') +
     skillBonus(state, 'scratchLuck') +
     achievementBonus(state, 'ticketLuck') +
@@ -388,6 +396,7 @@ export function offlineCapHours(state: GameState): number {
     (state.upgrades['sternenuhr'] ?? 0) * CONFIG.sternenuhrOfflinePerLevel +
     parcelBonus(state.parcels, 'offline') +
     worldMilestoneBonus(state.worldResets ?? 0, 'offline') +
+    starUpgradeBonus(state, 'offline') +
     compostUpgradeBonus(state, 'offline')
   )
 }

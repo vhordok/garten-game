@@ -1845,3 +1845,18 @@ Liste im Weltensaat-Block des PrestigePanels (✓/🔒 + nächstes Ziel), sichtb
 Weltensaat (motiviert das Säen). Damit ist Weltensaat eine echte neue Fortschrittsleiter.
 
 Reine Daten/Wiring/UI, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 78/78.
+
+### 9.64 Phase 62 — Sternenkammer-Ausbau: mehr Sternensaat-Sinks (keine Save-Änderung)
+
+Zweiter Teil der „Weltensaat-Inhalte". Die Sternenkammer hatte nur 4 Upgrades (zwei davon mit
+niedrigem Cap) — zu wenig, um die gebankte Sternensaat sinnvoll auszugeben. Vier neue Upgrades mit
+je eigenem, an einer vorhandenen Stelle eingehängtem Effekt (StarEffect erweitert):
+- **Sternenmarkt** (`sellPrice`, endlos): +5 % Verkaufspreis/Stufe → `sellMultiplier`
+- **Sternengilde** (`questReward`, ×10): +10 % Auftragsbelohnung/Stufe → `questRewardBonus`
+- **Sternenschlaf** (`offline`, ×12): +1 h Offline/Stufe → `offlineCapHours`
+- **Sternenglück** (`ticketLuck`, ×10): +4 % Los-Chance/Stufe → `scratchDropChance`
+
+Alle über `starUpgradeBonus(state, effect)` (vorhandenes Muster). Die Panel-Liste iteriert
+`STAR_UPGRADES`, daher rendern die neuen automatisch. Save-sicher: neue IDs → Level 0.
+
+Reine Daten/Wiring, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 79/79.
