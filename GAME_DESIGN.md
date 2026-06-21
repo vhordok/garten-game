@@ -1712,3 +1712,19 @@ bleibt gültig; `sanitize` clamped weiterhin auf die (nun größere) Länge. Spi
 Kette beendet hatten, sehen jetzt das nächste Kapitel; sehr tiefe Spieler lösen bereits erfüllte
 neue Kapitel beim nächsten Tick automatisch ein (kleiner, fairer Nachschlag, keine Flut).
 check/build grün, Tests 74/74.
+
+### 9.57 Phase 55 — Glühwürmchen an den Laternen + Sternenfunkeln (keine Save-Änderung)
+
+Szenen-Leben weitergeführt und an die Deko gekoppelt:
+
+- **Laternen-Glühwürmchen** (`Scene.svelte`): pro besessener Gartenlaterne schweben **2
+  warm-goldene Glühwürmchen** in einer sanften Schleife (`fly-orbit`) um die Lampe — an
+  gehashten Offsets, entkoppelt. Wer Laternen aufstellt, zieht sichtbar einen kleinen Schwarm
+  an → die Deko fühlt sich „funktional" an.
+- **Drift** der bestehenden Ambient-Glühwürmchen (`fly-pulse` jetzt mit leichtem X-Versatz).
+- **Sternenfunkeln**: beide Parallax-Sternenlagen pulsen langsam in der Deckkraft
+  (`twinkle-far`/`twinkle-near`).
+- `prefers-reduced-motion`: alle neuen Animationen aus.
+
+Reine CSS/UI, keine Logik-/Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 74/74.
+⚠️ Animation nur im Browser sichtbar — bitte am Gerät prüfen.

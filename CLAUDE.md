@@ -292,4 +292,7 @@ PrestigePanel-Weltensaat-Block. SAVE_VERSION 33: neue Felder starseedSpent+starU
 (data/campaign.ts — 5 Endgame-Kapitel angehängt: Großgrundbesitzer P14 → Weltenbereit P20 →
 Weltenschöpfer 1. Weltensaat → Sternenkammer-Kauf → Sternengärtner 3 Welten); save-sicher ohne
 Version-Bump (nur angehängt, Index bleibt gültig, sehr tiefe Spieler lösen erfüllte Kapitel
-auto ein). Stand SAVE_VERSION 33.
+auto ein). Phase 55 (§9.57): Szenen-Leben — pro besessener Gartenlaterne 2 warm-goldene
+Glühwürmchen in sanfter Orbit-Schleife (Scene.svelte fly-orbit, gehashte Offsets), Ambient-
+Glühwürmchen driften, Sterne funkeln langsam (twinkle-far/near); prefers-reduced-motion aus.
+Reine CSS/UI, keine Save-Änderung. Stand SAVE_VERSION 33.
