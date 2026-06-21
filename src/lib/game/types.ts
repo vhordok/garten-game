@@ -256,6 +256,11 @@ export interface GameState {
    * placed visibly around the field and add beauty (like gallery ornamentals);
    * survives prestige, no plot space. */
   decorations: Record<string, number>
+  /** Weltensaat (PHASE 51): banked Sternensaat — the higher-prestige currency.
+   * Each grants a permanent, garden-wide yield multiplier; survives everything. */
+  starseed: number
+  /** number of Weltensaat resets performed (PHASE 51). */
+  worldResets: number
   /** cannabis license level owned (0–5; IV/V are PHASE 27 trade licenses that
    * boost quest rewards instead of unlocking plants), survives prestige */
   licenses: number

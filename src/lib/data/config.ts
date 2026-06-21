@@ -169,4 +169,12 @@ export const CONFIG = {
    * decorationCostFactor× more; decorationMaxCopies caps each kind's stack. */
   decorationCostFactor: 1.8,
   decorationMaxCopies: 6,
+  /** PHASE 51 Weltensaat — a higher prestige. From this many leased parcels the
+   * player may sow a new world: it resets the parcel/compost layer AND the round
+   * (mastery/specialisations/skills/collections/achievements all survive) in
+   * exchange for permanent Sternensaat. Each Sternensaat grants starseedYieldPer
+   * permanent, garden-wide yield (multiplicative on everything). Gain = parcels −
+   * minParcels + 1, so deeper worlds bank more. */
+  weltensaatMinParcels: 20,
+  starseedYieldPer: 0.12,
 } as const

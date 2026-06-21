@@ -104,8 +104,9 @@ import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
 import { CAMPAIGN } from '../src/lib/data/campaign.ts'
 import { claimCampaign, currentCampaignStep, initCampaign } from '../src/lib/game/campaign.ts'
 import { DECORATIONS, nextDecorationCost } from '../src/lib/data/decorations.ts'
-import { buyDecoration } from '../src/lib/game/actions.ts'
+import { buyDecoration, weltensaat } from '../src/lib/game/actions.ts'
 import { decorationBeauty, decorationCount, ownsAnyDecoration } from '../src/lib/game/decorations.ts'
+import { canWeltensaat, starseedGain, worldseedYieldFactor } from '../src/lib/game/worldseed.ts'
 import { get } from 'svelte/store'
 import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog, flushToastLog, reloadToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
@@ -1557,6 +1558,99 @@ test('PHASE 49: decorations buy, add beauty, render, persist, migrate', () => {
     fresh()
     assert.notEqual(importSave(old), null)
     assert.deepEqual(getState().decorations, {}, 'pre-v31 save defaults to no decorations')
+  })
+})
+
+test('PHASE 51: Weltensaat banks Sternensaat, resets the prestige layer, keeps meta', () => {
+  withBoringRng(() => {
+    const min = CONFIG.weltensaatMinParcels
+
+    // ── gain gating ──
+    const low = fresh()
+    low.parcels = min - 1
+    assert.equal(starseedGain(low), 0, 'no gain below the parcel threshold')
+    assert.equal(canWeltensaat(low), false, 'not available below threshold')
+    assert.equal(weltensaat(), 0, 'weltensaat is a no-op when ineligible')
+
+    const at = fresh()
+    at.parcels = min
+    assert.equal(starseedGain(at), 1, 'exactly at threshold banks 1')
+    const deep = fresh()
+    deep.parcels = min + 9
+    assert.equal(starseedGain(deep), 10, 'deeper worlds bank more (parcels − min + 1)')
+
+    // ── the multiplier ──
+    const m = fresh()
+    assert.equal(worldseedYieldFactor(m), 1, 'no Sternensaat → factor 1')
+    const before = yieldMultiplier(m)
+    m.starseed = 5
+    assert.ok(Math.abs(worldseedYieldFactor(m) - (1 + 5 * CONFIG.starseedYieldPer)) < 1e-9, 'factor = 1 + n·per')
+    assert.ok(yieldMultiplier(m) > before, 'Sternensaat raises the global yield multiplier')
+
+    // ── the reset: banks gain, wipes the prestige layer + round, keeps meta ──
+    const s = fresh()
+    s.parcels = min + 4 // gain 5
+    s.compost = 500
+    s.compostSpent = 200
+    s.compostUpgrades = { tiefenmoor: 3 }
+    s.money = 9_999
+    s.totalEarned = 1e12
+    s.lifetimeEarned = 5e12
+    s.maxUnlockEarned = 1e12
+    s.mastery = { erdbeere: 99999 }
+    s.specializations = { beeren: 7 }
+    s.skills = { gartenplanung: 2 }
+    s.discoveredVariants = ['humusveilchen']
+    s.ornamentals = { nachtrose: 2 }
+    s.decorations = { teich: 1 }
+    s.licenses = 3
+    s.starseed = 2
+    s.worldResets = 1
+
+    const gained = weltensaat()
+    const g = getState()
+    assert.equal(gained, 5, 'banked the expected Sternensaat')
+    assert.equal(g.starseed, 7, 'Sternensaat added to the bank')
+    assert.equal(g.worldResets, 2, 'reset counter advanced')
+    // prestige layer wiped
+    assert.equal(g.parcels, 1, 'parcels reset to 1')
+    assert.equal(g.compost, 0, 'compost wiped')
+    assert.equal(g.compostSpent, 0, 'compostSpent wiped')
+    assert.deepEqual(g.compostUpgrades, {}, 'compost-garden upgrades wiped')
+    // round wiped
+    assert.equal(g.money, CONFIG.startMoney, 'money back to start')
+    assert.equal(g.totalEarned, 0, 'round earnings wiped')
+    assert.equal(g.plots.length, CONFIG.startPlots, 'plots reset to start')
+    // everything permanent survives
+    assert.equal(g.lifetimeEarned, 5e12, 'lifetime stat kept')
+    assert.equal(g.maxUnlockEarned, 1e12, 'unlock floor kept (no quest softlock)')
+    assert.equal(g.mastery['erdbeere'], 99999, 'mastery kept')
+    assert.equal(g.specializations['beeren'], 7, 'specialisations kept')
+    assert.equal(g.skills['gartenplanung'], 2, 'skills kept')
+    assert.deepEqual(g.discoveredVariants, ['humusveilchen'], 'variants kept')
+    assert.equal(g.ornamentals['nachtrose'], 2, 'gallery kept')
+    assert.equal(g.decorations['teich'], 1, 'decorations kept')
+    assert.equal(g.licenses, 3, 'licenses kept')
+
+    // ── save roundtrip + pre-v32 migration default ──
+    const r = fresh()
+    r.starseed = 12
+    r.worldResets = 3
+    const code = exportSave()
+    fresh()
+    assert.notEqual(importSave(code), null)
+    assert.equal(getState().starseed, 12, 'Sternensaat survives save/load')
+    assert.equal(getState().worldResets, 3, 'reset count survives save/load')
+
+    const old = JSON.stringify({
+      version: 31,
+      savedAt: Date.now(),
+      state: { money: 5, totalEarned: 5, selectedPlantId: 'basilikum', stats: { planted: 0, harvested: 0, sold: 0 }, createdAt: 1 },
+    })
+    fresh()
+    assert.notEqual(importSave(old), null)
+    assert.equal(getState().starseed, 0, 'pre-v32 save defaults Sternensaat to 0')
+    assert.equal(getState().worldResets, 0, 'pre-v32 save defaults reset count to 0')
   })
 })
 

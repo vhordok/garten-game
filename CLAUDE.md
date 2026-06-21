@@ -273,4 +273,10 @@ hässlich) — Deko wird jetzt in Scene.svelte ins Hintergrundbild gelandschafte
 Bodenfläche verteilt, mit Tiefe: hinten klein/blass, vorne groß/deckend; deterministischer
 Hash + Round-Robin; hinter dem Feld → rahmt den Garten), .garden-deco-Leiste entfernt;
 scripts/scene-preview.mjs zur Sichtprüfung. Reine UI, keine Save-Änderung.
-Stand SAVE_VERSION 31.
+Phase 51 (§9.53): Weltensaat — die höhere Prestige (game/worldseed.ts): ab Parzelle 20
+säbar, bankt Sternensaat (starseed) + worldResets, setzt Parzellen/Kompost/Runde zurück,
+alles Permanente (Meisterschaft/Spezial./Skills/Labor/Galerie/Deko/Erfolge/Kampagne/Lizenzen/
+maxUnlockEarned) bleibt → kein Softlock; worldseedYieldFactor=1+starseed·0,12 multiplikativ in
+yieldMultiplier (dauerhafter Garten-Ertrag); UI-Block im PrestigePanel + worldseedGoal (🌌).
+SAVE_VERSION 32: neue Felder starseed+worldResets (Migration defaultet 0).
+Stand SAVE_VERSION 32.
