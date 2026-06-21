@@ -1780,6 +1780,24 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
   })
 })
 
+test('PHASE 60: plot timer reflects REAL seconds, not raw growth-progress units', () => {
+  // The bug: the tile showed formatDuration(target−progress), but progress is in
+  // growth-adjusted units — at a huge growth multiplier a floored cosmic crop
+  // that read "10h" actually ripens in ~floor seconds. The tile must derive its
+  // remaining time from effectiveCycleSeconds (real time).
+  const s = fresh()
+  s.parcels = 98
+  s.compost = 1e9
+  s.compostSpent = 1e19
+  s.level = 1141199
+  s.licenses = 5
+  const def = plantById('sternensaat')
+  const real = effectiveCycleSeconds(s, def, false)
+  assert.ok(real <= CONFIG.minCycleFloorSeconds + 0.01, `real cycle ~floor (${real.toFixed(2)}s)`) // ~3s
+  assert.ok(real < def.growTime / 1000, 'real time is orders of magnitude below raw growTime units')
+  assert.ok(real < 10, 'a deep-prestige cosmic plot ripens in seconds, not hours')
+})
+
 test('PHASE 59: number/duration formatting is robust at extreme scale', () => {
   // normal cases
   assert.equal(formatNumber(999), '999')

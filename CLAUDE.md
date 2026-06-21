@@ -310,4 +310,8 @@ Skill-System ein; save-sicher ohne Version-Bump (nur Track angehängt, tiefe Spi
 erfüllte Stufen beim Tick, kleine Booster/Lose-Einmalbelohnung, kein Kompost/keine Flut). Phase
 59 (§9.61): Robustheits-Fix — formatDuration fing nicht-endliche Werte nicht ab (Infinity→
 „Infinityd NaNh"); jetzt „∞" wie formatNumber (Endgame-Zeitschätzungen können durch Division
-nicht-endlich werden). Neuer Format-Test. Keine Save-Änderung. Stand SAVE_VERSION 33.
+nicht-endlich werden). Neuer Format-Test. Keine Save-Änderung. Phase 60 (§9.62): Beet-Timer-Bugfix
+— Kacheln zeigten „10h 37m", obwohl die Kosmos-Pflanze in ~3 echten Sekunden reif ist (Plot.svelte
+rechnete formatDuration(target−progress), aber das sind wachstums-adjustierte Units, keine Echtzeit);
+jetzt remaining = effectiveCycleSeconds×(1−fraction), Chip+Tooltip wahrhaftig. Reiner UI-Fix, keine
+Save-Änderung. Stand SAVE_VERSION 33.
