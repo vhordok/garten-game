@@ -1771,3 +1771,19 @@ klettern, dann säen"-Strategie. `scripts/weltensaat.sim.mjs` bleibt als Dauer-D
 
 Reine UI + Diagnose-Tooling, keine Logik-/Save-Änderung (SAVE_VERSION 33). check/build grün,
 Tests 74/74.
+
+### 9.60 Phase 58 — Erfolge-Track „Weltenwanderer" für die Weltensaat (keine Save-Änderung)
+
+Die Weltensaat war im Erfolge-/Skillpunkt-System nicht vertreten. Neuer 13. Track
+(`data/achievements.ts`): **Weltenwanderer 🌌**, Metrik = `worldResets` (gesäte Welten),
+6 Stufen Bronze→Legendär bei [1, 2, 3, 5, 8, 15] Welten, dauerhafter Ertrags-Bonus (YIELD-Reihe)
++ Skillpunkte aus Gold/Legendär wie jeder Track. Bindet das neue Endgame in die bestehende
+Erfolgs-Ökonomie ein und gibt schon der ersten Weltensaat ein Bronze-Abzeichen.
+
+**Save-sicher ohne Version-Bump** (wie der Kampagnen-Append 9.56): nur ein Track angehängt,
+`achievementTiers` ist ein offener `Record<id,tier>`. Bestehende tiefe Spieler beanspruchen die
+erfüllten Stufen beim nächsten Tick automatisch (kleine Einmal-Belohnung Booster/Lose — **kein**
+Kompost laut `track()`-Design, kein Reward-Flut; Toast pro Track per Key aggregiert). Frische
+Saves: `worldResets 0` → Stufe 0 → nichts gesetzt.
+
+Reine Daten, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 75/75.

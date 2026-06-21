@@ -1779,6 +1779,21 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
   })
 })
 
+test('PHASE 58: Weltensaat achievement track rewards worlds sown', () => {
+  const def = ACHIEVEMENTS.find((a) => a.id === 'weltensaat')
+  assert.ok(def, 'Weltenwanderer track exists')
+  const s = fresh()
+  s.worldResets = 0
+  assert.equal(reachedTier(s, def), 0, 'no worlds → no tier')
+  s.worldResets = 3
+  assert.equal(reachedTier(s, def), 3, '3 worlds → tier 3 (Gold)')
+  s.worldResets = 20
+  assert.equal(reachedTier(s, def), 6, '20 worlds → tier 6 (Legendär)')
+  const before = achievementBonus(s, 'yield')
+  s.achievementTiers = { weltensaat: 6 }
+  assert.ok(achievementBonus(s, 'yield') > before, 'claimed Weltensaat tiers add permanent yield')
+})
+
 test('PHASE 20: seed lab crosses, discovers, applies bonus, persists', () => {
   withBoringRng(() => {
     // ── pure eligibility checks (crossEligibility takes the state directly) ──

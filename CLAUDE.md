@@ -304,4 +304,8 @@ abgesichert (scripts/weltensaat.sim.mjs spielt Core greedy bis Schwelle → säe
 — Befund: Wiederaufstieg machbar & ~1,4× schneller (kein Soft-Lock), aber flach säen bei Parz. 20
 ist eine Falle (nur ×1,10, kompoundiert → tief säen optimal); Fix: UI-Nudge im PrestigePanel
 (jede Parzelle = +1 Sternensaat, tief klettern dann säen), kein Balance-Eingriff. Keine Save-
-Änderung. Stand SAVE_VERSION 33.
+Änderung. Phase 58 (§9.60): Erfolge-Track „Weltenwanderer" 🌌 (data/achievements.ts, Metrik
+worldResets, Stufen 1/2/3/5/8/15, Ertrags-Bonus+Skillpunkte) bindet die Weltensaat ins Erfolgs-/
+Skill-System ein; save-sicher ohne Version-Bump (nur Track angehängt, tiefe Spieler beanspruchen
+erfüllte Stufen beim Tick, kleine Booster/Lose-Einmalbelohnung, kein Kompost/keine Flut). Stand
+SAVE_VERSION 33.

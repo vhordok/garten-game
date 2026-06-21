@@ -21,6 +21,7 @@ export type AchCategory =
   | 'spezialisierung'
   | 'level'
   | 'varianten'
+  | 'weltensaat'
 
 export const TIER_NAMES = ['Bronze', 'Silber', 'Gold', 'Platin', 'Diamant', 'Legendär'] as const
 export type TierName = (typeof TIER_NAMES)[number]
@@ -225,6 +226,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     metric: (s) => s.discoveredVariants.length,
     format: fmtPlain,
     tiers: track([1, 2, 4, 6, 8, 10], 'growth', GROWTH),
+  },
+  // PHASE 58: ties the Weltensaat endgame (worlds sown) into the achievement +
+  // skill-point economy. Permanent yield reward + a Bronze badge for the very
+  // first Weltensaat, up to Legendär at 15 worlds.
+  {
+    id: 'weltensaat',
+    name: 'Weltenwanderer',
+    category: 'weltensaat',
+    icon: '🌌',
+    metric: (s) => s.worldResets ?? 0,
+    format: (v) => `${Math.round(v)} Welten`,
+    tiers: track([1, 2, 3, 5, 8, 15], 'yield', YIELD),
   },
 ]
 
