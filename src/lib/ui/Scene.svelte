@@ -59,6 +59,29 @@
       }
     })
   })
+
+  // PHASE 55: fireflies are drawn to the player's lanterns — owning Gartenlaternen
+  // visibly attracts a little swarm, so the decoration feels functional. Two flies
+  // hover around each lantern, at stable hashed offsets and desynced drift.
+  type Fly = { key: string; left: number; top: number; dur: number; delay: number }
+  const lanternFlies = $derived.by<Fly[]>(() => {
+    const out: Fly[] = []
+    placements
+      .filter((p) => p.glow === 'warm')
+      .forEach((p, li) => {
+        for (let k = 0; k < 2; k++) {
+          const h = hash(li * 7 + k * 3 + 2)
+          out.push({
+            key: `lf-${li}-${k}`,
+            left: clamp(p.left + (h - 0.5) * 7, 0, 99),
+            top: clamp(p.top - 3 - h * 5, 50, 95),
+            dur: 3 + h * 3,
+            delay: -h * 4,
+          })
+        }
+      })
+    return out
+  })
 </script>
 
 <!-- Fixed night-garden backdrop: sky bands, stars, moon, parallax hedge
@@ -89,6 +112,15 @@
   <span class="fly" style="left: 41%; top: 66%; animation-duration: 4.4s"></span>
   <span class="fly" style="left: 67%; top: 61%; animation-duration: 3.8s"></span>
   <span class="fly" style="left: 86%; top: 70%; animation-duration: 5.1s"></span>
+  {#each lanternFlies as f (f.key)}
+    <span
+      class="fly lantern-fly"
+      style:left={`${f.left}%`}
+      style:top={`${f.top}%`}
+      style:animation-duration={`${f.dur}s`}
+      style:animation-delay={`${f.delay}s`}
+    ></span>
+  {/each}
   <div class="vignette"></div>
 </div>
 
@@ -234,7 +266,11 @@
   @media (prefers-reduced-motion: reduce) {
     .deco,
     .deco.glow-warm,
-    .deco.glow-cool {
+    .deco.glow-cool,
+    .fly,
+    .lantern-fly,
+    .stars.far,
+    .stars.near {
       animation: none;
     }
   }
@@ -252,11 +288,69 @@
   @keyframes fly-pulse {
     from {
       opacity: 0.15;
-      transform: translateY(0);
+      transform: translate(0, 0);
     }
     to {
       opacity: 0.95;
-      transform: translateY(-10px);
+      transform: translate(3px, -10px);
+    }
+  }
+
+  /* PHASE 55: lantern fireflies — warm-toned, orbiting their lantern in a gentle
+     loop so owning Gartenlaternen visibly draws a little swarm */
+  .lantern-fly {
+    background: var(--c-gold2);
+    box-shadow: 0 0 9px 2px rgba(232, 193, 112, 0.7);
+    animation: fly-orbit 5s ease-in-out infinite;
+  }
+
+  @keyframes fly-orbit {
+    0% {
+      opacity: 0.2;
+      transform: translate(0, 0);
+    }
+    25% {
+      opacity: 0.9;
+      transform: translate(6px, -5px);
+    }
+    50% {
+      opacity: 0.5;
+      transform: translate(2px, -10px);
+    }
+    75% {
+      opacity: 0.9;
+      transform: translate(-5px, -5px);
+    }
+    100% {
+      opacity: 0.2;
+      transform: translate(0, 0);
+    }
+  }
+
+  /* PHASE 55: a slow, subtle star twinkle over the two parallax layers */
+  .stars.far {
+    animation: twinkle-far 7s ease-in-out infinite alternate;
+  }
+
+  .stars.near {
+    animation: twinkle-near 9s ease-in-out infinite alternate;
+  }
+
+  @keyframes twinkle-far {
+    from {
+      opacity: 0.4;
+    }
+    to {
+      opacity: 0.65;
+    }
+  }
+
+  @keyframes twinkle-near {
+    from {
+      opacity: 0.7;
+    }
+    to {
+      opacity: 1;
     }
   }
 
