@@ -1749,3 +1749,25 @@ des Komposts nie mithalten; eine höhere Prestige muss aber *stärker* sein als 
 Reine Balance/Formel/UI, keine Save-Änderung (SAVE_VERSION 33) — bestehende Sternensaat wirkt
 sofort stärker. check/build grün, Tests 74/74 (Faktor = (1+per)^banked, 79 → ×1000+, endlich
 bei 1e6 Bank).
+
+### 9.59 Phase 57 — Weltensaat-Loop-Audit + Tiefe-Nudge (keine Save-Änderung)
+
+Nach dem Rebalance (9.58) den ganzen Loop **simulativ abgesichert**, statt nur die Bonus-Höhe
+zu raten: neues `scripts/weltensaat.sim.mjs` spielt den echten Core greedy MIT Prestige bis zur
+Weltensaat-Schwelle, säht eine Welt, misst den Wiederaufstieg und eine zweite Welt.
+
+**Befunde:**
+- **Wiederaufstieg ist machbar und sogar schneller** (Sim: Parzelle 20 in 16,8 h erstklettern →
+  nach Weltensaat in 12,4 h zurück, ~1,4×). Mein früherer Soft-Lock-Verdacht (lifetimeEarned
+  bleibt) bestätigt sich **nicht** — der Riesen-Multiplikator + behaltene Meisterschaft/Spez.
+  tragen den Wiederaufstieg.
+- **Flache Weltensaat ist eine Falle:** genau bei Parzelle 20 gibt es nur +1 Sternensaat (×1,10).
+  Der Bonus kompoundiert, also lohnt sich nur **tief säen** (Parz. 30 → ×3, 50 → ×19, 98 → ×1,9 K).
+
+**Fix (kein Balance-Eingriff — der Nutzer hat die Stärke gewählt):** UI-Nudge im Weltensaat-Block
+(`PrestigePanel`), der erklärt, dass jede weitere Parzelle vor dem Säen +1 Sternensaat (×1,10,
+multiplikativ) bankt und flaches Säen kaum etwas bringt → leitet zur optimalen „erst tief
+klettern, dann säen"-Strategie. `scripts/weltensaat.sim.mjs` bleibt als Dauer-Diagnose.
+
+Reine UI + Diagnose-Tooling, keine Logik-/Save-Änderung (SAVE_VERSION 33). check/build grün,
+Tests 74/74.

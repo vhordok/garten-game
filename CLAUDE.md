@@ -299,4 +299,9 @@ Reine CSS/UI, keine Save-Änderung. Phase 56 (§9.58): Weltensaat-Rebalance — 
 Ertragsbonus jetzt KOMPOUND ((1+starseedYieldPer)^banked, Basis 1,10) statt linear → 79
 Sternensaat = ×1.860 statt ×10,5, überholt den Kompost-√-Runaway (gegen Infinity geklammert);
 starseedYieldPer 0,12→0,10; PrestigePanel zeigt „×N Ertrag" + factorAfter statt irreführendem
-+%. Reine Balance/UI, keine Save-Änderung. Stand SAVE_VERSION 33.
++%. Reine Balance/UI, keine Save-Änderung. Phase 57 (§9.59): Weltensaat-Loop simulativ
+abgesichert (scripts/weltensaat.sim.mjs spielt Core greedy bis Schwelle → säen → Wiederaufstieg)
+— Befund: Wiederaufstieg machbar & ~1,4× schneller (kein Soft-Lock), aber flach säen bei Parz. 20
+ist eine Falle (nur ×1,10, kompoundiert → tief säen optimal); Fix: UI-Nudge im PrestigePanel
+(jede Parzelle = +1 Sternensaat, tief klettern dann säen), kein Balance-Eingriff. Keine Save-
+Änderung. Stand SAVE_VERSION 33.

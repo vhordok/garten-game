@@ -241,6 +241,12 @@
         <span>+{formatNumber(starGain)} Sternensaat → Ertrag <b>×{formatNumber(factorAfter)}</b></span>
       </div>
     </div>
+    <p class="hint ws-tip">
+      💡 <b>Tief säen lohnt sich:</b> jede weitere Parzelle vor dem Säen bankt +1 Sternensaat
+      (×{(1 + CONFIG.starseedYieldPer).toFixed(2).replace('.', ',')} Ertrag, multiplikativ und für immer).
+      Direkt bei Parzelle {CONFIG.weltensaatMinParcels} zu säen bringt fast nichts — der Bonus
+      <b>kompoundiert</b>, also klettere erst tief, dann säe.
+    </p>
     {#if seenWeltensaat}
       <h3 class="sec ws-sub">Sternenkammer <span class="sec-note num">· {formatNumber($gameStore.starseed)} 🌌 frei</span></h3>
       <p class="hint">Gib Sternensaat für dauerhafte Boni aus — das schwächt den festen Ertrags-Bonus nicht.</p>
