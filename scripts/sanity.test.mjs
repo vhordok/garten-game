@@ -1782,6 +1782,19 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
   })
 })
 
+test('PHASE 62: Sternenkammer expansion — new star effects sum and wire through', () => {
+  const s = fresh()
+  s.starUpgrades = { sternenmarkt: 5, sternengilde: 3, sternenschlaf: 4, sternenglueck: 2 }
+  assert.ok(Math.abs(starUpgradeBonus(s, 'sellPrice') - 0.25) < 1e-9, 'Sternenmarkt +5%/lvl ×5 = +25% sell')
+  assert.ok(Math.abs(starUpgradeBonus(s, 'questReward') - 0.3) < 1e-9, 'Sternengilde +10%/lvl ×3')
+  assert.ok(Math.abs(starUpgradeBonus(s, 'offline') - 4) < 1e-9, 'Sternenschlaf +1h/lvl ×4')
+  assert.ok(Math.abs(starUpgradeBonus(s, 'ticketLuck') - 0.08) < 1e-9, 'Sternenglück +4%/lvl ×2')
+  // end-to-end through the live modifier functions (proves the wiring points)
+  const base = fresh()
+  assert.ok(offlineCapHours(s) > offlineCapHours(base), 'Sternenschlaf lifts the offline cap')
+  assert.ok(scratchDropChance(s, 600) > scratchDropChance(base, 600), 'Sternenglück lifts ticket luck')
+})
+
 test('PHASE 61: world milestones grant permanent, derived perks from worldResets', () => {
   // summation + gating
   assert.equal(worldMilestoneBonus(0, 'yield'), 0, 'no worlds → no bonus')

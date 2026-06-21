@@ -834,6 +834,7 @@ export function questRewardBonus(s: GameState): number {
     1 +
     parcelBonus(s.parcels, 'questReward') +
     compostUpgradeBonus(s, 'questReward') +
+    starUpgradeBonus(s, 'questReward') +
     beautyMilestoneBonus(gardenBeauty(s), 'questReward') +
     skillBonus(s, 'questReward') +
     achievementBonus(s, 'questReward') +

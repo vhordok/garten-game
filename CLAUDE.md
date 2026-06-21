@@ -318,4 +318,7 @@ Save-Änderung. Phase 61 (§9.63): Welten-Meilensteine (data/worldMilestones.ts 
 worldResets, mirror von parcelBonus, rein abgeleitet → kein Save-Feld) machen Weltensaat zu echtem
 Inhalt: jede gesäte Welt schaltet dauerhaft frei (Ertrag/Wachstum/Kompost/Offline/+Start-Parzellen/
 +Sternensaat je Saat), eingehängt an 6 Stellen (yield/growth/offline/compostGain/startParcels/
-starseedGain), UI-Liste im Weltensaat-Block. Stand SAVE_VERSION 33.
+starseedGain), UI-Liste im Weltensaat-Block. Phase 62 (§9.64): Sternenkammer-Ausbau — 4 neue
+Sternensaat-Upgrades (Sternenmarkt/sellPrice endlos, Sternengilde/questReward, Sternenschlaf/offline,
+Sternenglück/ticketLuck) je an vorhandener Modifier-Stelle eingehängt via starUpgradeBonus, Panel
+iteriert STAR_UPGRADES (rendert automatisch). Save-sicher, neue IDs→0. Stand SAVE_VERSION 33.
