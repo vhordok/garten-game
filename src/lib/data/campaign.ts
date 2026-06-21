@@ -157,4 +157,52 @@ export const CAMPAIGN: CampaignStep[] = [
     reward: { compost: 60, tickets: 15 },
     rewardDesc: '+60 Kompost, +15 Rubbellose',
   },
+  // ── Endgame chapters (PHASE 54): guide the player through the higher prestige
+  // (Weltensaat, parcel 20) and the Sternenkammer. Appended to the END so the
+  // index stays save-safe; deep players auto-claim the ones they already meet. ──
+  {
+    id: 'landlord',
+    title: 'Großgrundbesitzer',
+    objective: 'Pachte deine 14. Parzelle',
+    metric: (s) => s.parcels,
+    target: 14,
+    reward: { compost: 150, fertilizer: 5 },
+    rewardDesc: '+150 Kompost, +5 Turbo-Dünger',
+  },
+  {
+    id: 'world-ready',
+    title: 'Weltenbereit',
+    objective: 'Erreiche Parzelle 20 (Weltensaat schaltet frei)',
+    metric: (s) => s.parcels,
+    target: 20,
+    reward: { compost: 300, tickets: 25 },
+    rewardDesc: '+300 Kompost, +25 Rubbellose',
+  },
+  {
+    id: 'world-sower',
+    title: 'Weltenschöpfer',
+    objective: 'Säe deine erste Weltensaat',
+    metric: (s) => s.worldResets,
+    target: 1,
+    reward: { tickets: 30, fertilizer: 8 },
+    rewardDesc: '+30 Rubbellose, +8 Turbo-Dünger',
+  },
+  {
+    id: 'star-chamber',
+    title: 'Sternenkammer',
+    objective: 'Kaufe ein Upgrade in der Sternenkammer',
+    metric: (s) => Object.values(s.starUpgrades ?? {}).reduce((sum, n) => sum + (n || 0), 0),
+    target: 1,
+    reward: { fertilizer: 12 },
+    rewardDesc: '+12 Turbo-Dünger',
+  },
+  {
+    id: 'star-gardener',
+    title: 'Sternengärtner',
+    objective: 'Säe insgesamt 3 Welten',
+    metric: (s) => s.worldResets,
+    target: 3,
+    reward: { tickets: 50, fertilizer: 15 },
+    rewardDesc: '+50 Rubbellose, +15 Turbo-Dünger',
+  },
 ]

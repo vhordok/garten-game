@@ -1722,6 +1722,53 @@ test('PHASE 53: Sternenkammer spends Sternensaat without weakening the flat bonu
   })
 })
 
+test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgame', () => {
+  withBoringRng(() => {
+    // the chain now reaches the higher-prestige content
+    const ids = CAMPAIGN.map((c) => c.id)
+    for (const id of ['world-ready', 'world-sower', 'star-chamber', 'star-gardener']) {
+      assert.ok(ids.includes(id), `campaign has the ${id} endgame chapter`)
+    }
+
+    // a deep player who satisfies every chapter claims the WHOLE chain at once
+    const s = fresh()
+    s.campaign = 0
+    s.stats.planted = 1000
+    s.stats.harvested = 1000
+    s.totalEarned = 1e9
+    s.stats.questsDone = 50
+    s.plots = Array.from({ length: 30 }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+    s.stats.scratchesDone = 50
+    s.parcels = 30
+    s.specializations = { beeren: 4 }
+    s.records.bestBeauty = 1
+    s.mastery = { erdbeere: 1e9 }
+    s.discoveredVariants = ['a', 'b', 'c', 'd']
+    s.worldResets = 5
+    s.starUpgrades = { sternenfeuer: 2 }
+    claimCampaign(s)
+    assert.equal(getState().campaign, CAMPAIGN.length, 'a maxed deep state finishes the whole campaign')
+
+    // a player at parcel 8 (old end) now has the next chapter waiting, not "done"
+    const mid = fresh()
+    mid.campaign = 0
+    mid.stats.planted = 1000
+    mid.stats.harvested = 1000
+    mid.totalEarned = 1e9
+    mid.stats.questsDone = 50
+    mid.plots = Array.from({ length: 30 }, () => ({ plantId: null, progress: 0, waterLeft: 0, regrowing: false }))
+    mid.stats.scratchesDone = 50
+    mid.parcels = 8
+    mid.specializations = { beeren: 4 }
+    mid.records.bestBeauty = 1
+    mid.mastery = { erdbeere: 1e9 }
+    mid.discoveredVariants = ['a', 'b', 'c', 'd']
+    claimCampaign(mid)
+    assert.ok(getState().campaign < CAMPAIGN.length, 'the endgame chapters remain ahead of a parcel-8 player')
+    assert.equal(currentCampaignStep(getState()).id, 'landlord', 'next chapter is the first endgame one')
+  })
+})
+
 test('PHASE 20: seed lab crosses, discovers, applies bonus, persists', () => {
   withBoringRng(() => {
     // ── pure eligibility checks (crossEligibility takes the state directly) ──
