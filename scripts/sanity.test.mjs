@@ -114,7 +114,8 @@ import { WORLD_MILESTONES, worldMilestoneBonus, nextWorldMilestone } from '../sr
 import { get } from 'svelte/store'
 import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog, flushToastLog, reloadToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
-import { autoHarvestRate } from '../src/lib/game/modifiers.ts'
+import { autoHarvestRate, autoSowRate, autoSellInterval } from '../src/lib/game/modifiers.ts'
+import { isHelperUpgrade, toggleHelperPause } from '../src/lib/game/actions.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
 import { eventMasteryMult, gardenBeauty } from '../src/lib/game/modifiers.ts'
@@ -1780,6 +1781,30 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
     assert.ok(getState().campaign < CAMPAIGN.length, 'the endgame chapters remain ahead of a parcel-8 player')
     assert.equal(currentCampaignStep(getState()).id, 'landlord', 'next chapter is the first endgame one')
   })
+})
+
+test('PHASE 63: helpers can be paused and the choice round-trips through save', () => {
+  const s = fresh()
+  s.upgrades = { marktkarren: 3, erntehelfer: 5, saegnom: 2 }
+  assert.ok(isHelperUpgrade(upgradeById('marktkarren')), 'marktkarren is a pausable helper')
+  assert.ok(!isHelperUpgrade(upgradeById('duenger')), 'duenger (yield upgrade) is not a helper')
+  assert.ok(Number.isFinite(autoSellInterval(s)), 'market cart sells on a finite interval')
+  assert.ok(autoHarvestRate(s) > 0 && autoSowRate(s) > 0, 'helpers run')
+
+  toggleHelperPause('marktkarren')
+  assert.deepEqual(getState().pausedHelpers, ['marktkarren'], 'pause recorded')
+  assert.equal(autoSellInterval(getState()), Infinity, 'paused market cart never sells')
+  assert.ok(autoHarvestRate(getState()) > 0, 'other helpers unaffected')
+
+  // round-trips through save/load; invalid + non-helper ids are dropped
+  getState().pausedHelpers.push('not-a-helper', 'duenger')
+  const blob = exportSave()
+  replaceState(createDefaultState())
+  importSave(blob)
+  assert.deepEqual(getState().pausedHelpers, ['marktkarren'], 'only valid helper ids survive load')
+
+  toggleHelperPause('marktkarren')
+  assert.equal(getState().pausedHelpers.length, 0, 'resume clears the pause')
 })
 
 test('PHASE 62: Sternenkammer expansion — new star effects sum and wire through', () => {

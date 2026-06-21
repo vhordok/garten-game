@@ -19,7 +19,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 33
+export const SAVE_VERSION = 34
 
 interface SaveEnvelope {
   version: number
@@ -231,6 +231,11 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v32 → v33: PHASE 53 Sternenkammer — new `starseedSpent` + `starUpgrades`.
       // sanitize() defaults them to 0 / {}, so old saves have nothing spent yet.
       return { ...envelope, version: 33 }
+    case 33:
+      // v33 → v34: PHASE 63 pausable helpers — new `pausedHelpers` id list.
+      // sanitize() defaults it to [] (nothing paused), so old saves keep every
+      // helper running exactly as before.
+      return { ...envelope, version: 34 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -326,6 +331,20 @@ function sanitize(raw: unknown): GameState {
     }
   }
   state.discoveredVariants = variants
+
+  // PHASE 63 paused helper ids — keep only real helper-upgrade ids, dedupe
+  const helperIds = new Set(
+    UPGRADES.filter((u) => u.effect === 'autoHarvest' || u.effect === 'autoSow' || u.effect === 'autoSell').map(
+      (u) => u.id
+    )
+  )
+  const paused: string[] = []
+  if (Array.isArray(r.pausedHelpers)) {
+    for (const id of r.pausedHelpers) {
+      if (typeof id === 'string' && helperIds.has(id) && !paused.includes(id)) paused.push(id)
+    }
+  }
+  state.pausedHelpers = paused
 
   state.level = Math.floor(clampNumber(r.level, 1, 1, 9999))
   state.xp = clampNumber(r.xp, 0)

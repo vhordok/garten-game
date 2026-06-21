@@ -1,7 +1,16 @@
 <script lang="ts">
   import { LICENSES } from '../data/licenses'
   import { UPGRADES } from '../data/upgrades'
-  import { buyLicense, buySpecialization, buyUpgrade, nextUpgradeCost, PLANT_CATEGORIES, upgradeLevel } from '../game/actions'
+  import {
+    buyLicense,
+    buySpecialization,
+    buyUpgrade,
+    isHelperUpgrade,
+    nextUpgradeCost,
+    PLANT_CATEGORIES,
+    toggleHelperPause,
+    upgradeLevel,
+  } from '../game/actions'
   import { nextSpecMilestone, specPerkMultiplier, specializationPurchase, specYieldSum } from '../game/modifiers'
   import { CONFIG } from '../data/config'
   import { categorySpecById } from '../data/specializations'
@@ -144,7 +153,9 @@
         {@const cost = nextUpgradeCost(upgrade, $gameStore)}
         {@const unlocked = !upgrade.unlockParcel || $gameStore.parcels >= upgrade.unlockParcel}
         {@const affordable = unlocked && cost !== null && $gameStore.money >= cost}
-        <li class="row" class:dimmed={!unlocked}>
+        {@const helper = isHelperUpgrade(upgrade) && level > 0}
+        {@const paused = helper && ($gameStore.pausedHelpers?.includes(upgrade.id) ?? false)}
+        <li class="row" class:dimmed={!unlocked} class:paused>
           <span class="icon"><PixelIcon name={unlocked ? upgrade.sprite : 'lock'} scale={3} /></span>
           <span class="info">
             <span class="name">
@@ -158,21 +169,35 @@
             <span class="desc">{upgrade.description}</span>
             <span class="effect num">
               {effectText(upgrade)}
-              {#if level > 0}
+              {#if paused}
+                · <b class="paused-tag">⏸ pausiert</b>
+              {:else if level > 0}
                 · aktiv: <b>{activeText(upgrade, level)}</b>
               {/if}
             </span>
           </span>
-          {#if !unlocked}
-            <span class="maxed lockmsg num">ab Parzelle {upgrade.unlockParcel}</span>
-          {:else if cost === null}
-            <span class="maxed">MAX</span>
-          {:else}
-            <button class="pxbtn gold num buy" disabled={!affordable} onclick={(e) => handleBuy(e, upgrade.id)}>
-              <PixelIcon name="coin" scale={1} />
-              {formatNumber(cost)}
-            </button>
-          {/if}
+          <span class="actions">
+            {#if !unlocked}
+              <span class="maxed lockmsg num">ab Parzelle {upgrade.unlockParcel}</span>
+            {:else if cost === null}
+              <span class="maxed">MAX</span>
+            {:else}
+              <button class="pxbtn gold num buy" disabled={!affordable} onclick={(e) => handleBuy(e, upgrade.id)}>
+                <PixelIcon name="coin" scale={1} />
+                {formatNumber(cost)}
+              </button>
+            {/if}
+            {#if helper}
+              <button
+                class="pxbtn pausebtn num"
+                class:resume={paused}
+                title={paused ? 'Helfer fortsetzen' : 'Helfer pausieren'}
+                onclick={() => toggleHelperPause(upgrade.id)}
+              >
+                {paused ? '▶ Start' : '⏸ Pause'}
+              </button>
+            {/if}
+          </span>
         </li>
       {/each}
     </ul>
@@ -339,6 +364,35 @@
 
   .buy {
     flex: none;
+  }
+
+  /* PHASE 63: helper buy + pause stacked on the right */
+  .actions {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .pausebtn {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    color: var(--c-mist);
+    white-space: nowrap;
+  }
+  .pausebtn.resume {
+    color: var(--c-leaf3);
+    text-shadow: 0 0 8px rgba(120, 200, 120, 0.4);
+  }
+
+  /* a paused helper visibly steps back, but its buy button stays usable */
+  .row.paused .icon,
+  .row.paused .desc {
+    opacity: 0.55;
+  }
+  .paused-tag {
+    color: var(--c-mist);
   }
 
   .dimmed {
