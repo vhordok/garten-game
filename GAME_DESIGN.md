@@ -1787,3 +1787,19 @@ Kompost laut `track()`-Design, kein Reward-Flut; Toast pro Track per Key aggregi
 Saves: `worldResets 0` → Stufe 0 → nichts gesetzt.
 
 Reine Daten, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 75/75.
+
+### 9.61 Phase 59 — formatDuration robust bei nicht-endlichen Werten (keine Save-Änderung)
+
+Robustheits-Bug gefunden (Stress-Test der Format-Helfer am realen Spieler-Maßstab Parzelle ~98,
+2e47 Einnahmen, ×1e300-Faktoren): `formatNumber` fängt nicht-endliche Werte ab (→ „∞"),
+**`formatDuration` nicht** — `formatDuration(Infinity)` ergab `"Infinityd NaNh"`,
+`formatDuration(NaN)` → `"NaNd NaNh"`. Im Endgame kann eine Zeitschätzung (Ziel-Panel
+`questFulfillSeconds`, Reife-/Offline-Zeiten) durch Division durch eine riesige/0-Rate
+nicht-endlich werden und diesen Müll anzeigen.
+
+- **Fix:** `if (!Number.isFinite(totalSeconds)) return '∞'` am Anfang von `formatDuration`
+  (spiegelt `formatNumber`). Negative klammern weiterhin auf `0s`.
+- Neuer Format-Test (`PHASE 59`): Normalfälle + Extremskala (2e47, 1e300, ∞) + die Bug-Fälle
+  (∞/NaN-Dauer → „∞", kein „NaN" in großen endlichen Dauern).
+
+Reine Util-Härtung, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 76/76.

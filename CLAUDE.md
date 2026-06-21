@@ -307,5 +307,7 @@ ist eine Falle (nur ×1,10, kompoundiert → tief säen optimal); Fix: UI-Nudge 
 Änderung. Phase 58 (§9.60): Erfolge-Track „Weltenwanderer" 🌌 (data/achievements.ts, Metrik
 worldResets, Stufen 1/2/3/5/8/15, Ertrags-Bonus+Skillpunkte) bindet die Weltensaat ins Erfolgs-/
 Skill-System ein; save-sicher ohne Version-Bump (nur Track angehängt, tiefe Spieler beanspruchen
-erfüllte Stufen beim Tick, kleine Booster/Lose-Einmalbelohnung, kein Kompost/keine Flut). Stand
-SAVE_VERSION 33.
+erfüllte Stufen beim Tick, kleine Booster/Lose-Einmalbelohnung, kein Kompost/keine Flut). Phase
+59 (§9.61): Robustheits-Fix — formatDuration fing nicht-endliche Werte nicht ab (Infinity→
+„Infinityd NaNh"); jetzt „∞" wie formatNumber (Endgame-Zeitschätzungen können durch Division
+nicht-endlich werden). Neuer Format-Test. Keine Save-Änderung. Stand SAVE_VERSION 33.

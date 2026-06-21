@@ -25,6 +25,9 @@ export function formatNumber(value: number): string {
 
 /** 45.3 → "46s", 95 → "1m 35s", 7322 → "2h 2m", 200000 → "2d 8h" */
 export function formatDuration(totalSeconds: number): string {
+  // Guard non-finite (e.g. a time estimate that divided by a huge/zero rate at
+  // extreme scale) — otherwise the d/h math yields "Infinityd NaNh".
+  if (!Number.isFinite(totalSeconds)) return '∞'
   const s = Math.max(0, Math.ceil(totalSeconds))
   if (s < 60) return `${s}s`
   const m = Math.floor(s / 60)
