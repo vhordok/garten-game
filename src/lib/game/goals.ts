@@ -7,6 +7,7 @@
 import { CONFIG } from '../data/config'
 import { ACHIEVEMENTS, TIER_NAMES } from '../data/achievements'
 import { currentCampaignStep, campaignProgress } from './campaign'
+import { canWeltensaat, starseedGain } from './worldseed'
 import { claimedTier } from './achievements'
 import { nextBeautyMilestone } from '../data/beautyMilestones'
 import { isOrnamental, ownsAnyOrnamental } from './gallery'
@@ -343,6 +344,30 @@ function campaignGoal(state: GameState): Goal | null {
     ready: false,
     campaign: true,
     why: step.objective,
+  }
+}
+
+/**
+ * PHASE 51: the Weltensaat (higher prestige) — an endgame goal once the player is
+ * deep enough to see it (approaching the parcel threshold or already a world-sower).
+ */
+function worldseedGoal(state: GameState): Goal | null {
+  if (state.worldResets === 0 && state.parcels < CONFIG.weltensaatMinParcels - 6) return null
+  const ready = canWeltensaat(state)
+  const gain = starseedGain(state)
+  return {
+    id: 'worldseed',
+    tier: 'endgame',
+    icon: '🌌',
+    label: ready ? `Weltensaat säen: +${gain} Sternensaat` : `Weltensaat ab Parzelle ${CONFIG.weltensaatMinParcels}`,
+    reward: 'Dauerhafter gartenweiter Ertrag (Sternensaat)',
+    current: Math.min(state.parcels, CONFIG.weltensaatMinParcels),
+    target: CONFIG.weltensaatMinParcels,
+    fraction: clamp01(state.parcels / CONFIG.weltensaatMinParcels),
+    ready,
+    why: ready
+      ? 'Setzt Parzellen/Kompost zurück — alles Permanente bleibt, Ertrag steigt für immer'
+      : 'Die höhere Prestige: schaltet einen dauerhaften Garten-Multiplikator frei',
   }
 }
 
@@ -747,6 +772,7 @@ const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endg
 export function activeGoals(state: GameState): Goal[] {
   const goals = [
     campaignGoal(state),
+    worldseedGoal(state),
     plantGoal(state),
     upgradeGoal(state),
     shopGoal(state),

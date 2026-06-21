@@ -7,6 +7,7 @@ import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { achievementBonus } from './achievements'
 import { decorationBeauty } from './decorations'
+import { worldseedYieldFactor } from './worldseed'
 import { variantBonus, variantEventBonus } from './seedlab'
 import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
@@ -121,6 +122,7 @@ export function yieldMultiplier(state: GameState): number {
     (1 + levelBonus) *
     (1 + achievementBonus(state, 'yield')) *
     (1 + forestBonus(state)) * // PHASE 34: timber „Hain"-Aura (separate multiplicative factor)
+    worldseedYieldFactor(state) * // PHASE 51: permanent Weltensaat (Sternensaat) aura
     perma *
     meta *
     event

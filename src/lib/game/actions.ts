@@ -7,6 +7,7 @@ import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
 import { isOrnamental, nextOrnamentalCost } from './gallery'
 import { purchaseDecoration } from './decorations'
+import { starseedGain } from './worldseed'
 import { parcelBonus } from '../data/milestones'
 import { skillById } from '../data/skills'
 import { PLANTS, plantById } from '../data/plants'
@@ -510,6 +511,41 @@ export function leaseParcel(): number {
   if (gain < leaseRequirement(s)) return 0
   s.compost += gain
   s.parcels += 1
+  s.money = CONFIG.startMoney
+  s.totalEarned = 0
+  s.plots = Array.from({ length: CONFIG.startPlots }, emptyPlot)
+  s.inventory = {}
+  s.upgrades = {}
+  s.quests = []
+  s.questStreak = 0
+  s.combo = { count: 0, remaining: 0 }
+  s.selectedPlantId = PLANTS[0].id
+  s.autoSowPlantId = null
+  refillQuests(s)
+  notify()
+  return gain
+}
+
+/**
+ * PHASE 51 Weltensaat — the higher prestige. Banks Sternensaat (a permanent,
+ * garden-wide yield multiplier) and resets the parcel/compost prestige layer AND
+ * the round. Everything permanent survives: mastery, specialisations, skills,
+ * variants, ornamentals, decorations, achievements, campaign, licenses, records,
+ * lifetime/unlock stats (so quests/unlocks stay at tier — no softlock). Returns
+ * the Sternensaat gained, or 0 if not eligible.
+ */
+export function weltensaat(): number {
+  const s = getState()
+  const gain = starseedGain(s)
+  if (gain <= 0) return 0
+  s.starseed = (s.starseed ?? 0) + gain
+  s.worldResets = (s.worldResets ?? 0) + 1
+  // reset the prestige layer (deeper than leaseParcel: parcels + compost too)
+  s.parcels = 1
+  s.compost = 0
+  s.compostSpent = 0
+  s.compostUpgrades = {}
+  // reset the round, exactly like a prestige
   s.money = CONFIG.startMoney
   s.totalEarned = 0
   s.plots = Array.from({ length: CONFIG.startPlots }, emptyPlot)

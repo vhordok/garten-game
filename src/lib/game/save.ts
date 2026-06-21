@@ -18,7 +18,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 31
+export const SAVE_VERSION = 32
 
 interface SaveEnvelope {
   version: number
@@ -222,6 +222,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v30 → v31: PHASE 49 Garten-Deko — new `decorations` count map. sanitize()
       // defaults it to {} (no decorations placed), so old saves are unaffected.
       return { ...envelope, version: 31 }
+    case 31:
+      // v31 → v32: PHASE 51 Weltensaat — new `starseed` + `worldResets`. sanitize()
+      // defaults both to 0, so old saves carry no higher-prestige progress yet.
+      return { ...envelope, version: 32 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -448,6 +452,10 @@ function sanitize(raw: unknown): GameState {
   }
   state.achievementTiers = achievementTiers
   state.licenses = Math.floor(clampNumber(r.licenses, 0, 0, 5))
+
+  // PHASE 51 Weltensaat: banked Sternensaat + reset count (default 0 for old saves)
+  state.starseed = Math.floor(clampNumber(r.starseed, 0, 0, 1e9))
+  state.worldResets = Math.floor(clampNumber(r.worldResets, 0, 0, 1e9))
 
   const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
   state.records = {

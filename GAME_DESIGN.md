@@ -1635,3 +1635,27 @@ verschönern. Rendering komplett überarbeitet (Daten/Logik/Save unverändert):
 
 Reine UI/Rendering-Änderung, keine Logik-/Save-Änderung (SAVE_VERSION 31). check/build grün,
 Tests 71/71. ⚠️ Ohne Headless-Browser nur über den Preview-Render geprüft — bitte am Gerät verifizieren.
+
+### 9.53 Phase 51 — Weltensaat: die höhere Prestige (SAVE_VERSION 32)
+
+Neue Endgame-Schicht (Spieler-Wunsch #1): ein seltener „Reset über dem Reset", der einen
+dauerhaften gartenweiten Multiplikator freischaltet.
+
+- **Logik** (`game/worldseed.ts`): ab `weltensaatMinParcels` (20) darf der Spieler eine
+  **Weltensaat** säen. `starseedGain` = Parzellen − min + 1 (tiefer = mehr). `weltensaat()`
+  (actions) bankt die **Sternensaat** (`starseed`), zählt `worldResets` hoch und **setzt die
+  Prestige-Schicht + Runde zurück**: Parzellen→1, Kompost/compostSpent/Kompost-Garten→0,
+  Geld/Runden-Einnahmen/Beete/Lager/Upgrades/Aufträge wie beim Prestige. **Alles Permanente
+  bleibt**: Meisterschaft, Spezialisierungen, Skills, Saatlabor, Galerie, Deko, Erfolge,
+  Kampagne, Lizenzen, `lifetimeEarned`, `maxUnlockEarned` (→ Aufträge/Unlocks bleiben auf
+  Tier, kein Softlock).
+- **Multiplikator**: `worldseedYieldFactor = 1 + starseed·starseedYieldPer` (0,12) fließt
+  multiplikativ in `yieldMultiplier` → jede Sternensaat hebt den Ertrag des ganzen Gartens
+  dauerhaft, sodass der Wiederaufstieg schneller geht als der letzte.
+- **UI** (`PrestigePanel.svelte`): eigener Weltensaat-Block am Ende des Prestige-Panels
+  (plum/kosmischer Akzent) mit Sternensaat-Stand + aktivem %-Bonus, Gewinn beim Säen, harter
+  Bestätigungsdialog und Gate-Hinweis vor Parzelle 20. `goals.ts`: `worldseedGoal` (Endgame-
+  Ziel 🌌) ab Parzelle 14 bzw. nach dem ersten Reset, Chip „Weltensaat".
+
+**SAVE_VERSION 32:** neue Felder `starseed` + `worldResets`. Migration 31→32: `sanitize`
+defaultet beide auf 0 → alte Saves ohne höhere Prestige. check/build grün, Tests 72/72.

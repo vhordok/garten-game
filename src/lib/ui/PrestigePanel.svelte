@@ -2,7 +2,8 @@
   import { CONFIG } from '../data/config'
   import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
   import { PARCEL_MILESTONES, nextMilestone } from '../data/milestones'
-  import { buyCompostUpgrade, compostGain, leaseParcel, leaseRequirement } from '../game/actions'
+  import { buyCompostUpgrade, compostGain, leaseParcel, leaseRequirement, weltensaat } from '../game/actions'
+  import { canWeltensaat, starseedGain, worldseedYieldFactor } from '../game/worldseed'
   import { effectiveCompost } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -22,6 +23,11 @@
   const growthPct = $derived(Math.round(effectiveCompost($gameStore) * CONFIG.compostGrowthPerPoint * 100))
   const upcoming = $derived(nextMilestone($gameStore.parcels))
 
+  // PHASE 51 Weltensaat — the higher prestige
+  const starGain = $derived(starseedGain($gameStore))
+  const starFactor = $derived(worldseedYieldFactor($gameStore))
+  const canSow = $derived(canWeltensaat($gameStore))
+
   function compostActive(effect: string, perLevel: number, level: number): string {
     if (level <= 0) return ''
     return effect === 'offline' ? `+${perLevel * level} h` : `+${Math.round(perLevel * level * 100)} %`
@@ -34,6 +40,26 @@
       playSound('buy')
     } else {
       playSound('error')
+    }
+  }
+
+  function handleWeltensaat() {
+    if (
+      !window.confirm(
+        'Weltensaat säen? Parzellen UND Kompost werden auf Anfang zurückgesetzt — Meisterschaft, ' +
+          'Spezialisierungen, Skills, Sammlungen, Erfolge und Lizenzen bleiben. Dafür bekommst du ' +
+          'dauerhafte Sternensaat (gartenweiter Ertrag für immer).'
+      )
+    ) {
+      return
+    }
+    const gained = weltensaat()
+    if (gained > 0) {
+      playSound('legendary')
+      screenShake(1.8)
+      legendaryBurst(window.innerWidth / 2, window.innerHeight / 2)
+      pushToast(`Weltensaat gesät! +${formatNumber(gained)} Sternensaat 🌌`, '🌌', 10000, { priority: 'critical' })
+      onClose()
     }
   }
 
@@ -175,6 +201,37 @@
     Ertrags-% wirken als Chance: +25 % heißt, jede Ernte bringt im Schnitt das 1,25-fache — der Bonus
     würfelt pro Ernte eine Extra-Einheit aus.
   </p>
+
+  <!-- PHASE 51: Weltensaat — the higher prestige, gated behind deep parcels -->
+  <div class="weltensaat" class:armed={canSow}>
+    <h3 class="sec ws-title">🌌 Weltensaat — die höhere Prestige</h3>
+    <p class="hint">
+      Der ganz große Neuanfang: Du setzt <b>Parzellen und Kompost</b> komplett zurück und säst eine neue
+      Welt. Meisterschaft, Spezialisierungen, Skills, Saatlabor, Galerie, Deko, Erfolge und Lizenzen
+      <b>bleiben</b> — dafür erntest du <b>Sternensaat</b>, die für immer den gartenweiten Ertrag hebt.
+    </p>
+    <div class="rows num">
+      <div class="row">
+        <span class="label">Sternensaat</span>
+        <span>
+          {formatNumber($gameStore.starseed)} 🌌
+          {#if $gameStore.starseed > 0}(+{Math.round((starFactor - 1) * 100)} % Ertrag, dauerhaft){/if}
+          {#if $gameStore.worldResets > 0}· {$gameStore.worldResets}× gesät{/if}
+        </span>
+      </div>
+      <div class="row gain-row" class:ready={canSow}>
+        <span class="label">Beim Säen</span>
+        <span>+{formatNumber(starGain)} Sternensaat (+{Math.round(starGain * CONFIG.starseedYieldPer * 100)} % Ertrag)</span>
+      </div>
+    </div>
+    <button class="pxbtn full num ws-btn" disabled={!canSow} onclick={handleWeltensaat}>
+      {#if canSow}
+        Weltensaat säen — +{formatNumber(starGain)} Sternensaat
+      {:else}
+        Freigeschaltet ab Parzelle {CONFIG.weltensaatMinParcels}
+      {/if}
+    </button>
+  </div>
 </Overlay>
 
 <style>
@@ -345,5 +402,32 @@
 
   .cu.endless .cu-head b {
     color: var(--c-gold2);
+  }
+
+  /* PHASE 51: Weltensaat — the higher-prestige block, plum/cosmic accent */
+  .weltensaat {
+    margin-top: 18px;
+    padding: 12px;
+    border: 1px solid var(--c-plum1);
+    background: linear-gradient(180deg, rgba(64, 39, 81, 0.35), transparent);
+  }
+
+  .ws-title {
+    color: var(--c-plum3);
+    margin-top: 0;
+  }
+
+  .ws-btn {
+    margin-top: 4px;
+    background: var(--c-plum2);
+    border-color: var(--c-plum3);
+  }
+
+  .weltensaat.armed .ws-btn {
+    box-shadow: 0 0 14px rgba(223, 132, 165, 0.5);
+  }
+
+  .ws-btn:disabled {
+    opacity: 0.6;
   }
 </style>

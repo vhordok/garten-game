@@ -14,6 +14,8 @@
     if (g.campaign) return 'Kampagne'
     if (g.discovery) return 'Build'
     switch (g.id) {
+      case 'worldseed':
+        return 'Weltensaat'
       case 'plant':
       case 'collection':
         return 'Pflanze'
