@@ -7,7 +7,7 @@ import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { achievementBonus } from './achievements'
 import { decorationBeauty } from './decorations'
-import { worldseedYieldFactor } from './worldseed'
+import { worldseedYieldFactor, starUpgradeBonus } from './worldseed'
 import { variantBonus, variantEventBonus } from './seedlab'
 import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
@@ -69,6 +69,7 @@ export function growthMultiplier(state: GameState): number {
   return (
     multiplierFor(state, 'growth') *
     (1 + CONFIG.compostGrowthPerPoint * effectiveCompost(state)) *
+    (1 + starUpgradeBonus(state, 'growth')) * // PHASE 53: Sternenkammer growth
     wasserfass *
     perma *
     aura
@@ -123,6 +124,7 @@ export function yieldMultiplier(state: GameState): number {
     (1 + achievementBonus(state, 'yield')) *
     (1 + forestBonus(state)) * // PHASE 34: timber „Hain"-Aura (separate multiplicative factor)
     worldseedYieldFactor(state) * // PHASE 51: permanent Weltensaat (Sternensaat) aura
+    (1 + starUpgradeBonus(state, 'yield')) * // PHASE 53: Sternenkammer yield
     perma *
     meta *
     event

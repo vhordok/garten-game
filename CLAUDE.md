@@ -282,4 +282,10 @@ SAVE_VERSION 32: neue Felder starseed+worldResets (Migration defaultet 0). Phase
 lebendige Gartenszene — Hintergrund-Deko bekommt sanfte Idle-Bewegung (.deco-anchor + deco-bob,
 per Hash entkoppelt) und typabhängiges Leuchten (Laterne warm, Wasser-Deko kühl, gepulster
 drop-shadow), prefers-reduced-motion respektiert. Reine CSS/UI, keine Save-Änderung.
-Stand SAVE_VERSION 32.
+Phase 53 (§9.55): Sternenkammer (data/starUpgrades.ts + game/worldseed.ts) — Sternensaat
+ausgebbar über 4 permanente Upgrades (Sternenfeuer Ertrag/Sternenwind Tempo endlos,
+Sternendünger Kompost-Gewinn, Sternenkeim Start-Parzellen); starseedSpent getrennt getrackt
+→ starseedBanked=starseed+spent treibt den flachen worldseedYieldFactor (Ausgeben schwächt
+ihn nie, wie compostClaimed); Hooks in yield/growth/compostGain/weltensaat-Reset; UI-Liste im
+PrestigePanel-Weltensaat-Block. SAVE_VERSION 33: neue Felder starseedSpent+starUpgrades
+(Migration defaultet 0/{}). Stand SAVE_VERSION 33.

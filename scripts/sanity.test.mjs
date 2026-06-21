@@ -106,7 +106,9 @@ import { claimCampaign, currentCampaignStep, initCampaign } from '../src/lib/gam
 import { DECORATIONS, nextDecorationCost } from '../src/lib/data/decorations.ts'
 import { buyDecoration, weltensaat } from '../src/lib/game/actions.ts'
 import { decorationBeauty, decorationCount, ownsAnyDecoration } from '../src/lib/game/decorations.ts'
-import { canWeltensaat, starseedGain, worldseedYieldFactor } from '../src/lib/game/worldseed.ts'
+import { canWeltensaat, starseedGain, starseedBanked, starUpgradeBonus, starUpgradeLevel, worldseedYieldFactor } from '../src/lib/game/worldseed.ts'
+import { buyStarUpgrade } from '../src/lib/game/actions.ts'
+import { STAR_UPGRADES, starUpgradeCost } from '../src/lib/data/starUpgrades.ts'
 import { get } from 'svelte/store'
 import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog, flushToastLog, reloadToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
@@ -1651,6 +1653,72 @@ test('PHASE 51: Weltensaat banks Sternensaat, resets the prestige layer, keeps m
     assert.notEqual(importSave(old), null)
     assert.equal(getState().starseed, 0, 'pre-v32 save defaults Sternensaat to 0')
     assert.equal(getState().worldResets, 0, 'pre-v32 save defaults reset count to 0')
+  })
+})
+
+test('PHASE 53: Sternenkammer spends Sternensaat without weakening the flat bonus', () => {
+  withBoringRng(() => {
+    const yieldDef = STAR_UPGRADES.find((u) => u.effect === 'yield')
+    const compostDef = STAR_UPGRADES.find((u) => u.effect === 'compostGain')
+    const startDef = STAR_UPGRADES.find((u) => u.effect === 'startParcels')
+
+    // ── flat banked bonus uses starseed + starseedSpent (spending never weakens) ──
+    const s = fresh()
+    s.starseed = 10
+    const factorBefore = worldseedYieldFactor(s)
+    const ymBefore = yieldMultiplier(s)
+    assert.equal(starseedBanked(s), 10, 'banked = pool when nothing spent')
+    const cost0 = starUpgradeCost(yieldDef, 0)
+    assert.ok(buyStarUpgrade(yieldDef.id), 'buy first yield level')
+    const g = getState()
+    assert.equal(g.starseed, 10 - cost0, 'Sternensaat spent from the pool')
+    assert.equal(g.starseedSpent, cost0, 'spent tracked separately')
+    assert.equal(starseedBanked(g), 10, 'total banked unchanged by spending')
+    assert.ok(Math.abs(worldseedYieldFactor(g) - factorBefore) < 1e-9, 'flat yield bonus NOT weakened by spending')
+    assert.equal(starUpgradeLevel(g, yieldDef.id), 1, 'upgrade level bumped')
+    assert.ok(starUpgradeBonus(g, 'yield') >= yieldDef.perLevel - 1e-9, 'yield bonus applies')
+    assert.ok(yieldMultiplier(g) > ymBefore, 'Sternenkammer yield raises the multiplier')
+
+    // ── can't afford → no buy ──
+    const poor = fresh()
+    poor.starseed = 0
+    assert.equal(buyStarUpgrade(yieldDef.id), false, 'no Sternensaat, no upgrade')
+
+    // ── compostGain upgrade raises the next prestige gain ──
+    const c = fresh()
+    c.lifetimeEarned = 1e12
+    const gainBase = compostGain(c)
+    c.starUpgrades = { [compostDef.id]: 3 }
+    assert.ok(compostGain(c) > gainBase, 'Sternendünger raises compost gain')
+
+    // ── startParcels gives a head-start on the Weltensaat reset ──
+    const w = fresh()
+    w.parcels = CONFIG.weltensaatMinParcels + 2
+    w.starUpgrades = { [startDef.id]: 4 }
+    weltensaat()
+    assert.equal(getState().parcels, 1 + 4, 'Sternenkeim head-starts the re-climb')
+
+    // ── save roundtrip + pre-v33 migration default ──
+    const r = fresh()
+    r.starseed = 5
+    r.starseedSpent = 7
+    r.starUpgrades = { [yieldDef.id]: 2 }
+    const code = exportSave()
+    fresh()
+    assert.notEqual(importSave(code), null)
+    assert.equal(getState().starseedSpent, 7, 'starseedSpent survives save/load')
+    assert.equal(getState().starUpgrades[yieldDef.id], 2, 'star upgrades survive save/load')
+
+    const old = JSON.stringify({
+      version: 32,
+      savedAt: Date.now(),
+      state: { money: 5, totalEarned: 5, starseed: 4, selectedPlantId: 'basilikum', stats: { planted: 0, harvested: 0, sold: 0 }, createdAt: 1 },
+    })
+    fresh()
+    assert.notEqual(importSave(old), null)
+    assert.equal(getState().starseedSpent, 0, 'pre-v33 save defaults starseedSpent to 0')
+    assert.deepEqual(getState().starUpgrades, {}, 'pre-v33 save defaults star upgrades to {}')
+    assert.equal(getState().starseed, 4, 'existing Sternensaat preserved through migration')
   })
 })
 

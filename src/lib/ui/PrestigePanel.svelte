@@ -2,8 +2,9 @@
   import { CONFIG } from '../data/config'
   import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
   import { PARCEL_MILESTONES, nextMilestone } from '../data/milestones'
-  import { buyCompostUpgrade, compostGain, leaseParcel, leaseRequirement, weltensaat } from '../game/actions'
-  import { canWeltensaat, starseedGain, worldseedYieldFactor } from '../game/worldseed'
+  import { buyCompostUpgrade, buyStarUpgrade, compostGain, leaseParcel, leaseRequirement, weltensaat } from '../game/actions'
+  import { canWeltensaat, starseedGain, starUpgradeLevel, worldseedYieldFactor } from '../game/worldseed'
+  import { STAR_UPGRADES, starUpgradeCost } from '../data/starUpgrades'
   import { effectiveCompost } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -36,6 +37,19 @@
   function handleBuyCompost(e: MouseEvent, id: string) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     if (buyCompostUpgrade(id)) {
+      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 12)
+      playSound('buy')
+    } else {
+      playSound('error')
+    }
+  }
+
+  // PHASE 53: Sternenkammer — spend Sternensaat on permanent upgrades
+  const seenWeltensaat = $derived($gameStore.starseed > 0 || $gameStore.worldResets > 0)
+
+  function handleBuyStar(e: MouseEvent, id: string) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    if (buyStarUpgrade(id)) {
       coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 12)
       playSound('buy')
     } else {
@@ -224,6 +238,35 @@
         <span>+{formatNumber(starGain)} Sternensaat (+{Math.round(starGain * CONFIG.starseedYieldPer * 100)} % Ertrag)</span>
       </div>
     </div>
+    {#if seenWeltensaat}
+      <h3 class="sec ws-sub">Sternenkammer <span class="sec-note num">· {formatNumber($gameStore.starseed)} 🌌 frei</span></h3>
+      <p class="hint">Gib Sternensaat für dauerhafte Boni aus — das schwächt den festen Ertrags-Bonus nicht.</p>
+      <ul class="cu-list">
+        {#each STAR_UPGRADES as u (u.id)}
+          {@const level = starUpgradeLevel($gameStore, u.id)}
+          {@const cost = starUpgradeCost(u, level)}
+          {@const affordable = cost !== null && $gameStore.starseed >= cost}
+          <li class="cu" class:endless={u.repeatable}>
+            <span class="cu-body">
+              <span class="cu-head">
+                <b>{u.name}</b>
+                <span class="cu-lvl num">Stufe {level}{u.repeatable ? '' : `/${u.maxLevel}`}</span>
+                {#if u.repeatable}<span class="cu-endless">∞</span>{/if}
+              </span>
+              <span class="cu-desc">{u.desc}</span>
+            </span>
+            {#if cost === null}
+              <span class="cu-lock">MAX</span>
+            {:else}
+              <button class="pxbtn small num" disabled={!affordable} onclick={(e) => handleBuyStar(e, u.id)}>
+                🌌 {formatNumber(cost)}
+              </button>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+
     <button class="pxbtn full num ws-btn" disabled={!canSow} onclick={handleWeltensaat}>
       {#if canSow}
         Weltensaat säen — +{formatNumber(starGain)} Sternensaat
@@ -415,6 +458,10 @@
   .ws-title {
     color: var(--c-plum3);
     margin-top: 0;
+  }
+
+  .ws-sub {
+    color: var(--c-plum3);
   }
 
   .ws-btn {

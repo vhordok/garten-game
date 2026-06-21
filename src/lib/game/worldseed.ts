@@ -7,6 +7,7 @@
 // re-climb is faster than the last. Pure TS; the reset action lives in actions.ts.
 
 import { CONFIG } from '../data/config'
+import { STAR_UPGRADES, starUpgradeById, starUpgradeCost, type StarEffect } from '../data/starUpgrades'
 import type { GameState } from './types'
 
 /** Sternensaat banked by performing a Weltensaat right now (0 if not eligible). */
@@ -20,7 +21,47 @@ export function canWeltensaat(state: GameState): boolean {
   return starseedGain(state) > 0
 }
 
-/** Permanent garden-wide yield factor from owned Sternensaat (≥1). */
+/** Total Sternensaat ever banked (pool + spent) — drives the flat yield bonus so
+ * spending in the Sternenkammer never weakens it (mirrors compostClaimed). */
+export function starseedBanked(state: GameState): number {
+  return Math.max(state.starseed ?? 0, 0) + Math.max(state.starseedSpent ?? 0, 0)
+}
+
+/** Permanent garden-wide yield factor from total banked Sternensaat (≥1). */
 export function worldseedYieldFactor(state: GameState): number {
-  return 1 + (state.starseed ?? 0) * CONFIG.starseedYieldPer
+  return 1 + starseedBanked(state) * CONFIG.starseedYieldPer
+}
+
+/** Owned level of a Sternenkammer upgrade (0 = none). */
+export function starUpgradeLevel(state: GameState, id: string): number {
+  return state.starUpgrades?.[id] ?? 0
+}
+
+/** Summed bonus from all Sternenkammer upgrades for the given effect. */
+export function starUpgradeBonus(state: GameState, effect: StarEffect): number {
+  let bonus = 0
+  for (const def of STAR_UPGRADES) {
+    if (def.effect !== effect) continue
+    const level = starUpgradeLevel(state, def.id)
+    if (level > 0) bonus += def.perLevel * level
+  }
+  return bonus
+}
+
+/**
+ * Buy one level of a Sternenkammer upgrade with Sternensaat. Spends from the pool
+ * and tracks it in starseedSpent so the flat yield bonus stays intact. Mutates
+ * state and returns true on success (actions.ts wraps this + notifies).
+ */
+export function purchaseStarUpgrade(state: GameState, id: string): boolean {
+  const def = starUpgradeById(id)
+  if (!def) return false
+  const level = starUpgradeLevel(state, id)
+  const cost = starUpgradeCost(def, level)
+  if (cost === null || (state.starseed ?? 0) < cost) return false
+  state.starseed -= cost
+  state.starseedSpent = (state.starseedSpent ?? 0) + cost
+  if (!state.starUpgrades) state.starUpgrades = {}
+  state.starUpgrades[id] = level + 1
+  return true
 }
