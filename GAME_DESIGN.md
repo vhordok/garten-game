@@ -1695,3 +1695,20 @@ Garten).
 
 **SAVE_VERSION 33:** neue Felder `starseedSpent` + `starUpgrades`. Migration 32→33: `sanitize`
 defaultet 0 / {} (bestehende Sternensaat bleibt). check/build grün, Tests 73/73.
+
+### 9.56 Phase 54 — Kampagne reicht bis ins Weltensaat-Endgame (keine Save-Änderung)
+
+Die Mini-Kampagne (Phase 48) endete bei Kapitel 12 (8 Parzellen) — also **vor** dem neuen
+Endgame (Weltensaat ab Parzelle 20, Sternenkammer). Tiefe Spieler hatten dort keine Führung
+mehr. 5 Endgame-Kapitel **ans Ende angehängt** (`data/campaign.ts`):
+
+- **Großgrundbesitzer** (Parzelle 14) → **Weltenbereit** (Parzelle 20, Weltensaat schaltet frei)
+  → **Weltenschöpfer** (erste Weltensaat) → **Sternenkammer** (ein Sternen-Upgrade kaufen) →
+  **Sternengärtner** (3 Welten gesät). Belohnungen über die bekannten Währungen (Kompost/Lose/
+  Dünger), zum Endgame hin größer.
+
+**Save-sicher ohne Version-Bump:** Kapitel nur **angehängt** → der gespeicherte `campaign`-Index
+bleibt gültig; `sanitize` clamped weiterhin auf die (nun größere) Länge. Spieler, die die alte
+Kette beendet hatten, sehen jetzt das nächste Kapitel; sehr tiefe Spieler lösen bereits erfüllte
+neue Kapitel beim nächsten Tick automatisch ein (kleiner, fairer Nachschlag, keine Flut).
+check/build grün, Tests 74/74.

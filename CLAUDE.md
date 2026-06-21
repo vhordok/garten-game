@@ -288,4 +288,8 @@ Sternendünger Kompost-Gewinn, Sternenkeim Start-Parzellen); starseedSpent getre
 → starseedBanked=starseed+spent treibt den flachen worldseedYieldFactor (Ausgeben schwächt
 ihn nie, wie compostClaimed); Hooks in yield/growth/compostGain/weltensaat-Reset; UI-Liste im
 PrestigePanel-Weltensaat-Block. SAVE_VERSION 33: neue Felder starseedSpent+starUpgrades
-(Migration defaultet 0/{}). Stand SAVE_VERSION 33.
+(Migration defaultet 0/{}). Phase 54 (§9.56): Kampagne bis ins Weltensaat-Endgame verlängert
+(data/campaign.ts — 5 Endgame-Kapitel angehängt: Großgrundbesitzer P14 → Weltenbereit P20 →
+Weltenschöpfer 1. Weltensaat → Sternenkammer-Kauf → Sternengärtner 3 Welten); save-sicher ohne
+Version-Bump (nur angehängt, Index bleibt gültig, sehr tiefe Spieler lösen erfüllte Kapitel
+auto ein). Stand SAVE_VERSION 33.
