@@ -14,7 +14,15 @@
   }
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
-  type Placed = { key: string; sprite: string; left: number; top: number; size: number; z: number; dim: number }
+  type Placed = { key: string; sprite: string; left: number; top: number; size: number; z: number; dim: number; glow: string; delay: number }
+
+  // PHASE 52: a few decoration kinds glow at night — lanterns warm, water cool —
+  // so the background reads as a living garden, not a flat picture.
+  const glowOf = (sprite: string): string => {
+    if (sprite === 'deco-laterne') return 'warm'
+    if (sprite === 'deco-teich' || sprite === 'deco-vogelbad' || sprite === 'deco-springbrunnen') return 'cool'
+    return ''
+  }
 
   const placements = $derived.by<Placed[]>(() => {
     // round-robin over kinds so copies interleave across the width (organic mix)
@@ -38,7 +46,17 @@
       const top = 70 + h2 * 22
       const depth = (top - 70) / 22 // 0 (far) .. 1 (near)
       const size = Math.round((28 + depth * 40)) // 28px far → 68px near
-      return { key: `${d.id}-${i}`, sprite: d.sprite, left, top, size, z: Math.round(top * 10), dim: 0.55 + depth * 0.45 }
+      return {
+        key: `${d.id}-${i}`,
+        sprite: d.sprite,
+        left,
+        top,
+        size,
+        z: Math.round(top * 10),
+        dim: 0.55 + depth * 0.45,
+        glow: glowOf(d.sprite),
+        delay: -(h1 * 4), // desync the idle bob
+      }
     })
   })
 </script>
@@ -54,17 +72,18 @@
   <div class="hedge near"></div>
   <div class="ground"></div>
   {#each placements as p (p.key)}
-    <img
-      class="px deco"
-      src={spriteUrl(p.sprite)}
-      style:left={`${p.left}%`}
-      style:top={`${p.top}%`}
-      style:width={`${p.size}px`}
-      style:height={`${p.size}px`}
-      style:z-index={p.z}
-      style:opacity={p.dim}
-      alt=""
-    />
+    <span class="deco-anchor" style:left={`${p.left}%`} style:top={`${p.top}%`} style:z-index={p.z} style:opacity={p.dim}>
+      <img
+        class="px deco"
+        class:glow-warm={p.glow === 'warm'}
+        class:glow-cool={p.glow === 'cool'}
+        src={spriteUrl(p.sprite)}
+        style:width={`${p.size}px`}
+        style:height={`${p.size}px`}
+        style:animation-delay={`${p.delay}s`}
+        alt=""
+      />
+    </span>
   {/each}
   <span class="fly" style="left: 18%; top: 58%; animation-duration: 3.2s"></span>
   <span class="fly" style="left: 41%; top: 66%; animation-duration: 4.4s"></span>
@@ -160,11 +179,64 @@
   }
 
   /* PHASE 50: landscaped decorations — sit on the ground, anchored by their base,
-     softly shadowed for depth. Positioned/scaled inline (see script). */
+     softly shadowed for depth. The anchor handles position/depth; the inner
+     sprite handles the PHASE 52 idle bob + glow without fighting the anchor. */
+  .deco-anchor {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    line-height: 0;
+  }
+
   .deco {
     image-rendering: pixelated;
-    transform: translate(-50%, -100%);
     filter: drop-shadow(0 3px 3px rgba(5, 6, 12, 0.55));
+    animation: deco-bob 5.5s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  /* warm lantern light + cool water shimmer — a gentle pulse so the night
+     garden feels alive (PHASE 52) */
+  .deco.glow-warm {
+    animation: deco-bob 5.5s ease-in-out infinite alternate, glow-warm 3.4s ease-in-out infinite alternate;
+  }
+
+  .deco.glow-cool {
+    animation: deco-bob 5.5s ease-in-out infinite alternate, glow-cool 4.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes deco-bob {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-2px);
+    }
+  }
+
+  @keyframes glow-warm {
+    from {
+      filter: drop-shadow(0 3px 3px rgba(5, 6, 12, 0.55)) drop-shadow(0 0 3px rgba(232, 193, 112, 0.35));
+    }
+    to {
+      filter: drop-shadow(0 3px 3px rgba(5, 6, 12, 0.55)) drop-shadow(0 0 9px rgba(232, 193, 112, 0.8));
+    }
+  }
+
+  @keyframes glow-cool {
+    from {
+      filter: drop-shadow(0 3px 3px rgba(5, 6, 12, 0.55)) drop-shadow(0 0 2px rgba(115, 190, 211, 0.25));
+    }
+    to {
+      filter: drop-shadow(0 3px 3px rgba(5, 6, 12, 0.55)) drop-shadow(0 0 7px rgba(115, 190, 211, 0.6));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .deco,
+    .deco.glow-warm,
+    .deco.glow-cool {
+      animation: none;
+    }
   }
 
   /* firefly: a square pixel with a soft glow, gently pulsing */

@@ -278,5 +278,8 @@ säbar, bankt Sternensaat (starseed) + worldResets, setzt Parzellen/Kompost/Rund
 alles Permanente (Meisterschaft/Spezial./Skills/Labor/Galerie/Deko/Erfolge/Kampagne/Lizenzen/
 maxUnlockEarned) bleibt → kein Softlock; worldseedYieldFactor=1+starseed·0,12 multiplikativ in
 yieldMultiplier (dauerhafter Garten-Ertrag); UI-Block im PrestigePanel + worldseedGoal (🌌).
-SAVE_VERSION 32: neue Felder starseed+worldResets (Migration defaultet 0).
+SAVE_VERSION 32: neue Felder starseed+worldResets (Migration defaultet 0). Phase 52 (§9.54):
+lebendige Gartenszene — Hintergrund-Deko bekommt sanfte Idle-Bewegung (.deco-anchor + deco-bob,
+per Hash entkoppelt) und typabhängiges Leuchten (Laterne warm, Wasser-Deko kühl, gepulster
+drop-shadow), prefers-reduced-motion respektiert. Reine CSS/UI, keine Save-Änderung.
 Stand SAVE_VERSION 32.

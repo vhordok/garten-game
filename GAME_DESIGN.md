@@ -1659,3 +1659,18 @@ dauerhaften gartenweiten Multiplikator freischaltet.
 
 **SAVE_VERSION 32:** neue Felder `starseed` + `worldResets`. Migration 31→32: `sanitize`
 defaultet beide auf 0 → alte Saves ohne höhere Prestige. check/build grün, Tests 72/72.
+
+### 9.54 Phase 52 — Lebendige Gartenszene: Deko-Glanz & sanfte Animation (keine Save-Änderung)
+
+Den visuellen Faden weitergeführt: die Hintergrund-Deko (Phase 50) **lebt** jetzt.
+
+- **`Scene.svelte`**: jede Deko sitzt in einem `.deco-anchor` (Position/Tiefe), die innere
+  Sprite macht eine **sanfte Idle-Bewegung** (`deco-bob`, ±2 px, per `animation-delay` aus dem
+  Hash entkoppelt → kein Gleichschritt).
+- **Leuchten nach Typ**: Laternen glühen **warm** (`glow-warm`), Wasser-Deko (Teich/Vogelbad/
+  Springbrunnen) schimmert **kühl** (`glow-cool`) — gepulster `drop-shadow`, sodass die
+  Nachtszene atmet statt flach zu wirken.
+- **`prefers-reduced-motion`**: alle Deko-Animationen aus (Barrierefreiheit).
+
+Reine CSS/UI-Animation, keine Logik-/Save-Änderung (SAVE_VERSION 32). check/build grün,
+Tests 72/72. ⚠️ Animation nur im Browser sichtbar — bitte am Gerät prüfen.
