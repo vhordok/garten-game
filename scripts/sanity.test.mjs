@@ -1586,8 +1586,18 @@ test('PHASE 51: Weltensaat banks Sternensaat, resets the prestige layer, keeps m
     assert.equal(worldseedYieldFactor(m), 1, 'no Sternensaat → factor 1')
     const before = yieldMultiplier(m)
     m.starseed = 5
-    assert.ok(Math.abs(worldseedYieldFactor(m) - (1 + 5 * CONFIG.starseedYieldPer)) < 1e-9, 'factor = 1 + n·per')
+    // PHASE 56: compounding — factor = (1 + per)^banked, not 1 + n·per
+    assert.ok(Math.abs(worldseedYieldFactor(m) - Math.pow(1 + CONFIG.starseedYieldPer, 5)) < 1e-9, 'factor = (1+per)^banked')
+    assert.ok(worldseedYieldFactor(m) > 1 + 5 * CONFIG.starseedYieldPer, 'compounding beats the old flat bonus')
     assert.ok(yieldMultiplier(m) > before, 'Sternensaat raises the global yield multiplier')
+    // a deep player's bank (e.g. 79 from a parcel-98 world) is a real power spike,
+    // not the old ×10.5 — and it stays finite even at absurd banks
+    const deepBank = fresh()
+    deepBank.starseed = 79
+    assert.ok(worldseedYieldFactor(deepBank) > 1000, '79 Sternensaat is a ×1000+ spike, not ×10')
+    const absurd = fresh()
+    absurd.starseed = 1e6
+    assert.ok(Number.isFinite(worldseedYieldFactor(absurd)), 'factor stays finite at absurd banks')
 
     // ── the reset: banks gain, wipes the prestige layer + round, keeps meta ──
     const s = fresh()

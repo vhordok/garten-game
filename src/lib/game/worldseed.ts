@@ -27,9 +27,13 @@ export function starseedBanked(state: GameState): number {
   return Math.max(state.starseed ?? 0, 0) + Math.max(state.starseedSpent ?? 0, 0)
 }
 
-/** Permanent garden-wide yield factor from total banked Sternensaat (≥1). */
+/** Permanent garden-wide yield factor from total banked Sternensaat (≥1).
+ * PHASE 56: COMPOUNDING — each banked Sternensaat multiplies yield by
+ * (1 + starseedYieldPer), so deep worlds reach a multiplier that can actually
+ * outgrow the late-game compost runaway. Clamped to stay finite. */
 export function worldseedYieldFactor(state: GameState): number {
-  return 1 + starseedBanked(state) * CONFIG.starseedYieldPer
+  const factor = Math.pow(1 + CONFIG.starseedYieldPer, starseedBanked(state))
+  return Number.isFinite(factor) ? Math.min(factor, 1e300) : 1e300
 }
 
 /** Owned level of a Sternenkammer upgrade (0 = none). */
