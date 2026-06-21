@@ -1880,3 +1880,20 @@ man sie fortsetzt.
   Nicht-Helfer-IDs).
 
 Neues Save-Feld, abwärtskompatibel. check/build grün, Tests 80/80 (Pause→0, Toggle, Save-Roundtrip).
+
+### 9.66 Phase 64 — neue Kosmos-Spitze: 5 Pflanzen jenseits von Schöpfungskern (keine Save-Änderung)
+
+Spielerwunsch: neue Pflanzen für weiteres Endgame, nachdem alles freigeschaltet ist. Die kosmische
+Leiter wächst über Schöpfungskern (P98) hinaus um fünf neue Stufen (`data/plants.ts`):
+Urlichtblüte (P104), Äonenkern (P110), Unendlichkeitsrose (P116), Singularitätsstern (P123),
+Ursprungsblüte (P131). Je ~×3,5 Wert (sellValue 2e16→3,5e18), Unlock 1e39→1e47, gestaffelte
+Parzellen-Gates (über mehrere Weltensaat-Wiederaufstiege erreichbar → echter Langzeit-Progress).
+
+Voll datengetrieben: Kategorie `kosmos` (regrow, gefloored, eigene Spezialisierung/Akzentfarbe
+ziehen automatisch mit), integriert allein über `plantById` — Plots/Quests/Hotbar/Ziele/Save
+generisch. Sprites: gemeinsame Früh-Stufen (kosmos1/2), je eine **distinkte reife Blüte** (das
+Sternensaat-Stern-Motiv neu eingefärbt: violett/gold/purpur/blau/silberweiß), per
+`scripts/sprite-atlas.mjs` sichtgeprüft.
+
+Reine Daten/Sprites, keine Save-Änderung (Plant-IDs brauchen kein Feld). check/build grün,
+Tests 80/80 (Balance-Invarianten halten: uniforme Kadenz, Monotonie).

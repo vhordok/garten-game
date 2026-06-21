@@ -325,4 +325,7 @@ iteriert STAR_UPGRADES (rendert automatisch). Save-sicher, neue IDs→0. Phase 6
 pausierbar (neues Feld pausedHelpers: string[]) — Marktkarren/Sä-Gnom/etc. einzeln an-/abschaltbar;
 activeHelperBonus() überspringt pausierte in autoHarvest/autoSow/autoSell (live+offline),
 toggleHelperPause-Aktion, „⏸ Pause/▶ Start"-Knopf im Shop. SAVE_VERSION 34 (Migration defaultet [],
-sanitize behält nur echte Helfer-IDs). Stand SAVE_VERSION 34.
+sanitize behält nur echte Helfer-IDs). Phase 64 (§9.66): neue Kosmos-Spitze — 5 Pflanzen jenseits
+Schöpfungskern (Urlichtblüte P104→Ursprungsblüte P131, ~×3,5 Wert, Unlock 1e39→1e47, gestaffelte
+Parzellen-Gates über mehrere Weltensaat-Wiederaufstiege), voll datengetrieben über plantById,
+distinkte reife Sprites (Sternensaat-Motiv neu eingefärbt). Keine Save-Änderung. Stand SAVE_VERSION 34.
