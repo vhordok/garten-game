@@ -2,6 +2,7 @@
   import { CONFIG } from '../data/config'
   import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
   import { PARCEL_MILESTONES, nextMilestone } from '../data/milestones'
+  import { WORLD_MILESTONES, nextWorldMilestone } from '../data/worldMilestones'
   import { buyCompostUpgrade, buyStarUpgrade, compostGain, leaseParcel, leaseRequirement, weltensaat } from '../game/actions'
   import { canWeltensaat, starseedBanked, starseedGain, starUpgradeLevel, worldseedYieldFactor } from '../game/worldseed'
   import { STAR_UPGRADES, starUpgradeCost } from '../data/starUpgrades'
@@ -247,6 +248,26 @@
       Direkt bei Parzelle {CONFIG.weltensaatMinParcels} zu säen bringt fast nichts — der Bonus
       <b>kompoundiert</b>, also klettere erst tief, dann säe.
     </p>
+
+    <h3 class="sec ws-sub">Welten-Meilensteine <span class="sec-note num">· {$gameStore.worldResets ?? 0} Welten gesät</span></h3>
+    <p class="hint">Jede gesäte Welt schaltet einen dauerhaften Bonus frei — er überlebt jeden Reset.</p>
+    <ul class="ms-list num">
+      {#each WORLD_MILESTONES as m (m.world)}
+        {@const reached = ($gameStore.worldResets ?? 0) >= m.world}
+        <li class="ms" class:reached>
+          <span class="ms-icon">{reached ? '✓' : '🔒'}</span>
+          <span class="ms-body">
+            <span><b>Welt {m.world}</b> · {m.label}</span>
+            <span class="ms-desc">{m.desc}</span>
+          </span>
+        </li>
+      {/each}
+    </ul>
+    {#if nextWorldMilestone($gameStore.worldResets ?? 0)}
+      {@const wsNext = nextWorldMilestone($gameStore.worldResets ?? 0)}
+      <p class="hint">Nächste Welt-Belohnung: <b>Welt {wsNext?.world}</b> — {wsNext?.desc}.</p>
+    {/if}
+
     {#if seenWeltensaat}
       <h3 class="sec ws-sub">Sternenkammer <span class="sec-note num">· {formatNumber($gameStore.starseed)} 🌌 frei</span></h3>
       <p class="hint">Gib Sternensaat für dauerhafte Boni aus — das schwächt den festen Ertrags-Bonus nicht.</p>

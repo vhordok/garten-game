@@ -9,6 +9,7 @@ import { isOrnamental, nextOrnamentalCost } from './gallery'
 import { purchaseDecoration } from './decorations'
 import { purchaseStarUpgrade, starseedGain, starUpgradeBonus } from './worldseed'
 import { parcelBonus } from '../data/milestones'
+import { worldMilestoneBonus } from '../data/worldMilestones'
 import { skillById } from '../data/skills'
 import { PLANTS, plantById } from '../data/plants'
 import { bestHarvestValue, masteryPrizePlant, SCRATCH_PRIZES, scratchPrizeAmount, type ScratchPrizeType } from '../data/scratch'
@@ -487,7 +488,11 @@ export function compostGain(state: GameState): number {
   const event = state.weather.id === 'komposttag' ? 1.5 + variantEventBonus(state, 'komposttag') : 1
   const fromLifetime = Math.floor(
     Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase) *
-      (1 + skillBonus(state, 'compostGain') + variantBonus(state, 'compostGain') + starUpgradeBonus(state, 'compostGain')) *
+      (1 +
+        skillBonus(state, 'compostGain') +
+        variantBonus(state, 'compostGain') +
+        starUpgradeBonus(state, 'compostGain') +
+        worldMilestoneBonus(state.worldResets ?? 0, 'compostGain')) *
       event
   )
   // subtract compost already CLAIMED (pool + spent) so spending on the compost
@@ -542,7 +547,9 @@ export function weltensaat(): number {
   s.worldResets = (s.worldResets ?? 0) + 1
   // reset the prestige layer (deeper than leaseParcel: parcels + compost too).
   // PHASE 53: the Sternenkeim upgrade grants a parcel head-start on the re-climb.
-  s.parcels = 1 + starUpgradeBonus(s, 'startParcels')
+  // PHASE 61: the 'Sternenpfad' world milestone adds more (worldResets already
+  // incremented above, so the just-finished world's milestone counts here).
+  s.parcels = 1 + starUpgradeBonus(s, 'startParcels') + worldMilestoneBonus(s.worldResets ?? 0, 'startParcels')
   s.compost = 0
   s.compostSpent = 0
   s.compostUpgrades = {}

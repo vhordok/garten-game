@@ -10,6 +10,7 @@ import { decorationBeauty } from './decorations'
 import { worldseedYieldFactor, starUpgradeBonus } from './worldseed'
 import { variantBonus, variantEventBonus } from './seedlab'
 import { parcelBonus } from '../data/milestones'
+import { worldMilestoneBonus } from '../data/worldMilestones'
 import { plantById } from '../data/plants'
 import { categorySpecById, type SpecKind } from '../data/specializations'
 import { UPGRADES } from '../data/upgrades'
@@ -61,6 +62,7 @@ export function growthMultiplier(state: GameState): number {
   const perma =
     1 +
     parcelBonus(state.parcels, 'growth') +
+    worldMilestoneBonus(state.worldResets ?? 0, 'growth') +
     compostUpgradeBonus(state, 'growth') +
     achievementBonus(state, 'growth') +
     variantBonus(state, 'growth')
@@ -109,7 +111,11 @@ export function forestBonus(state: GameState): number {
 export function yieldMultiplier(state: GameState): number {
   const levelBonus = levelYieldBonus(state.level)
   // PHASE 13: parcel milestones + compost-garden upgrades add small yield boni
-  const perma = 1 + parcelBonus(state.parcels, 'yield') + compostUpgradeBonus(state, 'yield')
+  const perma =
+    1 +
+    parcelBonus(state.parcels, 'yield') +
+    worldMilestoneBonus(state.worldResets ?? 0, 'yield') +
+    compostUpgradeBonus(state, 'yield')
   // PHASE 17: beauty-milestone aura + skill-tree (Gartenplanung) yield;
   // PHASE 20: seed-lab variant yield bonus
   const meta =
@@ -381,6 +387,7 @@ export function offlineCapHours(state: GameState): number {
     effectBonus(state, 'offlineCap') +
     (state.upgrades['sternenuhr'] ?? 0) * CONFIG.sternenuhrOfflinePerLevel +
     parcelBonus(state.parcels, 'offline') +
+    worldMilestoneBonus(state.worldResets ?? 0, 'offline') +
     compostUpgradeBonus(state, 'offline')
   )
 }

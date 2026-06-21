@@ -314,4 +314,8 @@ nicht-endlich werden). Neuer Format-Test. Keine Save-Änderung. Phase 60 (§9.62
 — Kacheln zeigten „10h 37m", obwohl die Kosmos-Pflanze in ~3 echten Sekunden reif ist (Plot.svelte
 rechnete formatDuration(target−progress), aber das sind wachstums-adjustierte Units, keine Echtzeit);
 jetzt remaining = effectiveCycleSeconds×(1−fraction), Chip+Tooltip wahrhaftig. Reiner UI-Fix, keine
-Save-Änderung. Stand SAVE_VERSION 33.
+Save-Änderung. Phase 61 (§9.63): Welten-Meilensteine (data/worldMilestones.ts — 8 Meilensteine auf
+worldResets, mirror von parcelBonus, rein abgeleitet → kein Save-Feld) machen Weltensaat zu echtem
+Inhalt: jede gesäte Welt schaltet dauerhaft frei (Ertrag/Wachstum/Kompost/Offline/+Start-Parzellen/
++Sternensaat je Saat), eingehängt an 6 Stellen (yield/growth/offline/compostGain/startParcels/
+starseedGain), UI-Liste im Weltensaat-Block. Stand SAVE_VERSION 33.

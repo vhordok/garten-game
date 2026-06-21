@@ -8,12 +8,15 @@
 
 import { CONFIG } from '../data/config'
 import { STAR_UPGRADES, starUpgradeById, starUpgradeCost, type StarEffect } from '../data/starUpgrades'
+import { worldMilestoneBonus } from '../data/worldMilestones'
 import type { GameState } from './types'
 
-/** Sternensaat banked by performing a Weltensaat right now (0 if not eligible). */
+/** Sternensaat banked by performing a Weltensaat right now (0 if not eligible).
+ * PHASE 61: world milestones add a flat bonus per sowing on top of the depth. */
 export function starseedGain(state: GameState): number {
   if (state.parcels < CONFIG.weltensaatMinParcels) return 0
-  return state.parcels - CONFIG.weltensaatMinParcels + 1
+  const depth = state.parcels - CONFIG.weltensaatMinParcels + 1
+  return depth + worldMilestoneBonus(state.worldResets ?? 0, 'starseedGain')
 }
 
 /** Whether a Weltensaat is available (enough parcels to bank ≥1 Sternensaat). */
