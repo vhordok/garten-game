@@ -259,6 +259,11 @@ export interface GameState {
   /** Weltensaat (PHASE 51): banked Sternensaat — the higher-prestige currency.
    * Each grants a permanent, garden-wide yield multiplier; survives everything. */
   starseed: number
+  /** Sternensaat spent in the Sternenkammer (PHASE 53); starseed+starseedSpent
+   * (total ever banked) drives the flat yield bonus so spending never weakens it. */
+  starseedSpent: number
+  /** Sternenkammer upgrade levels keyed by StarUpgradeDef id (PHASE 53). */
+  starUpgrades: Record<string, number>
   /** number of Weltensaat resets performed (PHASE 51). */
   worldResets: number
   /** cannabis license level owned (0–5; IV/V are PHASE 27 trade licenses that

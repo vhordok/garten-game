@@ -41,6 +41,8 @@ export function createDefaultState(now = Date.now()): GameState {
     campaign: 0,
     decorations: {},
     starseed: 0,
+    starseedSpent: 0,
+    starUpgrades: {},
     worldResets: 0,
     licenses: 0,
     records: { bestHarvest: 0, longestCombo: 0, biggestWin: 0, bestBeauty: 0 },

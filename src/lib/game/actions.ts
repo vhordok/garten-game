@@ -7,7 +7,7 @@ import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
 import { isOrnamental, nextOrnamentalCost } from './gallery'
 import { purchaseDecoration } from './decorations'
-import { starseedGain } from './worldseed'
+import { purchaseStarUpgrade, starseedGain, starUpgradeBonus } from './worldseed'
 import { parcelBonus } from '../data/milestones'
 import { skillById } from '../data/skills'
 import { PLANTS, plantById } from '../data/plants'
@@ -487,7 +487,7 @@ export function compostGain(state: GameState): number {
   const event = state.weather.id === 'komposttag' ? 1.5 + variantEventBonus(state, 'komposttag') : 1
   const fromLifetime = Math.floor(
     Math.sqrt(state.lifetimeEarned / CONFIG.prestigeBase) *
-      (1 + skillBonus(state, 'compostGain') + variantBonus(state, 'compostGain')) *
+      (1 + skillBonus(state, 'compostGain') + variantBonus(state, 'compostGain') + starUpgradeBonus(state, 'compostGain')) *
       event
   )
   // subtract compost already CLAIMED (pool + spent) so spending on the compost
@@ -540,8 +540,9 @@ export function weltensaat(): number {
   if (gain <= 0) return 0
   s.starseed = (s.starseed ?? 0) + gain
   s.worldResets = (s.worldResets ?? 0) + 1
-  // reset the prestige layer (deeper than leaseParcel: parcels + compost too)
-  s.parcels = 1
+  // reset the prestige layer (deeper than leaseParcel: parcels + compost too).
+  // PHASE 53: the Sternenkeim upgrade grants a parcel head-start on the re-climb.
+  s.parcels = 1 + starUpgradeBonus(s, 'startParcels')
   s.compost = 0
   s.compostSpent = 0
   s.compostUpgrades = {}
@@ -559,6 +560,14 @@ export function weltensaat(): number {
   refillQuests(s)
   notify()
   return gain
+}
+
+/** PHASE 53: buy one level of a Sternenkammer upgrade with Sternensaat. */
+export function buyStarUpgrade(id: string): boolean {
+  const s = getState()
+  if (!purchaseStarUpgrade(s, id)) return false
+  notify()
+  return true
 }
 
 export function buyPlot(): boolean {

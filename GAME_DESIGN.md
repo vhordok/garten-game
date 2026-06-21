@@ -1674,3 +1674,24 @@ Den visuellen Faden weitergeführt: die Hintergrund-Deko (Phase 50) **lebt** jet
 
 Reine CSS/UI-Animation, keine Logik-/Save-Änderung (SAVE_VERSION 32). check/build grün,
 Tests 72/72. ⚠️ Animation nur im Browser sichtbar — bitte am Gerät prüfen.
+
+### 9.55 Phase 53 — Sternenkammer: Sternensaat ausgeben (SAVE_VERSION 33)
+
+Weltensaat (Phase 51) gab nur einen flachen Multiplikator — keine Entscheidung. Jetzt ist
+**Sternensaat ausgebbar** über eine kleine permanente Upgrade-Kammer (spiegelt den Kompost-
+Garten).
+
+- **Daten** (`data/starUpgrades.ts`): 4 Upgrades — **Sternenfeuer** (+8 % Ertrag/Stufe, endlos),
+  **Sternenwind** (+6 % Tempo/Stufe, endlos), **Sternendünger** (+12 % Kompost-Gewinn/Stufe,
+  max 10 → schnellerer Wiederaufstieg) und **Sternenkeim** (+1 Start-Parzelle/Stufe nach jeder
+  Weltensaat, max 6). Geometrische Sternensaat-Kosten.
+- **Logik** (`game/worldseed.ts`): `purchaseStarUpgrade` zieht aus `starseed` und **trackt
+  `starseedSpent` getrennt** — `starseedBanked = starseed + starseedSpent` treibt den flachen
+  `worldseedYieldFactor`, **Ausgeben schwächt ihn also nie** (wie compostClaimed). `starUpgradeBonus`
+  liefert die Effekte. Hooks: Ertrag/Tempo in `yieldMultiplier`/`growthMultiplier`, Kompost in
+  `compostGain`, Start-Parzellen im `weltensaat()`-Reset (`parcels = 1 + bonus`).
+- **UI** (`PrestigePanel.svelte`): „Sternenkammer"-Liste im Weltensaat-Block (erscheint nach der
+  ersten Weltensaat) mit Stufe, ∞-Markierung und 🌌-Preis. Action `buyStarUpgrade`.
+
+**SAVE_VERSION 33:** neue Felder `starseedSpent` + `starUpgrades`. Migration 32→33: `sanitize`
+defaultet 0 / {} (bestehende Sternensaat bleibt). check/build grün, Tests 73/73.

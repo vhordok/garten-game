@@ -8,6 +8,7 @@ import { CAMPAIGN } from '../data/campaign'
 import { decorationById } from '../data/decorations'
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES } from '../data/compostUpgrades'
+import { STAR_UPGRADES } from '../data/starUpgrades'
 import { maxScratchTickets } from './modifiers'
 import { PLANTS, plantById } from '../data/plants'
 import { QUEST_CLIENTS, QUEST_TIERS } from '../data/questFlavor'
@@ -18,7 +19,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 32
+export const SAVE_VERSION = 33
 
 interface SaveEnvelope {
   version: number
@@ -226,6 +227,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // v31 → v32: PHASE 51 Weltensaat — new `starseed` + `worldResets`. sanitize()
       // defaults both to 0, so old saves carry no higher-prestige progress yet.
       return { ...envelope, version: 32 }
+    case 32:
+      // v32 → v33: PHASE 53 Sternenkammer — new `starseedSpent` + `starUpgrades`.
+      // sanitize() defaults them to 0 / {}, so old saves have nothing spent yet.
+      return { ...envelope, version: 33 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -456,6 +461,17 @@ function sanitize(raw: unknown): GameState {
   // PHASE 51 Weltensaat: banked Sternensaat + reset count (default 0 for old saves)
   state.starseed = Math.floor(clampNumber(r.starseed, 0, 0, 1e9))
   state.worldResets = Math.floor(clampNumber(r.worldResets, 0, 0, 1e9))
+  // PHASE 53 Sternenkammer: spent Sternensaat + upgrade levels (known ids only)
+  state.starseedSpent = Math.floor(clampNumber(r.starseedSpent, 0, 0, 1e15))
+  const starUpgrades: Record<string, number> = {}
+  if (typeof r.starUpgrades === 'object' && r.starUpgrades !== null) {
+    const raw = r.starUpgrades as Record<string, unknown>
+    for (const def of STAR_UPGRADES) {
+      const level = Math.floor(clampNumber(raw[def.id], 0, 0, def.maxLevel))
+      if (level > 0) starUpgrades[def.id] = level
+    }
+  }
+  state.starUpgrades = starUpgrades
 
   const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
   state.records = {
