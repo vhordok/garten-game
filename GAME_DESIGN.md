@@ -1820,3 +1820,28 @@ die Pflanzen quasi sofort poppen (empirisch: reif nach 4 s).
   behauptete „2d 2h". Neuer Test `PHASE 60` schützt den Echtzeit-Vertrag.
 
 Reiner UI-Bugfix, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 77/77.
+
+### 9.63 Phase 61 — Welten-Meilensteine: Weltensaat schaltet echte Inhalte frei (keine Save-Änderung)
+
+Spieler am Content-Ceiling (alles freigeschaltet, alle endlichen Sinks MAX) fragte: lohnt sich
+Weltensaat überhaupt? Mechanisch ja (×1.86 K Ertrag, schnellerer Wiederaufstieg), aber bislang
+gab Weltensaat **nur größere Zahlen, keinen neuen Inhalt**. Diese Phase füllt die Lücke (gewählte
+Richtung „Weltensaat-Inhalte"): jede **gesäte Welt** schaltet einen dauerhaften Meilenstein-Bonus
+frei — analog zu den Parzellen-Meilensteinen, aber auf `worldResets` (überlebt jeden Reset).
+
+`data/worldMilestones.ts` — 8 Meilensteine (Welt 1/2/3/4/5/8/12/20) über sechs Effekte:
+- Welt 1 +25 % Ertrag · Welt 12 +150 % Ertrag (`yield`)
+- Welt 2 +2 Start-Parzellen je Weltensaat (`startParcels`, schnellerer Wiederaufstieg)
+- Welt 3 +50 % Wachstumstempo (`growth`)
+- Welt 4 +50 % Kompost-Gewinn (`compostGain`)
+- Welt 5 +1 / Welt 20 +2 Sternensaat je Weltensaat (`starseedGain`, verstärkt den Loop)
+- Welt 8 +6 h Offline (`offline`)
+
+`worldMilestoneBonus(worldResets, effect)` summiert die erreichten Boni (rein aus `worldResets`
+abgeleitet → **kein Save-Feld**, mirror von `parcelBonus`). Eingehängt an sechs vorhandenen
+Stellen: `yieldMultiplier`/`growthMultiplier`/`offlineCapHours` (modifiers), `compostGain` +
+`weltensaat()`-Start-Parzellen (actions), `starseedGain` (worldseed). UI: „Welten-Meilensteine"-
+Liste im Weltensaat-Block des PrestigePanels (✓/🔒 + nächstes Ziel), sichtbar auch vor der ersten
+Weltensaat (motiviert das Säen). Damit ist Weltensaat eine echte neue Fortschrittsleiter.
+
+Reine Daten/Wiring/UI, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 78/78.

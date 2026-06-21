@@ -110,6 +110,7 @@ import { canWeltensaat, starseedGain, starseedBanked, starUpgradeBonus, starUpgr
 import { buyStarUpgrade } from '../src/lib/game/actions.ts'
 import { STAR_UPGRADES, starUpgradeCost } from '../src/lib/data/starUpgrades.ts'
 import { formatNumber, formatDuration } from '../src/lib/util/format.ts'
+import { WORLD_MILESTONES, worldMilestoneBonus, nextWorldMilestone } from '../src/lib/data/worldMilestones.ts'
 import { get } from 'svelte/store'
 import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog, flushToastLog, reloadToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
@@ -1625,8 +1626,9 @@ test('PHASE 51: Weltensaat banks Sternensaat, resets the prestige layer, keeps m
     assert.equal(gained, 5, 'banked the expected Sternensaat')
     assert.equal(g.starseed, 7, 'Sternensaat added to the bank')
     assert.equal(g.worldResets, 2, 'reset counter advanced')
-    // prestige layer wiped
-    assert.equal(g.parcels, 1, 'parcels reset to 1')
+    // prestige layer wiped — PHASE 61: + the 'Sternenpfad' world-2 milestone
+    // head-start (worldResets is now 2), so parcels reset to 1 + that bonus
+    assert.equal(g.parcels, 1 + worldMilestoneBonus(2, 'startParcels'), 'parcels reset to start (+ world milestone head-start)')
     assert.equal(g.compost, 0, 'compost wiped')
     assert.equal(g.compostSpent, 0, 'compostSpent wiped')
     assert.deepEqual(g.compostUpgrades, {}, 'compost-garden upgrades wiped')
@@ -1778,6 +1780,32 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
     assert.ok(getState().campaign < CAMPAIGN.length, 'the endgame chapters remain ahead of a parcel-8 player')
     assert.equal(currentCampaignStep(getState()).id, 'landlord', 'next chapter is the first endgame one')
   })
+})
+
+test('PHASE 61: world milestones grant permanent, derived perks from worldResets', () => {
+  // summation + gating
+  assert.equal(worldMilestoneBonus(0, 'yield'), 0, 'no worlds → no bonus')
+  assert.equal(worldMilestoneBonus(1, 'yield'), 0.25, 'world 1 → +25% yield')
+  assert.equal(worldMilestoneBonus(20, 'yield'), 0.25 + 1.5, 'reached yield milestones sum (world 1 + 12)')
+  assert.equal(worldMilestoneBonus(5, 'starseedGain'), 1, 'world 5 → +1 Sternensaat/sowing')
+  assert.equal(worldMilestoneBonus(20, 'starseedGain'), 1 + 2, 'world 5 + 20 stack')
+  assert.equal(nextWorldMilestone(0)?.world, 1, 'next from 0 is world 1')
+  assert.equal(nextWorldMilestone(20), null, 'all reached past the last')
+  assert.equal(WORLD_MILESTONES.length, 8, 'eight world milestones')
+
+  // integration: more worlds → higher yield multiplier (derived, no save field)
+  const a = fresh()
+  const b = fresh()
+  b.worldResets = 12
+  assert.ok(yieldMultiplier(b) > yieldMultiplier(a), 'world milestones lift the yield multiplier')
+  assert.ok(growthMultiplier(b) > growthMultiplier(a), 'and the growth multiplier')
+
+  // integration: starseedGain folds in the milestone bonus
+  const deep = fresh()
+  deep.parcels = CONFIG.weltensaatMinParcels // depth bonus = 1
+  assert.equal(starseedGain(deep), 1, 'no worlds yet → just the depth')
+  deep.worldResets = 5
+  assert.equal(starseedGain(deep), 1 + 1, 'world-5 milestone adds +1 Sternensaat per sowing')
 })
 
 test('PHASE 60: plot timer reflects REAL seconds, not raw growth-progress units', () => {
