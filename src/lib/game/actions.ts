@@ -643,6 +643,26 @@ export function buyUpgrade(upgradeId: string): boolean {
   return true
 }
 
+/** Helper upgrade effects that can be paused (automation the player may not
+ * always want running, e.g. auto-sell over quest stock). PHASE 63. */
+const HELPER_EFFECTS = new Set(['autoHarvest', 'autoSow', 'autoSell'])
+
+/** Whether an upgrade is a pausable helper. */
+export function isHelperUpgrade(def: UpgradeDef): boolean {
+  return HELPER_EFFECTS.has(def.effect)
+}
+
+/** PHASE 63: pause/resume a helper upgrade. Paused helpers keep their level but
+ * contribute nothing to automation until resumed. */
+export function toggleHelperPause(id: string): void {
+  const s = getState()
+  if (!s.pausedHelpers) s.pausedHelpers = []
+  const i = s.pausedHelpers.indexOf(id)
+  if (i >= 0) s.pausedHelpers.splice(i, 1)
+  else s.pausedHelpers.push(id)
+  notify()
+}
+
 /** Distinct plant categories in content order (UI lists, specialisation). */
 export const PLANT_CATEGORIES: string[] = [...new Set(PLANTS.map((p) => p.category))]
 

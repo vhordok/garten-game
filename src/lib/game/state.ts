@@ -20,6 +20,7 @@ export function createDefaultState(now = Date.now()): GameState {
     specializations: {},
     skills: {},
     discoveredVariants: [],
+    pausedHelpers: [],
     ornamentals: {},
     level: 1,
     xp: 0,

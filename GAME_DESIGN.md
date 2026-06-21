@@ -1860,3 +1860,23 @@ Alle über `starUpgradeBonus(state, effect)` (vorhandenes Muster). Die Panel-Lis
 `STAR_UPGRADES`, daher rendern die neuen automatisch. Save-sicher: neue IDs → Level 0.
 
 Reine Daten/Wiring, keine Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 79/79.
+
+### 9.65 Phase 63 — Helfer pausierbar (SAVE_VERSION 34)
+
+Spielerwunsch: einzelne Helfer an-/abschalten können — etwa den Marktkarren/die Handelsflotte
+(verkauft sonst Lager, das man für Aufträge braucht) oder den Sä-Gnom/die Saatgilde (sät die
+gewählte Sorte, wenn man das gerade nicht will). Neues State-Feld `pausedHelpers: string[]` — die
+IDs pausierter Helfer-Upgrades. Pausierte Helfer behalten ihre Stufe, tragen aber nichts bei, bis
+man sie fortsetzt.
+
+- **Logik:** `isHelperPaused()` + `activeHelperBonus()` (wie `effectBonus`, überspringt pausierte)
+  treiben jetzt `autoHarvestRate`/`autoSowRate`/`autoSellInterval` — greift live **und** offline
+  (eine Quelle). Helfer = Upgrades mit Effekt `autoHarvest`/`autoSow`/`autoSell`. Aktion
+  `toggleHelperPause(id)`.
+- **UI:** „⏸ Pause"/„▶ Start"-Knopf an jedem besessenen Helfer im Shop; pausierte Zeile tritt
+  optisch zurück und zeigt „⏸ pausiert" statt der aktiven Wirkung. Kauf-Knopf bleibt nutzbar.
+- **Save:** SAVE_VERSION 34, Migration v33→v34 defaultet `pausedHelpers` auf `[]` (nichts pausiert
+  → alte Saves laufen unverändert). `sanitize()` behält nur echte Helfer-IDs (verwirft fremde/
+  Nicht-Helfer-IDs).
+
+Neues Save-Feld, abwärtskompatibel. check/build grün, Tests 80/80 (Pause→0, Toggle, Save-Roundtrip).

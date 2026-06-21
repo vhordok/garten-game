@@ -209,6 +209,10 @@ export interface GameState {
   /** discovered seed-lab variant ids; survives prestige. Each grants a small
    * permanent passive bonus and counts toward the collection (PHASE 20). */
   discoveredVariants: string[]
+  /** PHASE 63: helper-upgrade ids the player has paused (auto-harvest/sow/sell).
+   * Paused helpers keep their level but contribute nothing until resumed —
+   * lets players stop e.g. the market cart from selling quest stock. */
+  pausedHelpers: string[]
   /** Ziergalerie (PHASE 44): owned ornamental count per plant id. Ornamentals
    * are no longer planted on the field — they're a permanent beauty collection
    * (survives prestige) that feeds gardenBeauty without taking plot space or

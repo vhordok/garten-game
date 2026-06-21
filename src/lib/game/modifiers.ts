@@ -337,6 +337,24 @@ export function effectBonus(state: GameState, effect: UpgradeEffect): number {
   return bonus
 }
 
+/** PHASE 63: whether the player has paused this helper upgrade. */
+export function isHelperPaused(state: GameState, id: string): boolean {
+  return state.pausedHelpers?.includes(id) ?? false
+}
+
+/** Like effectBonus, but skips paused helper upgrades — used only for the
+ * automation rates so a player can switch individual helpers off. */
+function activeHelperBonus(state: GameState, effect: UpgradeEffect): number {
+  let bonus = 0
+  for (const def of UPGRADES) {
+    if (def.effect !== effect) continue
+    if (isHelperPaused(state, def.id)) continue
+    const level = state.upgrades[def.id] ?? 0
+    if (level > 0) bonus += def.perLevel * level
+  }
+  return bonus
+}
+
 /** Watering charges granted per sown crop / regrow cycle. */
 export function waterCharges(state: GameState): number {
   return CONFIG.waterChargesPerCrop + Math.round(effectBonus(state, 'waterCharges'))
@@ -401,19 +419,19 @@ export function offlineCapHours(state: GameState): number {
   )
 }
 
-/** Auto-harvested plots per second (0 = no helper). */
+/** Auto-harvested plots per second (0 = no helper; paused helpers excluded). */
 export function autoHarvestRate(state: GameState): number {
-  return effectBonus(state, 'autoHarvest')
+  return activeHelperBonus(state, 'autoHarvest')
 }
 
-/** Auto-sown plots per second (0 = no helper). */
+/** Auto-sown plots per second (0 = no helper; paused helpers excluded). */
 export function autoSowRate(state: GameState): number {
-  return effectBonus(state, 'autoSow')
+  return activeHelperBonus(state, 'autoSow')
 }
 
-/** Seconds between automatic full sales (Infinity = no helper). */
+/** Seconds between automatic full sales (Infinity = no helper / all paused). */
 export function autoSellInterval(state: GameState): number {
-  const level = Math.round(effectBonus(state, 'autoSell'))
+  const level = Math.round(activeHelperBonus(state, 'autoSell'))
   return level > 0 ? 60 / level : Infinity
 }
 

@@ -321,4 +321,8 @@ Inhalt: jede gesäte Welt schaltet dauerhaft frei (Ertrag/Wachstum/Kompost/Offli
 starseedGain), UI-Liste im Weltensaat-Block. Phase 62 (§9.64): Sternenkammer-Ausbau — 4 neue
 Sternensaat-Upgrades (Sternenmarkt/sellPrice endlos, Sternengilde/questReward, Sternenschlaf/offline,
 Sternenglück/ticketLuck) je an vorhandener Modifier-Stelle eingehängt via starUpgradeBonus, Panel
-iteriert STAR_UPGRADES (rendert automatisch). Save-sicher, neue IDs→0. Stand SAVE_VERSION 33.
+iteriert STAR_UPGRADES (rendert automatisch). Save-sicher, neue IDs→0. Phase 63 (§9.65): Helfer
+pausierbar (neues Feld pausedHelpers: string[]) — Marktkarren/Sä-Gnom/etc. einzeln an-/abschaltbar;
+activeHelperBonus() überspringt pausierte in autoHarvest/autoSow/autoSell (live+offline),
+toggleHelperPause-Aktion, „⏸ Pause/▶ Start"-Knopf im Shop. SAVE_VERSION 34 (Migration defaultet [],
+sanitize behält nur echte Helfer-IDs). Stand SAVE_VERSION 34.
