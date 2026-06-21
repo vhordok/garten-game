@@ -103,10 +103,10 @@
     {/each}
   </ul>
 
-  <h3 class="sect">Garten-Deko — sichtbar im Beet</h3>
+  <h3 class="sect">Garten-Deko — im Hintergrund</h3>
   <p class="hint">
-    Deko wird <b>im Garten platziert</b> (du siehst sie über dem Feld) und gibt ebenfalls
-    dauerhaft Schönheit. Jede Kopie kostet mehr, max. {CONFIG.decorationMaxCopies} je Art.
+    Deko wird <b>in die Gartenszene gesetzt</b> (sie erscheint im Hintergrundbild rund um dein
+    Feld) und gibt dauerhaft Schönheit. Jede Kopie kostet mehr, max. {CONFIG.decorationMaxCopies} je Art.
   </p>
 
   <ul class="gal">

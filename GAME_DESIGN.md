@@ -1615,3 +1615,23 @@ verschönern **und** Progress geben.
 **SAVE_VERSION 31:** neues Feld `decorations: Record<string,number>`. Migration 30→31:
 `sanitize` defaultet `{}`, hält nur gültige IDs, clamped auf den Cap. check/build grün,
 Tests 71/71.
+
+### 9.52 Phase 50 — Deko-Rendering in den Hintergrund verlegt (keine Save-Änderung)
+
+Spieler-Feedback zu Phase 49: die Deko als **Zeile über dem Feld** sah schlecht aus —
+voll ausgebaut „einfach eine hässliche Zeile". Gewünscht: Deko soll das **Hintergrundbild**
+verschönern. Rendering komplett überarbeitet (Daten/Logik/Save unverändert):
+
+- **`Garden.svelte`**: die `.garden-deco`-Leiste (samt Sprites/Styles) **entfernt**.
+- **`Scene.svelte`**: Deko wird jetzt **in die Gartenszene gelandschaftet** — jede besessene
+  Kopie als Sprite über die Bodenfläche (top 70–92 %) verteilt, mit **Tiefe**: weiter hinten
+  = höher + kleiner (28 px) + blasser, vorne = tiefer + größer (bis 68 px) + voll deckend;
+  am Boden verankert (`translate(-50%,-100%)`) + weicher Schlagschatten. Verteilung
+  deterministisch (sin-Hash + Even-Spread per Index, Kinder per Round-Robin verschachtelt →
+  organische Mischung statt Klumpen). Liegt hinter dem Feld (z-index 0) → rahmt den Garten.
+- **`scripts/scene-preview.mjs`**: rendert die Szene + Vollausbau-Deko zu `scene-preview.png`
+  zur Sichtprüfung (wie sprite-/deco-atlas).
+- Galerie-Hinweis & Daten-Kommentar an die Hintergrund-Platzierung angepasst.
+
+Reine UI/Rendering-Änderung, keine Logik-/Save-Änderung (SAVE_VERSION 31). check/build grün,
+Tests 71/71. ⚠️ Ohne Headless-Browser nur über den Preview-Render geprüft — bitte am Gerät verifizieren.
