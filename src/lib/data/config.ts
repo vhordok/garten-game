@@ -172,9 +172,12 @@ export const CONFIG = {
   /** PHASE 51 Weltensaat — a higher prestige. From this many leased parcels the
    * player may sow a new world: it resets the parcel/compost layer AND the round
    * (mastery/specialisations/skills/collections/achievements all survive) in
-   * exchange for permanent Sternensaat. Each Sternensaat grants starseedYieldPer
-   * permanent, garden-wide yield (multiplicative on everything). Gain = parcels −
-   * minParcels + 1, so deeper worlds bank more. */
+   * exchange for permanent Sternensaat. Gain = parcels − minParcels + 1, so deeper
+   * worlds bank more.
+   * PHASE 56 rebalance: the yield bonus is COMPOUNDING, not flat — each banked
+   * Sternensaat multiplies garden-wide yield by (1 + starseedYieldPer), so the
+   * factor is (1 + per)^banked. A flat +12 %/unit could never beat the late game's
+   * √-runaway compost; ×1.10^banked makes Weltensaat a real power spike (79 → ×1860). */
   weltensaatMinParcels: 20,
-  starseedYieldPer: 0.12,
+  starseedYieldPer: 0.1,
 } as const

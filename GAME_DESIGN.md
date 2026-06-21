@@ -1728,3 +1728,24 @@ Szenen-Leben weitergeführt und an die Deko gekoppelt:
 
 Reine CSS/UI, keine Logik-/Save-Änderung (SAVE_VERSION 33). check/build grün, Tests 74/74.
 ⚠️ Animation nur im Browser sichtbar — bitte am Gerät prüfen.
+
+### 9.58 Phase 56 — Weltensaat-Rebalance: kompound statt flach (keine Save-Änderung)
+
+Spieler-Befund (Parzelle 98, 1 Mrd Kompost = +790 Mio % Ertrag): eine Weltensaat brachte
+nur **+948 % (×10,5)** für 79 Sternensaat — viel zu schwach, um Parzelle 98 → 1 zu opfern.
+Diagnose bestätigt: der Bonus war **linear** (`1 + banked·0,12`) und konnte mit dem √-Runaway
+des Komposts nie mithalten; eine höhere Prestige muss aber *stärker* sein als die darunter.
+
+- **Kompound-Bonus**: `worldseedYieldFactor = (1 + starseedYieldPer)^banked` (Basis 1,10) statt
+  `1 + banked·per`. Jede Sternensaat **multipliziert** den gartenweiten Ertrag → 79 = **×1.860**
+  (statt ×10,5), über ~3 Welten Milliarden — überholt den Kompost-Berg. Gegen `Infinity`
+  geklammert (`min(…, 1e300)`), bleibt bei absurden Bänken endlich.
+- **starseedYieldPer 0,12 → 0,10** (= Basis 1,10).
+- **UI** (`PrestigePanel`): zeigt den Bonus jetzt als **„×N Ertrag"** statt „+ %", plus die
+  resultierende `×` beim Säen (`factorAfter`) — kein irreführender Vergleich mit dem Kompost-%
+  mehr. `starseedBanked = starseed + starseedSpent` treibt den Faktor weiter (Ausgeben schwächt
+  nicht).
+
+Reine Balance/Formel/UI, keine Save-Änderung (SAVE_VERSION 33) — bestehende Sternensaat wirkt
+sofort stärker. check/build grün, Tests 74/74 (Faktor = (1+per)^banked, 79 → ×1000+, endlich
+bei 1e6 Bank).

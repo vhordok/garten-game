@@ -3,7 +3,7 @@
   import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
   import { PARCEL_MILESTONES, nextMilestone } from '../data/milestones'
   import { buyCompostUpgrade, buyStarUpgrade, compostGain, leaseParcel, leaseRequirement, weltensaat } from '../game/actions'
-  import { canWeltensaat, starseedGain, starUpgradeLevel, worldseedYieldFactor } from '../game/worldseed'
+  import { canWeltensaat, starseedBanked, starseedGain, starUpgradeLevel, worldseedYieldFactor } from '../game/worldseed'
   import { STAR_UPGRADES, starUpgradeCost } from '../data/starUpgrades'
   import { effectiveCompost } from '../game/modifiers'
   import { gameStore } from '../game/state'
@@ -27,6 +27,9 @@
   // PHASE 51 Weltensaat — the higher prestige
   const starGain = $derived(starseedGain($gameStore))
   const starFactor = $derived(worldseedYieldFactor($gameStore))
+  const starBanked = $derived(starseedBanked($gameStore))
+  // PHASE 56: the yield factor compounds — show the ×multiplier after sowing
+  const factorAfter = $derived(Math.min(starFactor * Math.pow(1 + CONFIG.starseedYieldPer, starGain), 1e300))
   const canSow = $derived(canWeltensaat($gameStore))
 
   function compostActive(effect: string, perLevel: number, level: number): string {
@@ -229,13 +232,13 @@
         <span class="label">Sternensaat</span>
         <span>
           {formatNumber($gameStore.starseed)} 🌌
-          {#if $gameStore.starseed > 0}(+{Math.round((starFactor - 1) * 100)} % Ertrag, dauerhaft){/if}
+          {#if starBanked > 0}· Ertrag <b>×{formatNumber(starFactor)}</b> dauerhaft{/if}
           {#if $gameStore.worldResets > 0}· {$gameStore.worldResets}× gesät{/if}
         </span>
       </div>
       <div class="row gain-row" class:ready={canSow}>
         <span class="label">Beim Säen</span>
-        <span>+{formatNumber(starGain)} Sternensaat (+{Math.round(starGain * CONFIG.starseedYieldPer * 100)} % Ertrag)</span>
+        <span>+{formatNumber(starGain)} Sternensaat → Ertrag <b>×{formatNumber(factorAfter)}</b></span>
       </div>
     </div>
     {#if seenWeltensaat}

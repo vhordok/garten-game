@@ -295,4 +295,8 @@ Version-Bump (nur angehängt, Index bleibt gültig, sehr tiefe Spieler lösen er
 auto ein). Phase 55 (§9.57): Szenen-Leben — pro besessener Gartenlaterne 2 warm-goldene
 Glühwürmchen in sanfter Orbit-Schleife (Scene.svelte fly-orbit, gehashte Offsets), Ambient-
 Glühwürmchen driften, Sterne funkeln langsam (twinkle-far/near); prefers-reduced-motion aus.
-Reine CSS/UI, keine Save-Änderung. Stand SAVE_VERSION 33.
+Reine CSS/UI, keine Save-Änderung. Phase 56 (§9.58): Weltensaat-Rebalance — Sternensaat-
+Ertragsbonus jetzt KOMPOUND ((1+starseedYieldPer)^banked, Basis 1,10) statt linear → 79
+Sternensaat = ×1.860 statt ×10,5, überholt den Kompost-√-Runaway (gegen Infinity geklammert);
+starseedYieldPer 0,12→0,10; PrestigePanel zeigt „×N Ertrag" + factorAfter statt irreführendem
++%. Reine Balance/UI, keine Save-Änderung. Stand SAVE_VERSION 33.
