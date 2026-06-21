@@ -103,6 +103,9 @@ import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceSt
 import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
 import { CAMPAIGN } from '../src/lib/data/campaign.ts'
 import { claimCampaign, currentCampaignStep, initCampaign } from '../src/lib/game/campaign.ts'
+import { DECORATIONS, nextDecorationCost } from '../src/lib/data/decorations.ts'
+import { buyDecoration } from '../src/lib/game/actions.ts'
+import { decorationBeauty, decorationCount, ownsAnyDecoration } from '../src/lib/game/decorations.ts'
 import { get } from 'svelte/store'
 import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, toastLog, toastLogUnseen, markToastLogSeen, clearToastLog, flushToastLog, reloadToastLog } from '../src/lib/ui/toasts.ts'
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
@@ -1492,6 +1495,68 @@ test('PHASE 48: mini-campaign claims, rewards, migrates, surfaces as a goal', ()
     const camp = board.find((x) => x.id === 'campaign')
     assert.ok(camp && camp.campaign === true, 'campaign goal is on the board')
     assert.equal(board[0].id, 'campaign', 'campaign goal headlines (first on the board)')
+  })
+})
+
+test('PHASE 49: decorations buy, add beauty, render, persist, migrate', () => {
+  withBoringRng(() => {
+    // every decoration has a real 16×16 sprite registered
+    for (const d of DECORATIONS) {
+      const g = SPRITES[d.sprite]
+      assert.ok(Array.isArray(g) && g.length === 16 && g.every((r) => r.length === 16), `${d.id} has a 16×16 sprite`)
+    }
+
+    // ── buy: spends gold, bumps the count, raises beauty ──
+    const s = fresh()
+    s.money = 1e7
+    const d0 = DECORATIONS[0]
+    assert.equal(decorationCount(s, d0.id), 0)
+    assert.equal(ownsAnyDecoration(s), false)
+    const beautyBefore = gardenBeauty(s)
+    const cost = nextDecorationCost(d0, 0)
+    assert.ok(buyDecoration(d0.id), 'first copy buys')
+    assert.equal(getState().decorations[d0.id], 1, 'count bumped')
+    assert.equal(getState().money, 1e7 - cost, 'gold spent')
+    assert.ok(gardenBeauty(getState()) > beautyBefore, 'decoration raises garden beauty')
+    assert.ok(ownsAnyDecoration(getState()), 'now owns a decoration')
+    assert.ok(decorationBeauty(getState()) >= d0.beautyBonus - 1e-9, 'raw decoration beauty counted')
+
+    // ── escalating cost + per-kind cap ──
+    const s2 = fresh()
+    s2.money = 1e12
+    let last = 0
+    for (let i = 0; i < CONFIG.decorationMaxCopies; i++) {
+      const c = nextDecorationCost(d0, i)
+      assert.ok(c > last, 'each copy costs strictly more')
+      last = c
+      assert.ok(buyDecoration(d0.id), `copy ${i + 1} buys`)
+    }
+    assert.equal(decorationCount(getState(), d0.id), CONFIG.decorationMaxCopies, 'reached the cap')
+    assert.equal(nextDecorationCost(d0, CONFIG.decorationMaxCopies), Infinity, 'cost is Infinity at the cap')
+    assert.equal(buyDecoration(d0.id), false, 'cannot buy past the cap')
+
+    // ── can't afford → no purchase ──
+    const poor = fresh()
+    poor.money = 0
+    assert.equal(buyDecoration(d0.id), false, 'no gold, no decoration')
+
+    // ── save roundtrip + pre-v31 migration default ──
+    const r = fresh()
+    r.money = 1e7
+    buyDecoration(DECORATIONS[1].id)
+    const code = exportSave()
+    fresh()
+    assert.notEqual(importSave(code), null)
+    assert.equal(getState().decorations[DECORATIONS[1].id], 1, 'decorations survive save/load')
+
+    const old = JSON.stringify({
+      version: 30,
+      savedAt: Date.now(),
+      state: { money: 5, totalEarned: 5, selectedPlantId: 'basilikum', stats: { planted: 0, harvested: 0, sold: 0 }, createdAt: 1 },
+    })
+    fresh()
+    assert.notEqual(importSave(old), null)
+    assert.deepEqual(getState().decorations, {}, 'pre-v31 save defaults to no decorations')
   })
 })
 

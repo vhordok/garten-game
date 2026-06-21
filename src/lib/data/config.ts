@@ -164,4 +164,9 @@ export const CONFIG = {
   galleryCopyFactor: 1.7,
   galleryMaxCopies: 12,
   galleryBeautyCostMul: 30000,
+  /** PHASE 49 Garten-Deko: placed decorations (visible on the field) add beauty
+   * like gallery ornamentals. Each further copy of the same decoration costs
+   * decorationCostFactor× more; decorationMaxCopies caps each kind's stack. */
+  decorationCostFactor: 1.8,
+  decorationMaxCopies: 6,
 } as const

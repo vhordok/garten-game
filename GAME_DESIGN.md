@@ -1591,3 +1591,27 @@ Schlagzeilen-Ziel** mit konkreter Belohnung.
 **SAVE_VERSION 30:** neues Feld `campaign` (Index des nächsten offenen Kapitels). Migration
 29→30: `sanitize` defaultet auf 0 bzw. ruft für Saves ohne Feld `initCampaign` (Frontier
 ohne Belohnung). check/build grün, Tests 70/70.
+
+### 9.51 Phase 49 — Garten-Deko: sichtbare Deko-Objekte im Beet (SAVE_VERSION 31)
+
+Wunsch des Spielers: Deko-Objekte, die man **auf dem Feld sieht**, den Bildschirm
+verschönern **und** Progress geben.
+
+- **Daten** (`data/decorations.ts`): 8 Deko-Objekte (Steinweg, Gartenzaun, Gartenlaterne,
+  Blumenbeet, Gartenteich, Vogelbad, Gartenzwerg, Springbrunnen) mit Name, 16×16-Sprite-ID,
+  `beautyBonus` und Gold-Basispreis. Kopie-/Cap-Skalierung in CONFIG
+  (`decorationCostFactor` 1,8 · `decorationMaxCopies` 6).
+- **Sprites** (`ui/pixel/sprites.ts`): 8 neue, code-authorierte 16×16-Pixel-Grids; per
+  `scripts/deco-atlas.mjs` als PNG zur Sichtprüfung gerendert (wie der Pflanzen-Atlas).
+- **Logik** (`game/decorations.ts`): `purchaseDecoration` (Gold-Sink, Cap), `decorationBeauty`
+  fließt in `gardenBeauty` → Deko **ist** Progress (Verkaufspreis-Aura + Schönheits-Perks +
+  `records.bestBeauty`, speist auch das Kampagnen-Kapitel „Verschönerer"). Action
+  `buyDecoration` als UI-Contract.
+- **Sichtbar** (`Garden.svelte`): eine **Deko-Leiste über den Beeten** zeichnet jede besessene
+  Kopie als Sprite (eigene erdige Strip-Optik) → der Garten wird mit jedem Kauf hübscher.
+- **Kauf-UI**: neue Sektion „Garten-Deko" **in der Ziergalerie** (kein neuer HUD-Button) mit
+  Sprite, Schönheits-Beitrag, eskalierendem Preis + MAX.
+
+**SAVE_VERSION 31:** neues Feld `decorations: Record<string,number>`. Migration 30→31:
+`sanitize` defaultet `{}`, hält nur gültige IDs, clamped auf den Cap. check/build grün,
+Tests 71/71.

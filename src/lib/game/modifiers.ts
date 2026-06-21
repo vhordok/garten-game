@@ -6,6 +6,7 @@ import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES, type CompostEffect } from '../data/compostUpgrades'
 import { beautyMilestoneBonus } from '../data/beautyMilestones'
 import { achievementBonus } from './achievements'
+import { decorationBeauty } from './decorations'
 import { variantBonus, variantEventBonus } from './seedlab'
 import { parcelBonus } from '../data/milestones'
 import { plantById } from '../data/plants'
@@ -273,6 +274,8 @@ export function gardenBeauty(state: GameState): number {
       bonus += def.beautyBonus * count * (1 + specUniqueBonus(state, def.category, 'beauty'))
     }
   }
+  // PHASE 49: placed Garten-Deko adds beauty too (visible on the field)
+  bonus += decorationBeauty(state)
   // PHASE 17: the Schaugarten skill amplifies the whole beauty stat
   // PHASE 18: the Gartenschau event boosts beauty's pull while it lasts
   // PHASE 20: a discovered Zier variant (Prachtorchidee) adds to beauty

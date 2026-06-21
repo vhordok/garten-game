@@ -5,6 +5,7 @@ import { ACHIEVEMENTS } from '../data/achievements'
 import { initAchievementTiers } from './achievements'
 import { initCampaign } from './campaign'
 import { CAMPAIGN } from '../data/campaign'
+import { decorationById } from '../data/decorations'
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES } from '../data/compostUpgrades'
 import { maxScratchTickets } from './modifiers'
@@ -17,7 +18,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 30
+export const SAVE_VERSION = 31
 
 interface SaveEnvelope {
   version: number
@@ -217,6 +218,10 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // advances it past every already-satisfied step WITHOUT paying rewards
       // (initCampaign) so existing players resume at their real frontier.
       return { ...envelope, version: 30 }
+    case 30:
+      // v30 → v31: PHASE 49 Garten-Deko — new `decorations` count map. sanitize()
+      // defaults it to {} (no decorations placed), so old saves are unaffected.
+      return { ...envelope, version: 31 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -368,6 +373,17 @@ function sanitize(raw: unknown): GameState {
   }
 
   state.ornamentals = ornamentals
+
+  // PHASE 49 Garten-Deko: keep only valid ids, clamp counts to the cap
+  const decorations: Record<string, number> = {}
+  if (typeof r.decorations === 'object' && r.decorations !== null) {
+    for (const [id, count] of Object.entries(r.decorations as Record<string, unknown>)) {
+      if (!decorationById(id)) continue
+      const n = Math.floor(clampNumber(count, 0, 0, CONFIG.decorationMaxCopies))
+      if (n > 0) decorations[id] = n
+    }
+  }
+  state.decorations = decorations
 
   const inventory: Record<string, number> = {}
   if (typeof r.inventory === 'object' && r.inventory !== null) {

@@ -263,4 +263,9 @@ Prestige, Einmal-Belohnungen über Erfolge-Währungen (Kompost/Lose/Dünger), cl
 läuft im Tick (auto, kein Knopf), initCampaign migriert ohne Retro-Flut; campaignGoal
 headlinet das Ziel-Panel (campaign-Flag, von Deckelung ausgenommen, Gold-Chip „Kampagne"),
 Toast bei Abschluss. SAVE_VERSION 30: neues Feld campaign (Index nächstes Kapitel).
-Stand SAVE_VERSION 30.
+Phase 49 (§9.51): Garten-Deko (data/decorations.ts + game/decorations.ts + 8 neue 16×16-
+Sprites via scripts/deco-atlas.mjs geprüft) — 8 kaufbare Deko-Objekte (Steinweg…Springbrunnen),
+sichtbar als Leiste über den Beeten gezeichnet (Garden.svelte), decorationBeauty fließt in
+gardenBeauty → Deko ist Progress; Kauf-Sektion in der Ziergalerie (kein neuer HUD-Button),
+Gold-Sink mit Cap (decorationMaxCopies 6). SAVE_VERSION 31: neues Feld decorations.
+Stand SAVE_VERSION 31.

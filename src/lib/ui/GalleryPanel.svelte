@@ -1,7 +1,9 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
-  import { buyOrnamental, isPlantUnlocked } from '../game/actions'
+  import { buyDecoration, buyOrnamental, isPlantUnlocked } from '../game/actions'
   import { ORNAMENTALS, nextOrnamentalCost, ornamentalCount } from '../game/gallery'
+  import { DECORATIONS, nextDecorationCost } from '../data/decorations'
+  import { decorationCount } from '../game/decorations'
   import { gardenBeauty } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
@@ -29,6 +31,16 @@
   function handleBuy(e: MouseEvent, id: string) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     if (buyOrnamental(id)) {
+      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 14)
+      playSound('buy')
+    } else {
+      playSound('error')
+    }
+  }
+
+  function handleBuyDeco(e: MouseEvent, id: string) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    if (buyDecoration(id)) {
       coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 14)
       playSound('buy')
     } else {
@@ -90,6 +102,47 @@
       </li>
     {/each}
   </ul>
+
+  <h3 class="sect">Garten-Deko — sichtbar im Beet</h3>
+  <p class="hint">
+    Deko wird <b>im Garten platziert</b> (du siehst sie über dem Feld) und gibt ebenfalls
+    dauerhaft Schönheit. Jede Kopie kostet mehr, max. {CONFIG.decorationMaxCopies} je Art.
+  </p>
+
+  <ul class="gal">
+    {#each DECORATIONS as d (d.id)}
+      {@const owned = decorationCount($gameStore, d.id)}
+      {@const atCap = owned >= CONFIG.decorationMaxCopies}
+      {@const cost = nextDecorationCost(d, owned)}
+      {@const affordable = Number.isFinite(cost) && $gameStore.money >= cost}
+      <li class="row deco" class:owned={owned > 0}>
+        <img class="px icon" src={spriteUrl(d.sprite)} width="40" height="40" alt="" />
+        <span class="body">
+          <span class="head">
+            <b>{d.name}</b>
+            <span class="beauty num">✿ +{Math.round(d.beautyBonus * 100)} %</span>
+            {#if owned > 0}<span class="count num">×{owned}</span>{/if}
+          </span>
+          <span class="sub num">
+            {#if owned > 0}Beitrag: +{Math.round(d.beautyBonus * owned * 100)} % Schönheit{:else}{d.desc}{/if}
+          </span>
+        </span>
+        <button
+          class="pxbtn small gold buy num"
+          disabled={!affordable || atCap}
+          onclick={(e) => handleBuyDeco(e, d.id)}
+          title={atCap ? 'Maximale Anzahl erreicht' : 'Eine Deko im Garten aufstellen'}
+        >
+          {#if atCap}
+            MAX
+          {:else}
+            <PixelIcon name="coin" scale={1} />
+            {formatNumber(cost)}
+          {/if}
+        </button>
+      </li>
+    {/each}
+  </ul>
 </Overlay>
 
 <style>
@@ -120,6 +173,18 @@
 
   .row.owned {
     border-left: 3px solid var(--c-plum3);
+  }
+
+  .row.deco.owned {
+    border-left-color: var(--c-gold2);
+  }
+
+  .sect {
+    margin: 16px 0 6px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--c-gold2);
   }
 
   .row.locked {
