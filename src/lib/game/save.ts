@@ -22,7 +22,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 37
+export const SAVE_VERSION = 38
 
 interface SaveEnvelope {
   version: number
@@ -254,6 +254,11 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // sanitize() defaults it to {} (none befriended), so old saves are
       // unaffected; animals get attracted as their conditions are met.
       return { ...envelope, version: 37 }
+    case 37:
+      // v37 → v38: PHASE 72 creature rework — new `creatureGifts` timer map.
+      // sanitize() defaults it to {}; befriended creatures whose timer is missing
+      // simply have a gift ready immediately (start = 0), which is fine.
+      return { ...envelope, version: 38 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -543,6 +548,16 @@ function sanitize(raw: unknown): GameState {
     }
   }
   state.creatures = creatures
+  // PHASE 72: gift timers (ms epoch) — keep only befriended creatures' entries
+  const creatureGifts: Record<string, number> = {}
+  if (typeof r.creatureGifts === 'object' && r.creatureGifts !== null) {
+    const raw = r.creatureGifts as Record<string, unknown>
+    for (const def of CREATURES) {
+      const t = raw[def.id]
+      if (creatures[def.id] && Number.isFinite(t)) creatureGifts[def.id] = Number(t)
+    }
+  }
+  state.creatureGifts = creatureGifts
 
   const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
   state.records = {

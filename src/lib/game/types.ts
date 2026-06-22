@@ -285,6 +285,10 @@ export interface GameState {
   /** PHASE 69 Garten-Bewohner — friendship level per creature id (0/absent =
    * not befriended). Permanent passive bonuses; survive prestige AND Weltensaat. */
   creatures: Record<string, number>
+  /** PHASE 72 — epoch ms each befriended creature started cooking its current
+   * gift. Gift is collectable once now ≥ start + giftSeconds; collecting resets
+   * it. Drives the roam-and-collect loop (replaces the old produce feeding). */
+  creatureGifts: Record<string, number>
   /** cannabis license level owned (0–5; IV/V are PHASE 27 trade licenses that
    * boost quest rewards instead of unlocking plants), survives prestige */
   licenses: number

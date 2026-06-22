@@ -14,6 +14,7 @@
   import CreaturesPanel from './lib/ui/CreaturesPanel.svelte'
   import GoalsPanel from './lib/ui/GoalsPanel.svelte'
   import GoldenFirefly from './lib/ui/GoldenFirefly.svelte'
+  import CreatureLayer from './lib/ui/CreatureLayer.svelte'
   import { registerShakeTarget } from './lib/ui/fx/shake'
   import Garden from './lib/ui/Garden.svelte'
   import Hotbar from './lib/ui/Hotbar.svelte'
@@ -168,6 +169,7 @@
   <PixelIcon name="gear" scale={2} />
 </button>
 <GoldenFirefly />
+<CreatureLayer />
 <FxLayer />
 
 {#if openPanel === 'inventory'}

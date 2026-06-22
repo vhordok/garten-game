@@ -2012,3 +2012,26 @@ nicht. `game/goals.ts`:
   `activeGoals` direkt hinter der Kampagne einsortiert.
 
 Reine UI-/Führungslogik, keine Save-Änderung. check/build grün, Tests 86/86.
+
+### 9.74 Phase 72 — Garten-Bewohner lebendig & interaktiv (SAVE_VERSION 38)
+
+Spieler-Feedback: das Füttern fühlte sich „wie alles andere" an (Ressource rein → Bonus raus) — die
+Tiere sollen leben, sich bewegen, interaktiv sein, „nicht wieder der Standardkram". Komplette
+Neugestaltung der Tier-Interaktion:
+
+- **Sie laufen & fliegen** (`ui/CreatureLayer.svelte`): angefreundete Tiere wandern echt durch den
+  Garten — Boden-Tiere auf einem unteren Band, Flieger höher — mit Ziel-Pathing, Pausen und
+  Blickrichtung (rAF-Bewegung, `prefers-reduced-motion` schaltet auf statisch). Eigene Klick-Ebene
+  über dem Feld (`pointer-events` nur auf den Tieren → Beete bleiben klickbar). Die alten statischen
+  Bob-Emoji in `Scene.svelte` sind entfernt.
+- **Geschenke statt Füttern** (`game/creatures.ts`): jedes Tier kocht auf einem Echtzeit-Timer ein
+  **Geschenk** (Rubbellose/Turbo-Dünger, Menge skaliert mit Freundschaft). Ist es fertig, wackelt ein
+  🎁 über dem Tier — **klick es an** (im Garten ODER im Panel) → Belohnung **und** +1
+  Freundschaftsstufe (= stärkerer dauerhafter Bonus). Klick ohne Geschenk = ein Herz-„Streicheln".
+  Das ersetzt die langweilige Produce-Fütterung; Freundschaft wächst jetzt durchs aktive Einsammeln.
+- Läuft offline (Timer per `Date.now`/`giftSeconds`, ein Geschenk wartet bei Rückkehr).
+
+SAVE_VERSION 38: neues Feld `creatureGifts` (Timer-Map; Migration defaultet {} → fehlender Timer =
+Geschenk sofort bereit). `feedBase/feedFactor`+Feeding-Logik entfernt, durch `gift/giftBase/
+giftSeconds`+Gift-Loop ersetzt. check/build grün, Tests 86/86 (Timer, Einsammeln, Belohnung,
+Freundschaft, Save-Roundtrip).

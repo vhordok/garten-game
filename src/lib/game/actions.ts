@@ -17,7 +17,8 @@ import {
 import {
   befriendCreature as befriendCreaturePure,
   creatureBonus,
-  feedCreature as feedCreaturePure,
+  collectGift as collectGiftPure,
+  type CreatureGift,
 } from './creatures'
 import { parcelBonus } from '../data/milestones'
 import { worldMilestoneBonus } from '../data/worldMilestones'
@@ -591,11 +592,11 @@ export function tameCreature(id: string): boolean {
   return ok
 }
 
-/** PHASE 69: feed a befriended creature surplus produce to raise its level. */
-export function feedGardenCreature(id: string): boolean {
-  const ok = feedCreaturePure(getState(), id)
-  if (ok) notify()
-  return ok
+/** PHASE 72: collect a roaming creature's ready gift (reward + friendship up). */
+export function collectCreatureGift(id: string): CreatureGift | null {
+  const reward = collectGiftPure(getState(), id)
+  if (reward) notify()
+  return reward
 }
 
 /** PHASE 68: send an expedition (one slot). True on success. */
