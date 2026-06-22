@@ -22,6 +22,9 @@ export type AchCategory =
   | 'level'
   | 'varianten'
   | 'weltensaat'
+  | 'expeditionen'
+  | 'relikte'
+  | 'tierfreund'
 
 export const TIER_NAMES = ['Bronze', 'Silber', 'Gold', 'Platin', 'Diamant', 'Legendär'] as const
 export type TierName = (typeof TIER_NAMES)[number]
@@ -238,6 +241,37 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     metric: (s) => s.worldResets ?? 0,
     format: (v) => `${Math.round(v)} Welten`,
     tiers: track([1, 2, 3, 5, 8, 15], 'yield', YIELD),
+  },
+  // PHASE 70: tie the two new activity systems (expeditions, creatures) into the
+  // achievement + skill-point economy — fresh badges to chase for maxed players,
+  // and visibility so the systems are discoverable. Metrics read state inline
+  // (import-free) to avoid cycles.
+  {
+    id: 'expeditionen',
+    name: 'Entdecker',
+    category: 'expeditionen',
+    icon: '🧭',
+    metric: (s) => s.expeditionsDone ?? 0,
+    format: (v) => `${Math.round(v)} Reisen`,
+    tiers: track([1, 5, 15, 40, 100, 300], 'yield', YIELD),
+  },
+  {
+    id: 'relikte',
+    name: 'Reliktsammler',
+    category: 'relikte',
+    icon: '⭐',
+    metric: (s) => Object.values(s.relics ?? {}).reduce((a, b) => a + b, 0),
+    format: fmtPlain,
+    tiers: track([1, 3, 6, 10, 20, 40], 'questReward', QUEST),
+  },
+  {
+    id: 'tierfreund',
+    name: 'Tierfreund',
+    category: 'tierfreund',
+    icon: '🐾',
+    metric: (s) => Object.values(s.creatures ?? {}).filter((v) => v > 0).length,
+    format: (v) => `${Math.round(v)} Tiere`,
+    tiers: track([1, 2, 3, 4, 6, 8], 'growth', GROWTH),
   },
 ]
 

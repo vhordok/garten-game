@@ -351,4 +351,7 @@ Weltensaat/Relikte/Level), anfreunden (gratis) → mit Überschuss-Ernte fütter
 Freundschaftsstufe+dauerhaften Bonus (creatureBonus an yield/growth/sellPrice/compostGain/ticketLuck,
 überlebt Prestige+Weltensaat); gibt dem Lager Sinn + Grund Auto-Verkauf zu pausieren. Sichtbar in der
 Szene (wippende Emoji), HUD 🦔. Kein Zyklus (gardenBeauty als Param). SAVE_VERSION 37 (neues Feld
-creatures, Migration default {}). Stand SAVE_VERSION 37.
+creatures, Migration default {}). Phase 70 (§9.72): die neuen Systeme ins Erfolgs-System eingebunden —
+3 Tracks (Entdecker/expeditionsDone, Reliktsammler/Σ Relikte, Tierfreund/angefreundete Tiere) machen
+Expeditionen+Tiere sichtbar + geben dem Maxed-Spieler neue Abzeichen; Metriken import-frei, save-sicher
+ohne Version-Bump (Track-Append wie 9.60). Stand SAVE_VERSION 37.
