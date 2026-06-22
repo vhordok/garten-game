@@ -328,4 +328,7 @@ toggleHelperPause-Aktion, „⏸ Pause/▶ Start"-Knopf im Shop. SAVE_VERSION 34
 sanitize behält nur echte Helfer-IDs). Phase 64 (§9.66): neue Kosmos-Spitze — 5 Pflanzen jenseits
 Schöpfungskern (Urlichtblüte P104→Ursprungsblüte P131, ~×3,5 Wert, Unlock 1e39→1e47, gestaffelte
 Parzellen-Gates über mehrere Weltensaat-Wiederaufstiege), voll datengetrieben über plantById,
-distinkte reife Sprites (Sternensaat-Motiv neu eingefärbt). Keine Save-Änderung. Stand SAVE_VERSION 34.
+distinkte reife Sprites (Sternensaat-Motiv neu eingefärbt). Keine Save-Änderung. Phase 65 (§9.67):
+sichtbare Weltensaat-Belohnung — 2 kosmische Deko-Objekte (Sternenportal ab 1 Welt, Sternenkugel ab
+3 Welten) via neuem DecorationDef.unlockWorlds-Gate (isDecorationUnlocked gatet Kauf+Galerie-Anzeige),
+2 neue 16×16-Sprites, landschaften in die Szene. Keine Save-Änderung. Stand SAVE_VERSION 34.

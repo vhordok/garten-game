@@ -103,9 +103,9 @@ import { crossEligibility, effectiveGoldCost, freeStock, isDiscovered, produceSt
 import { activeGoals, goalBoard } from '../src/lib/game/goals.ts'
 import { CAMPAIGN } from '../src/lib/data/campaign.ts'
 import { claimCampaign, currentCampaignStep, initCampaign } from '../src/lib/game/campaign.ts'
-import { DECORATIONS, nextDecorationCost } from '../src/lib/data/decorations.ts'
+import { DECORATIONS, nextDecorationCost, isDecorationUnlocked } from '../src/lib/data/decorations.ts'
 import { buyDecoration, weltensaat } from '../src/lib/game/actions.ts'
-import { decorationBeauty, decorationCount, ownsAnyDecoration } from '../src/lib/game/decorations.ts'
+import { decorationBeauty, decorationCount, ownsAnyDecoration, purchaseDecoration } from '../src/lib/game/decorations.ts'
 import { canWeltensaat, starseedGain, starseedBanked, starUpgradeBonus, starUpgradeLevel, worldseedYieldFactor } from '../src/lib/game/worldseed.ts'
 import { buyStarUpgrade } from '../src/lib/game/actions.ts'
 import { STAR_UPGRADES, starUpgradeCost } from '../src/lib/data/starUpgrades.ts'
@@ -1781,6 +1781,27 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
     assert.ok(getState().campaign < CAMPAIGN.length, 'the endgame chapters remain ahead of a parcel-8 player')
     assert.equal(currentCampaignStep(getState()).id, 'landlord', 'next chapter is the first endgame one')
   })
+})
+
+test('PHASE 65: cosmic decorations gate on worlds sown (Weltensaat reward)', () => {
+  const portal = DECORATIONS.find((d) => d.id === 'sternenportal')
+  assert.ok(portal && portal.unlockWorlds === 1, 'Sternenportal needs 1 world')
+  assert.ok(!isDecorationUnlocked(portal, 0), 'locked at 0 worlds')
+  assert.ok(isDecorationUnlocked(portal, 1), 'unlocked at 1 world')
+
+  const s = fresh()
+  s.money = 1e12
+  s.worldResets = 0
+  assert.equal(purchaseDecoration(s, 'sternenportal'), false, 'world-locked deco cannot be bought')
+  assert.equal(decorationCount(s, 'sternenportal'), 0, 'nothing placed while locked')
+  s.worldResets = 1
+  assert.equal(purchaseDecoration(s, 'sternenportal'), true, 'buyable after the first Weltensaat')
+  assert.ok(decorationBeauty(s) > 0, 'placed cosmic deco adds beauty')
+
+  // an ungated deco is always buyable, no worlds required
+  const s2 = fresh()
+  s2.money = 1e12
+  assert.equal(purchaseDecoration(s2, 'steinweg'), true, 'ungated deco buyable from the start')
 })
 
 test('PHASE 63: helpers can be paused and the choice round-trips through save', () => {

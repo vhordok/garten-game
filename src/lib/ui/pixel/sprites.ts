@@ -2907,6 +2907,44 @@ const decoSpringbrunnen: SpriteGrid = [
   '................',
 ]
 
+// PHASE 65: cosmic decorations unlocked by sowing worlds (Weltensaat reward).
+const decoSternenportal: SpriteGrid = [
+  '................',
+  '.....mMMm.......',
+  '...mM....Mm.....',
+  '..M..uUUu..M....',
+  '.M.uU....Uu.M...',
+  '.M.U..WW..U.M...',
+  '.M.U.W..W.U.M...',
+  '.M.U.W..W.U.M...',
+  '.M.U..WW..U.M...',
+  '.M.uU....Uu.M...',
+  '..M..uUUu..M....',
+  '...mM....Mm.....',
+  '.....mMMm.......',
+  '................',
+  '................',
+  '................',
+]
+const decoSternenkugel: SpriteGrid = [
+  '................',
+  '................',
+  '......WWWW......',
+  '.....WUUUUW.....',
+  '....WUUUUUUW....',
+  '....WUUWWUUW....',
+  '....WUUUUUUW....',
+  '....WUmmmUUW....',
+  '.....WUUUUW.....',
+  '......WWWW......',
+  '.......NN.......',
+  '......NNNN......',
+  '.....NNNNNN.....',
+  '....NNNNNNNN....',
+  '................',
+  '................',
+]
+
 // PHASE 64: mature blossoms for the new cosmic ladder tiers — the sternensaat
 // star-bloom motif recoloured per plant (violet / gold / crimson / blue / silver).
 const urlichtbluete3: SpriteGrid = [
@@ -3009,6 +3047,8 @@ export const SPRITES: Record<string, SpriteGrid> = {
   'deco-vogelbad': decoVogelbad,
   'deco-zwerg': decoZwerg,
   'deco-springbrunnen': decoSpringbrunnen,
+  'deco-sternenportal': decoSternenportal,
+  'deco-sternenkugel': decoSternenkugel,
   'seedling': seedling,
   'seedling-kraeuter': seedlingKraeuter,
   'seedling-gemuese': seedlingGemuese,

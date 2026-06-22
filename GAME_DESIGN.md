@@ -1897,3 +1897,19 @@ Sternensaat-Stern-Motiv neu eingefärbt: violett/gold/purpur/blau/silberweiß), 
 
 Reine Daten/Sprites, keine Save-Änderung (Plant-IDs brauchen kein Feld). check/build grün,
 Tests 80/80 (Balance-Invarianten halten: uniforme Kadenz, Monotonie).
+
+### 9.67 Phase 65 — sichtbare Weltensaat-Belohnung: kosmische Deko (keine Save-Änderung)
+
+Sichtbarer Lohn fürs Aufsteigen (Part 3 der „Weltensaat-Inhalte"): zwei neue Deko-Objekte, die
+sich erst durch **gesäte Welten** freischalten — ein Abzeichen der höheren Prestige, das im Garten
+sichtbar wird. Neues optionales Feld `DecorationDef.unlockWorlds`:
+- **Sternenportal** (ab 1 Welt, ✿ +40 %): ein leuchtendes Tor zwischen den Welten.
+- **Sternenkugel** (ab 3 Welten, ✿ +55 %): schwebende Kugel aus Sternenlicht.
+
+`isDecorationUnlocked(def, worldResets)` gatet Kauf (`purchaseDecoration` lehnt Gesperrtes ab) und
+Anzeige (Galerie zeigt gesperrte Deko mit „🔒 ab N Welten" + „ab N 🌌"-Chip statt Kauf-Knopf, Sprite
+gedimmt). Zwei neue 16×16-Sprites (Portal-Ring violett/blau, Sternenkugel auf Sockel), per
+`scripts/deco-atlas.mjs` sichtgeprüft; sie landschaften wie alle Deko in die Szene (Phase 50).
+
+Save-sicher: `decorations` existiert, neue IDs → 0, `unlockWorlds` ist reine Daten. check/build
+grün, Tests 81/81 (Gate sperrt Kauf, frei ab Welt N, Schönheit greift, ungegatete Deko sofort).

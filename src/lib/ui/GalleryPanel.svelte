@@ -114,9 +114,10 @@
       {@const owned = decorationCount($gameStore, d.id)}
       {@const atCap = owned >= CONFIG.decorationMaxCopies}
       {@const cost = nextDecorationCost(d, owned)}
-      {@const affordable = Number.isFinite(cost) && $gameStore.money >= cost}
-      <li class="row deco" class:owned={owned > 0}>
-        <img class="px icon" src={spriteUrl(d.sprite)} width="40" height="40" alt="" />
+      {@const unlocked = ($gameStore.worldResets ?? 0) >= (d.unlockWorlds ?? 0)}
+      {@const affordable = unlocked && Number.isFinite(cost) && $gameStore.money >= cost}
+      <li class="row deco" class:owned={owned > 0} class:locked={!unlocked}>
+        <img class="px icon" src={spriteUrl(d.sprite)} width="40" height="40" alt="" style:opacity={unlocked ? 1 : 0.35} />
         <span class="body">
           <span class="head">
             <b>{d.name}</b>
@@ -124,22 +125,26 @@
             {#if owned > 0}<span class="count num">×{owned}</span>{/if}
           </span>
           <span class="sub num">
-            {#if owned > 0}Beitrag: +{Math.round(d.beautyBonus * owned * 100)} % Schönheit{:else}{d.desc}{/if}
+            {#if !unlocked}🔒 Schaltet frei ab <b>{d.unlockWorlds} {d.unlockWorlds === 1 ? 'Welt' : 'Welten'}</b> (Weltensaat){:else if owned > 0}Beitrag: +{Math.round(d.beautyBonus * owned * 100)} % Schönheit{:else}{d.desc}{/if}
           </span>
         </span>
-        <button
-          class="pxbtn small gold buy num"
-          disabled={!affordable || atCap}
-          onclick={(e) => handleBuyDeco(e, d.id)}
-          title={atCap ? 'Maximale Anzahl erreicht' : 'Eine Deko im Garten aufstellen'}
-        >
-          {#if atCap}
-            MAX
-          {:else}
-            <PixelIcon name="coin" scale={1} />
-            {formatNumber(cost)}
-          {/if}
-        </button>
+        {#if !unlocked}
+          <span class="lockchip num">ab {d.unlockWorlds} 🌌</span>
+        {:else}
+          <button
+            class="pxbtn small gold buy num"
+            disabled={!affordable || atCap}
+            onclick={(e) => handleBuyDeco(e, d.id)}
+            title={atCap ? 'Maximale Anzahl erreicht' : 'Eine Deko im Garten aufstellen'}
+          >
+            {#if atCap}
+              MAX
+            {:else}
+              <PixelIcon name="coin" scale={1} />
+              {formatNumber(cost)}
+            {/if}
+          </button>
+        {/if}
       </li>
     {/each}
   </ul>
@@ -188,7 +193,14 @@
   }
 
   .row.locked {
-    opacity: 0.55;
+    opacity: 0.7;
+  }
+  .lockchip {
+    flex: none;
+    font-size: 0.72rem;
+    color: var(--c-plum2);
+    white-space: nowrap;
+    font-weight: 700;
   }
 
   .icon {
