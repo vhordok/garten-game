@@ -83,6 +83,7 @@
         </div>
       {:else}
         <div class="progress"><span style:width="{100 - (remaining / (activeDef.durationSeconds * 1000)) * 100}%"></span></div>
+        <span class="travel-hint num">🎁 Bei Rückkehr wählst du sicher/Wagnis und bekommst dein Relikt — läuft auch offline weiter.</span>
       {/if}
     </div>
   {/if}
@@ -184,6 +185,12 @@
     display: block;
     height: 100%;
     background: var(--c-blue1);
+  }
+  .travel-hint {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--c-mist);
+    margin-top: 6px;
   }
   .choices {
     display: flex;

@@ -2046,3 +2046,11 @@ aufging** (der Spieler klickte „Garten-Bewohner" → nichts). Fix: der Effekt 
 `gameStore`; das Lesen/Schreiben von `movers` läuft in `untrack`, und neu zugewiesen wird nur, wenn
 sich die Menge der präsenten Tiere wirklich ändert. Zusätzlich `z-index` der Ebene 60→15 (über Feld,
 **unter** HUD/Panels), damit Tiere nie über offenen Panels schweben. check/build grün, Tests 86/86.
+
+### 9.76 Phase 74 — Expeditions-Klarheit: Belohnung bei Rückkehr (keine Save-Änderung)
+
+Spieler-Verwirrung: „0 Relikte" während eine 8-h-Expedition noch läuft → ist das kaputt? Nein —
+Relikte gibt's erst bei Rückkehr (sicher/Wagnis-Wahl). Klarer gemacht: die laufende-Reise-Karte im
+`ExpeditionPanel` zeigt jetzt „🎁 Bei Rückkehr wählst du sicher/Wagnis und bekommst dein Relikt —
+läuft auch offline weiter." Reine UI-Klarstellung, keine Logik-/Save-Änderung. check/build grün,
+Tests 86/86.
