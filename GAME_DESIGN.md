@@ -2035,3 +2035,14 @@ SAVE_VERSION 38: neues Feld `creatureGifts` (Timer-Map; Migration defaultet {} �
 Geschenk sofort bereit). `feedBase/feedFactor`+Feeding-Logik entfernt, durch `gift/giftBase/
 giftSeconds`+Gift-Loop ersetzt. check/build grün, Tests 86/86 (Timer, Einsammeln, Belohnung,
 Freundschaft, Save-Roundtrip).
+
+### 9.75 Phase 73 — Hotfix: CreatureLayer-Effekt-Loop (keine Save-Änderung)
+
+Kritischer Bug aus Phase 72: der „movers neu aufbauen"-`$effect` in `CreatureLayer.svelte` **las und
+schrieb** `movers` (`movers = present.map(... movers ...)`). In Svelte 5 ist ein Read+Write desselben
+`$state` im selben Effekt eine Endlosschleife (`effect_update_depth_exceeded`) — sie feuerte schon
+beim Mount mit **null** Tieren und fror den Reaktivitäts-Scheduler ein, sodass **kein Panel mehr
+aufging** (der Spieler klickte „Garten-Bewohner" → nichts). Fix: der Effekt hängt jetzt nur am
+`gameStore`; das Lesen/Schreiben von `movers` läuft in `untrack`, und neu zugewiesen wird nur, wenn
+sich die Menge der präsenten Tiere wirklich ändert. Zusätzlich `z-index` der Ebene 60→15 (über Feld,
+**unter** HUD/Panels), damit Tiere nie über offenen Panels schweben. check/build grün, Tests 86/86.

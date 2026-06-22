@@ -11,6 +11,7 @@
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
   import { pushToast } from './toasts'
+  import { untrack } from 'svelte'
 
   const FLYERS = new Set(['biene', 'schmetterling', 'gartenvogel', 'eule'])
 
@@ -34,11 +35,18 @@
     return { id: c.id, emoji: c.emoji, flying, x, y, tx: x, ty: y, pause: Math.random() * 2, face: 1 }
   }
 
-  // keep one mover per befriended creature (preserve positions across updates)
+  // keep one mover per befriended creature (preserve positions across updates).
+  // Depend ONLY on the gameStore; read/write `movers` inside untrack so this
+  // effect can't retrigger itself (a read+write of the same $state loops). Only
+  // reassign when the set of present creatures actually changes.
   $effect(() => {
-    const present = CREATURES.filter((c) => creatureLevel($gameStore, c.id) > 0)
-    const byId = new Map(movers.map((m) => [m.id, m]))
-    movers = present.map((c) => byId.get(c.id) ?? spawn(c))
+    const presentIds = CREATURES.filter((c) => creatureLevel($gameStore, c.id) > 0).map((c) => c.id)
+    untrack(() => {
+      const same = presentIds.length === movers.length && presentIds.every((id, i) => movers[i]?.id === id)
+      if (same) return
+      const byId = new Map(movers.map((m) => [m.id, m]))
+      movers = presentIds.map((id) => byId.get(id) ?? spawn(creatureById(id)!))
+    })
   })
 
   // 1 Hz clock for gift readiness
@@ -126,7 +134,7 @@
   .creature-layer {
     position: fixed;
     inset: 0;
-    z-index: 60; /* above the scene/field, below panels/HUD */
+    z-index: 15; /* above the scene/field, BELOW the HUD (20) and panels (50) */
     pointer-events: none; /* the field stays clickable… */
     overflow: hidden;
   }
