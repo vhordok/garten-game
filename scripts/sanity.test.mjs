@@ -2055,6 +2055,27 @@ test('PHASE 59: number/duration formatting is robust at extreme scale', () => {
   assert.equal(formatDuration(-5), '0s', 'negative clamps to 0s')
 })
 
+test('PHASE 70: achievement tracks for expeditions, relics and creatures', () => {
+  const expDef = ACHIEVEMENTS.find((a) => a.id === 'expeditionen')
+  const relDef = ACHIEVEMENTS.find((a) => a.id === 'relikte')
+  const tierDef = ACHIEVEMENTS.find((a) => a.id === 'tierfreund')
+  assert.ok(expDef && relDef && tierDef, 'all three new tracks exist')
+
+  const s = fresh()
+  assert.equal(reachedTier(s, expDef), 0, 'no expeditions → tier 0')
+  s.expeditionsDone = 15
+  assert.equal(reachedTier(s, expDef), 3, '15 expeditions → tier 3')
+  s.relics = { weltenkern: 6, sonnenstein: 4 } // 10 total
+  assert.equal(reachedTier(s, relDef), 4, '10 relics → tier 4')
+  s.creatures = { biene: 2, igel: 1 } // 2 befriended
+  assert.equal(reachedTier(s, tierDef), 2, '2 creatures befriended → tier 2')
+
+  // claimed tiers add a permanent bonus (ties the systems into the economy)
+  const before = achievementBonus(s, 'yield')
+  s.achievementTiers = { expeditionen: 6 }
+  assert.ok(achievementBonus(s, 'yield') > before, 'claimed expedition tiers add permanent yield')
+})
+
 test('PHASE 58: Weltensaat achievement track rewards worlds sown', () => {
   const def = ACHIEVEMENTS.find((a) => a.id === 'weltensaat')
   assert.ok(def, 'Weltenwanderer track exists')

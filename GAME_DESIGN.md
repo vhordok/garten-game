@@ -1985,3 +1985,17 @@ toten Feld eine lebendige Szene. `data/creatures.ts` + `game/creatures.ts` + `ui
 Kein Import-Zyklus (gardenBeauty wird als Param übergeben). SAVE_VERSION 37: neues Feld `creatures`
 (Migration defaultet {}). check/build grün, Tests 84/84 (Anlocken, Anfreunden, Füttern-Verbrauch,
 Bonus, Save-Roundtrip).
+
+### 9.72 Phase 70 — neue Systeme ins Erfolgs-System eingebunden (keine Save-Änderung)
+
+Die zwei neuen Aktivitäten (Expeditionen, Tiere) waren in der Führung unsichtbar — und der Spieler
+fand die Erfolge „alles auf max, langweilig". Drei neue Erfolge-Tracks (`data/achievements.ts`)
+machen sie sichtbar UND geben gerade dem Maxed-Spieler frische Abzeichen zu jagen:
+- **Entdecker** 🧭 (Metrik `expeditionsDone`, Stufen 1/5/15/40/100/300, Ertrags-Bonus)
+- **Reliktsammler** ⭐ (Metrik Σ Relikte, 1/3/6/10/20/40, Auftragsbelohnung-Bonus)
+- **Tierfreund** 🐾 (Metrik angefreundete Tiere, 1/2/3/4/6/8, Wachstums-Bonus)
+
+Metriken lesen den State inline (import-frei, kein Zyklus). Jede beanspruchte Stufe gibt dauerhaften
+Bonus + Skillpunkte (Gold/Legendär) wie jeder Track. Save-sicher **ohne Version-Bump** (wie der
+Track-Append in 9.60): `achievementTiers` ist ein offener Record; tiefe Spieler beanspruchen erfüllte
+Stufen beim Tick (kleine Booster/Lose, kein Kompost/keine Flut). check/build grün, Tests 85/85.
