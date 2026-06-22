@@ -600,9 +600,10 @@ export function collectCreatureGift(id: string): CreatureGift | null {
   return reward
 }
 
-/** PHASE 68: send an expedition (one slot). True on success. */
-export function sendExpedition(id: string): boolean {
-  const ok = startExpeditionPure(getState(), id)
+/** PHASE 68/78: send an expedition (one slot), optionally with a creature
+ * companion that boosts the risky outcome. True on success. */
+export function sendExpedition(id: string, companion?: string): boolean {
+  const ok = startExpeditionPure(getState(), id, companion)
   if (ok) notify()
   return ok
 }

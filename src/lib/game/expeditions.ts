@@ -7,7 +7,18 @@
 
 import { EXPEDITIONS, expeditionById, isExpeditionUnlocked, type ExpeditionMode } from '../data/expeditions'
 import { RELICS, type RelicEffect } from '../data/relics'
+import { creatureLevel } from './creatures'
+import { creatureById } from '../data/creatures'
 import type { GameState } from './types'
+
+/** PHASE 78: extra risky-success chance from the creature companion (if any),
+ * scaling with its friendship level. Capped so it never trivialises the gamble. */
+const COMPANION_PER_LEVEL = 0.02
+const COMPANION_MAX = 0.3
+export function companionRiskBonus(state: GameState, companionId: string | undefined): number {
+  if (!companionId || !creatureById(companionId)) return 0
+  return Math.min(COMPANION_MAX, creatureLevel(state, companionId) * COMPANION_PER_LEVEL)
+}
 
 /** Owned copies of a relic. */
 export function relicCount(state: GameState, id: string): number {
@@ -44,15 +55,18 @@ export function expeditionReady(state: GameState, now = Date.now()): boolean {
   return !!state.activeExpedition && now >= state.activeExpedition.endsAt
 }
 
-/** Send an expedition (one slot). Pure: mutates state, returns true on success. */
-export function startExpedition(state: GameState, id: string, now = Date.now()): boolean {
+/** Send an expedition (one slot), optionally with a befriended-creature
+ * companion. Pure: mutates state, returns true on success. */
+export function startExpedition(state: GameState, id: string, companion?: string, now = Date.now()): boolean {
   if (state.activeExpedition) return false // one at a time
   const def = expeditionById(id)
   if (!def) return false
   if (!isExpeditionUnlocked(def, state.worldResets ?? 0)) return false
   if (state.money < def.cost) return false
+  // only a befriended creature may come along
+  const valid = companion && creatureLevel(state, companion) > 0 ? companion : undefined
   state.money -= def.cost
-  state.activeExpedition = { id, endsAt: now + def.durationSeconds * 1000 }
+  state.activeExpedition = { id, endsAt: now + def.durationSeconds * 1000, companion: valid }
   return true
 }
 
@@ -86,7 +100,9 @@ export function claimExpedition(state: GameState, choice: ExpeditionMode = 'safe
 
   let result: ExpeditionResult
   if (choice === 'risky') {
-    if (Math.random() < def.riskSuccess && def.riskyPool.length > 0) {
+    // PHASE 78: a companion creature lifts the success chance by its friendship
+    const successChance = def.riskSuccess + companionRiskBonus(state, exp.companion)
+    if (Math.random() < successChance && def.riskyPool.length > 0) {
       const relicId = def.riskyPool[Math.floor(Math.random() * def.riskyPool.length)]
       grant(state, relicId, def.riskyCopies)
       result = { expeditionId: def.id, choice, success: true, relicId, copies: def.riskyCopies }

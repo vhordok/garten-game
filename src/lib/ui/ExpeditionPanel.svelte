@@ -1,8 +1,10 @@
 <script lang="ts">
   import { EXPEDITIONS, expeditionById, expeditionEvent, isExpeditionUnlocked, type ExpeditionMode } from '../data/expeditions'
   import { RELICS, relicById, RARITY_COLOR } from '../data/relics'
+  import { CREATURES, creatureById } from '../data/creatures'
   import { collectExpedition, sendExpedition } from '../game/actions'
-  import { expeditionReady, expeditionRemainingMs, relicCount, totalRelics } from '../game/expeditions'
+  import { companionRiskBonus, expeditionReady, expeditionRemainingMs, relicCount, totalRelics } from '../game/expeditions'
+  import { creatureLevel } from '../game/creatures'
   import { gameStore } from '../game/state'
   import { formatDuration, formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -26,9 +28,13 @@
   const worlds = $derived($gameStore.worldResets ?? 0)
 
   let lastResult = $state<string | null>(null)
+  let companion = $state<string | null>(null)
+
+  // PHASE 78: befriended creatures that may come along as a companion
+  const friends = $derived(CREATURES.filter((c) => creatureLevel($gameStore, c.id) > 0))
 
   function send(id: string) {
-    if (sendExpedition(id)) {
+    if (sendExpedition(id, companion ?? undefined)) {
       playSound('buy')
       lastResult = null
     }
@@ -69,15 +75,19 @@
           <b>{activeDef.name}</b>
           <span class="asub num">{ready ? 'zurückgekehrt!' : `noch ${formatDuration(remaining / 1000)}`}</span>
         </span>
+        {#if active.companion && creatureById(active.companion)}
+          <span class="companion num">{creatureById(active.companion)?.emoji} +{Math.round(companionRiskBonus($gameStore, active.companion) * 100)} % Wagnis</span>
+        {/if}
       </div>
       {#if ready}
         {@const event = expeditionEvent(active.endsAt)}
+        {@const riskPct = Math.round((activeDef.riskSuccess + companionRiskBonus($gameStore, active.companion)) * 100)}
         <p class="event-text">{event.text}</p>
         <div class="choices">
           {#each event.options as opt (opt.label)}
             <button class="pxbtn" class:risky={opt.mode === 'risky'} onclick={() => claim(opt.mode)}>
               {opt.label}
-              <span class="cdesc num">{opt.mode === 'risky' ? `${Math.round(activeDef.riskSuccess * 100)} % auf seltenes Relikt` : opt.hint}</span>
+              <span class="cdesc num">{opt.mode === 'risky' ? `${riskPct} % auf seltenes Relikt` : opt.hint}</span>
             </button>
           {/each}
         </div>
@@ -90,6 +100,23 @@
 
   {#if lastResult}
     <p class="result">{lastResult}</p>
+  {/if}
+
+  {#if !active && friends.length > 0}
+    <h3 class="sec">Begleiter <span class="sec-note num">· optional, hebt die Wagnis-Chance</span></h3>
+    <div class="companions">
+      <button class="comp" class:sel={companion === null} onclick={() => (companion = null)} title="ohne Begleiter">🚫</button>
+      {#each friends as c (c.id)}
+        <button
+          class="comp"
+          class:sel={companion === c.id}
+          onclick={() => (companion = c.id)}
+          title="{c.name} — +{Math.round(companionRiskBonus($gameStore, c.id) * 100)} % Wagnis-Erfolg"
+        >
+          {c.emoji}<span class="comp-b num">+{Math.round(companionRiskBonus($gameStore, c.id) * 100)}%</span>
+        </button>
+      {/each}
+    </div>
   {/if}
 
   <h3 class="sec">Reiseziele</h3>
@@ -167,6 +194,38 @@
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+  .companion {
+    margin-left: auto;
+    color: var(--c-gold2);
+    font-size: 0.74rem;
+    white-space: nowrap;
+  }
+  .companions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .comp {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--c-night1);
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 4px 6px;
+    font-size: 1.1rem;
+    line-height: 1.1;
+    color: var(--c-cloud);
+  }
+  .comp.sel {
+    border-color: var(--c-gold2);
+    background: color-mix(in srgb, var(--c-gold2) 14%, var(--c-night1));
+  }
+  .comp-b {
+    font-size: 0.6rem;
+    color: var(--c-mist);
   }
   .aemoji {
     font-size: 1.6rem;

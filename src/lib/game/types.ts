@@ -275,8 +275,9 @@ export interface GameState {
   /** number of Weltensaat resets performed (PHASE 51). */
   worldResets: number
   /** PHASE 68 Expeditionen — the one active expedition (wall-clock timer), or
-   * null. Real-time gated, so the multiplier runaway can't rush it. */
-  activeExpedition: { id: string; endsAt: number } | null
+   * null. Real-time gated, so the multiplier runaway can't rush it. PHASE 78:
+   * an optional befriended-creature companion that boosts the risky outcome. */
+  activeExpedition: { id: string; endsAt: number; companion?: string } | null
   /** PHASE 68 — owned relics (permanent stacking passive bonuses, survive
    * prestige AND Weltensaat). Collected by claiming expeditions. */
   relics: Record<string, number>
