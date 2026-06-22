@@ -1783,6 +1783,29 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
   })
 })
 
+test('PHASE 67: skill points use the parcel high-water mark, survive Weltensaat', () => {
+  const s = fresh()
+  s.parcels = CONFIG.weltensaatMinParcels + 25
+  s.maxParcels = s.parcels
+  const hw = s.maxParcels
+  const pool = totalSkillPoints(s)
+  assert.ok(pool >= hw - 1, 'deep prestige grants skill points')
+  // sowing a world resets parcels — the skill pool must NOT drop (no re-climb)
+  weltensaat()
+  const g = getState()
+  assert.ok(g.parcels < CONFIG.weltensaatMinParcels, 'Weltensaat reset the parcel count')
+  assert.equal(g.maxParcels, hw, 'high-water mark kept through Weltensaat')
+  assert.equal(totalSkillPoints(g), pool, 'skill pool unchanged after a world reset')
+
+  // leasing a parcel raises the high-water mark
+  const s2 = fresh()
+  s2.parcels = 10
+  s2.maxParcels = 10
+  s2.lifetimeEarned = 1e30
+  assert.ok(leaseParcel() > 0, 'leased a parcel')
+  assert.ok(getState().maxParcels >= 11, 'leasing raises the high-water mark')
+})
+
 test('PHASE 65: cosmic decorations gate on worlds sown (Weltensaat reward)', () => {
   const portal = DECORATIONS.find((d) => d.id === 'sternenportal')
   assert.ok(portal && portal.unlockWorlds === 1, 'Sternenportal needs 1 world')

@@ -18,8 +18,12 @@ export function skillLevel(state: GameState, id: string): number {
  * Tied to progress that survives prestige → a true meta currency.
  */
 export function totalSkillPoints(state: GameState): number {
+  // PHASE 67: use the parcel HIGH-WATER mark, not the current count — Weltensaat
+  // resets `parcels`, but prestige progress (and the skill points it earned) is
+  // permanent, so a world reset must not zero out the pool and force a re-climb.
+  const parcelDepth = Math.max(state.maxParcels ?? state.parcels, state.parcels)
   return (
-    Math.max(state.parcels - 1, 0) +
+    Math.max(parcelDepth - 1, 0) +
     achievementSkillPoints(state) +
     Math.floor(Math.max(state.level - 1, 0) / CONFIG.skillPointPerLevels)
   )

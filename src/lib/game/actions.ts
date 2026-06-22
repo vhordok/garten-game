@@ -516,6 +516,7 @@ export function leaseParcel(): number {
   if (gain < leaseRequirement(s)) return 0
   s.compost += gain
   s.parcels += 1
+  s.maxParcels = Math.max(s.maxParcels ?? s.parcels, s.parcels) // PHASE 67 high-water
   s.money = CONFIG.startMoney
   s.totalEarned = 0
   s.plots = Array.from({ length: CONFIG.startPlots }, emptyPlot)

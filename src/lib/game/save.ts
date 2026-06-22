@@ -19,7 +19,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 34
+export const SAVE_VERSION = 35
 
 interface SaveEnvelope {
   version: number
@@ -236,6 +236,11 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // sanitize() defaults it to [] (nothing paused), so old saves keep every
       // helper running exactly as before.
       return { ...envelope, version: 34 }
+    case 34:
+      // v34 → v35: PHASE 67 skill-point fix — new `maxParcels` high-water mark.
+      // sanitize() seeds it to the current `parcels` so prestige-derived skill
+      // points survive Weltensaat (which resets parcels) going forward.
+      return { ...envelope, version: 35 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -275,6 +280,9 @@ function sanitize(raw: unknown): GameState {
   // old saves: seed the quest floor from the current round so orders stay on tier
   state.maxUnlockEarned = clampNumber(r.maxUnlockEarned, state.totalEarned, state.totalEarned)
   state.parcels = Math.floor(clampNumber(r.parcels, 1, 1, 1000))
+  // PHASE 67: high-water mark — never below the current parcel count (so old
+  // saves without the field, or any tampering, keep a consistent skill pool)
+  state.maxParcels = Math.max(Math.floor(clampNumber(r.maxParcels, 1, 1, 1000)), state.parcels)
   state.compost = Math.floor(clampNumber(r.compost, 0, 0, 1e9))
   state.compostSpent = Math.floor(clampNumber(r.compostSpent, 0, 0, 1e15))
 
