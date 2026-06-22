@@ -282,6 +282,9 @@ export interface GameState {
   relics: Record<string, number>
   /** PHASE 68 — expeditions completed (stat for goals/achievements). */
   expeditionsDone: number
+  /** PHASE 69 Garten-Bewohner — friendship level per creature id (0/absent =
+   * not befriended). Permanent passive bonuses; survive prestige AND Weltensaat. */
+  creatures: Record<string, number>
   /** cannabis license level owned (0–5; IV/V are PHASE 27 trade licenses that
    * boost quest rewards instead of unlocking plants), survives prestige */
   licenses: number

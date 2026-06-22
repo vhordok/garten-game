@@ -8,6 +8,7 @@ import { CAMPAIGN } from '../data/campaign'
 import { decorationById } from '../data/decorations'
 import { expeditionById } from '../data/expeditions'
 import { RELICS } from '../data/relics'
+import { CREATURES } from '../data/creatures'
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES } from '../data/compostUpgrades'
 import { STAR_UPGRADES } from '../data/starUpgrades'
@@ -21,7 +22,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 36
+export const SAVE_VERSION = 37
 
 interface SaveEnvelope {
   version: number
@@ -248,6 +249,11 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // `expeditionsDone`. sanitize() defaults them to null / {} / 0, so old
       // saves simply have no expedition running and no relics yet.
       return { ...envelope, version: 36 }
+    case 36:
+      // v36 → v37: PHASE 69 Garten-Bewohner — new `creatures` friendship map.
+      // sanitize() defaults it to {} (none befriended), so old saves are
+      // unaffected; animals get attracted as their conditions are met.
+      return { ...envelope, version: 37 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -526,6 +532,17 @@ function sanitize(raw: unknown): GameState {
   }
   state.relics = relics
   state.expeditionsDone = Math.floor(clampNumber(r.expeditionsDone, 0, 0, 1e9))
+
+  // PHASE 69 creatures: friendship levels (known ids only, clamped to maxLevel)
+  const creatures: Record<string, number> = {}
+  if (typeof r.creatures === 'object' && r.creatures !== null) {
+    const raw = r.creatures as Record<string, unknown>
+    for (const def of CREATURES) {
+      const level = Math.floor(clampNumber(raw[def.id], 0, 0, def.maxLevel))
+      if (level > 0) creatures[def.id] = level
+    }
+  }
+  state.creatures = creatures
 
   const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
   state.records = {

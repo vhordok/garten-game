@@ -345,4 +345,10 @@ your-luck (sicher=1 Relikt / Wagnis=Chance auf seltenes), Relikte sind 8 permane
 (überstehen Prestige+Weltensaat, relicBonus an yield/growth/sellPrice/compostGain/ticketLuck) — eine
 Progressionsachse, die der Multiplikator-Runaway NICHT beschleunigen kann. HUD 🧭, läuft offline.
 SAVE_VERSION 36 (neue Felder activeExpedition/relics/expeditionsDone, Migration default null/{}/0).
-Stand SAVE_VERSION 36.
+Phase 69 (§9.71): Garten-Bewohner (data/creatures.ts + game/creatures.ts + ui/CreaturesPanel.svelte +
+Scene-Sichtbarkeit) — 8 Tiere, die der Garten über monotone Bedingungen anlockt (Schönheit/Deko/Zier/
+Weltensaat/Relikte/Level), anfreunden (gratis) → mit Überschuss-Ernte füttern (freeStock) hebt
+Freundschaftsstufe+dauerhaften Bonus (creatureBonus an yield/growth/sellPrice/compostGain/ticketLuck,
+überlebt Prestige+Weltensaat); gibt dem Lager Sinn + Grund Auto-Verkauf zu pausieren. Sichtbar in der
+Szene (wippende Emoji), HUD 🦔. Kein Zyklus (gardenBeauty als Param). SAVE_VERSION 37 (neues Feld
+creatures, Migration default {}). Stand SAVE_VERSION 37.

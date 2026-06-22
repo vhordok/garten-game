@@ -2,6 +2,8 @@
   import PixelIcon from './PixelIcon.svelte'
   import { DECORATIONS } from '../data/decorations'
   import { decorationCount } from '../game/decorations'
+  import { CREATURES } from '../data/creatures'
+  import { creatureLevel } from '../game/creatures'
   import { gameStore } from '../game/state'
   import { spriteUrl } from './pixel/render'
 
@@ -82,6 +84,28 @@
       })
     return out
   })
+
+  // PHASE 69: befriended Garten-Bewohner roam the scene as gently bobbing emoji,
+  // at stable hashed spots — the garden visibly fills with life as you collect.
+  type Critter = { key: string; emoji: string; left: number; top: number; size: number; dur: number; delay: number }
+  const critters = $derived.by<Critter[]>(() => {
+    const out: Critter[] = []
+    CREATURES.forEach((c, i) => {
+      if (creatureLevel($gameStore, c.id) <= 0) return
+      const h = hash(i * 5 + 31)
+      const flying = c.id === 'biene' || c.id === 'schmetterling' || c.id === 'gartenvogel'
+      out.push({
+        key: `cr-${c.id}`,
+        emoji: c.emoji,
+        left: clamp(8 + h * 84, 2, 94),
+        top: flying ? clamp(48 + h * 18, 46, 70) : clamp(74 + h * 16, 72, 92),
+        size: flying ? 16 : 20,
+        dur: 4 + h * 4,
+        delay: -h * 5,
+      })
+    })
+    return out
+  })
 </script>
 
 <!-- Fixed night-garden backdrop: sky bands, stars, moon, parallax hedge
@@ -120,6 +144,15 @@
       style:animation-duration={`${f.dur}s`}
       style:animation-delay={`${f.delay}s`}
     ></span>
+  {/each}
+  {#each critters as c (c.key)}
+    <span
+      class="critter"
+      style:left={`${c.left}%`}
+      style:top={`${c.top}%`}
+      style:font-size={`${c.size}px`}
+      style:animation-duration={`${c.dur}s`}
+      style:animation-delay={`${c.delay}s`}>{c.emoji}</span>
   {/each}
   <div class="vignette"></div>
 </div>
@@ -324,6 +357,32 @@
     100% {
       opacity: 0.2;
       transform: translate(0, 0);
+    }
+  }
+
+  /* PHASE 69: befriended creatures bob gently around the scene */
+  .critter {
+    position: absolute;
+    line-height: 1;
+    z-index: 940;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+    animation: critter-bob 4s ease-in-out infinite alternate;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  @keyframes critter-bob {
+    from {
+      transform: translateY(0) rotate(-3deg);
+    }
+    to {
+      transform: translateY(-6px) rotate(3deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .critter {
+      animation: none;
     }
   }
 

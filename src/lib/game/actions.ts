@@ -14,6 +14,11 @@ import {
   startExpedition as startExpeditionPure,
   type ExpeditionResult,
 } from './expeditions'
+import {
+  befriendCreature as befriendCreaturePure,
+  creatureBonus,
+  feedCreature as feedCreaturePure,
+} from './creatures'
 import { parcelBonus } from '../data/milestones'
 import { worldMilestoneBonus } from '../data/worldMilestones'
 import { skillById } from '../data/skills'
@@ -499,7 +504,8 @@ export function compostGain(state: GameState): number {
         variantBonus(state, 'compostGain') +
         starUpgradeBonus(state, 'compostGain') +
         worldMilestoneBonus(state.worldResets ?? 0, 'compostGain') +
-        relicBonus(state, 'compostGain')) *
+        relicBonus(state, 'compostGain') +
+        creatureBonus(state, 'compostGain')) *
       event
   )
   // subtract compost already CLAIMED (pool + spent) so spending on the compost
@@ -575,6 +581,21 @@ export function weltensaat(): number {
   refillQuests(s)
   notify()
   return gain
+}
+
+/** PHASE 69: befriend an attracted creature (free first contact). */
+export function tameCreature(id: string): boolean {
+  const s = getState()
+  const ok = befriendCreaturePure(s, id, gardenBeauty(s))
+  if (ok) notify()
+  return ok
+}
+
+/** PHASE 69: feed a befriended creature surplus produce to raise its level. */
+export function feedGardenCreature(id: string): boolean {
+  const ok = feedCreaturePure(getState(), id)
+  if (ok) notify()
+  return ok
 }
 
 /** PHASE 68: send an expedition (one slot). True on success. */

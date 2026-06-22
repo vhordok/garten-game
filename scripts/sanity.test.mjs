@@ -117,6 +117,16 @@ import { expectedQuestPayout } from '../src/lib/game/actions.ts'
 import { autoHarvestRate, autoSowRate, autoSellInterval } from '../src/lib/game/modifiers.ts'
 import { isHelperUpgrade, toggleHelperPause } from '../src/lib/game/actions.ts'
 import { expeditionById, isExpeditionUnlocked } from '../src/lib/data/expeditions.ts'
+import { creatureById } from '../src/lib/data/creatures.ts'
+import {
+  befriendCreature,
+  feedCreature,
+  creatureBonus,
+  creatureLevel,
+  isCreatureAttracted,
+  totalFreeStock,
+  feedCost,
+} from '../src/lib/game/creatures.ts'
 import {
   startExpedition,
   claimExpedition,
@@ -1790,6 +1800,44 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
     assert.ok(getState().campaign < CAMPAIGN.length, 'the endgame chapters remain ahead of a parcel-8 player')
     assert.equal(currentCampaignStep(getState()).id, 'landlord', 'next chapter is the first endgame one')
   })
+})
+
+test('PHASE 69: creatures — attract, befriend, feed surplus produce, bonus, save', () => {
+  const s = fresh()
+  s.quests = [] // no reservations, so freeStock == inventory
+  const bee = creatureById('biene') // attract: beauty ≥ 0.5
+  assert.equal(isCreatureAttracted(s, bee, 0), false, 'bee needs a blooming garden')
+  assert.equal(befriendCreature(s, 'biene', 0), false, 'cannot befriend before attracted')
+  assert.equal(isCreatureAttracted(s, bee, 1), true, 'beauty 1 attracts the bee')
+  assert.equal(befriendCreature(s, 'biene', 1), true, 'befriended')
+  assert.equal(creatureLevel(s, 'biene'), 1, 'friendship level 1')
+  assert.equal(befriendCreature(s, 'biene', 1), false, 'cannot befriend twice')
+
+  // feeding consumes surplus produce and raises the level
+  const cost = feedCost(bee, 1)
+  assert.equal(feedCreature(s, 'biene'), false, 'no produce → cannot feed')
+  s.inventory = { erdbeere: cost + 10 }
+  assert.ok(totalFreeStock(s) >= cost, 'enough free produce now')
+  assert.equal(feedCreature(s, 'biene'), true, 'fed with surplus produce')
+  assert.equal(creatureLevel(s, 'biene'), 2, 'friendship level rose')
+  assert.equal(s.inventory.erdbeere, 10, 'exactly the cost was consumed')
+
+  // bonus feeds the permanent multipliers
+  const base = yieldMultiplier(fresh())
+  const g = fresh()
+  g.creatures = { schmetterling: 5 } // a yield creature
+  assert.ok(creatureBonus(g, 'yield') > 0 && yieldMultiplier(g) > base, 'creatures lift the yield multiplier')
+
+  // the ladybug is attractable from the very start (level ≥ 1)
+  assert.equal(isCreatureAttracted(fresh(), creatureById('marienkaefer'), 0), true, 'ladybug from the start')
+
+  // save round-trip
+  const s3 = fresh()
+  s3.creatures = { igel: 3 }
+  const blob = exportSave()
+  replaceState(createDefaultState())
+  importSave(blob)
+  assert.equal(getState().creatures.igel, 3, 'creatures persist through save/load')
 })
 
 test('PHASE 68: expeditions — real-time gate, relics, press-your-luck claim', () => {
