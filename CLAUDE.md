@@ -361,4 +361,7 @@ Phase 72 (§9.74): Garten-Bewohner lebendig & interaktiv — Tiere LAUFEN/FLIEGE
 (ui/CreatureLayer.svelte, rAF-Pathing, eigene Klick-Ebene), Füttern ersetzt durch GESCHENKE
 (Echtzeit-Timer → 🎁 anklicken im Garten/Panel → Rubbellose/Dünger + Freundschaftsstufe; Klick ohne
 Geschenk = Herz-Streicheln); collectGift/isGiftReady/giftReward, feedCreature entfernt. SAVE_VERSION 38
-(neues Feld creatureGifts, Migration default {}). Stand SAVE_VERSION 38.
+(neues Feld creatureGifts, Migration default {}). Phase 73 (§9.75): Hotfix — CreatureLayer-„movers"-
+$effect las+schrieb movers (Svelte-5-Endlosschleife, fror Reaktivität ein → kein Panel ging mehr auf);
+jetzt nur am gameStore hängend, movers-Read/Write in untrack + Reassign nur bei Mengenänderung, z-index
+60→15. Stand SAVE_VERSION 38.
