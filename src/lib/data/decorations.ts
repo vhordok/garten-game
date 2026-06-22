@@ -23,6 +23,9 @@ export interface DecorationDef {
   beautyBonus: number
   /** gold price of the FIRST copy */
   baseCost: number
+  /** PHASE 65: minimum sown worlds (Weltensaat) before this deco unlocks.
+   * Undefined/0 = available from the start. A visible reward for ascending. */
+  unlockWorlds?: number
 }
 
 export const DECORATIONS: DecorationDef[] = [
@@ -90,7 +93,32 @@ export const DECORATIONS: DecorationDef[] = [
     beautyBonus: 0.28,
     baseCost: 400_000,
   },
+  // PHASE 65: cosmic decorations — only available after sowing worlds (Weltensaat),
+  // a visible badge of the higher prestige. Stronger beauty, fitting the endgame.
+  {
+    id: 'sternenportal',
+    name: 'Sternenportal',
+    desc: 'Ein leuchtendes Tor zwischen den Welten — Beweis deiner ersten Weltensaat.',
+    sprite: 'deco-sternenportal',
+    beautyBonus: 0.4,
+    baseCost: 5_000_000,
+    unlockWorlds: 1,
+  },
+  {
+    id: 'sternenkugel',
+    name: 'Sternenkugel',
+    desc: 'Eine schwebende Kugel aus gebanntem Sternenlicht.',
+    sprite: 'deco-sternenkugel',
+    beautyBonus: 0.55,
+    baseCost: 25_000_000,
+    unlockWorlds: 3,
+  },
 ]
+
+/** PHASE 65: whether a decoration's Weltensaat gate is met. */
+export function isDecorationUnlocked(def: DecorationDef, worldResets: number): boolean {
+  return worldResets >= (def.unlockWorlds ?? 0)
+}
 
 export function decorationById(id: string): DecorationDef | undefined {
   return DECORATIONS.find((d) => d.id === id)

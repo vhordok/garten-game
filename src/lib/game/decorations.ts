@@ -2,7 +2,7 @@
 // adds its beautyBonus to gardenBeauty (see modifiers.ts). Pure TS; the buy
 // action wraps this in actions.ts.
 
-import { DECORATIONS, decorationById, nextDecorationCost } from '../data/decorations'
+import { DECORATIONS, decorationById, isDecorationUnlocked, nextDecorationCost } from '../data/decorations'
 import type { GameState } from './types'
 
 /** Owned copies of a decoration. */
@@ -34,6 +34,7 @@ export function ownsAnyDecoration(state: GameState): boolean {
 export function purchaseDecoration(state: GameState, id: string): boolean {
   const def = decorationById(id)
   if (!def) return false
+  if (!isDecorationUnlocked(def, state.worldResets ?? 0)) return false // PHASE 65 gate
   const owned = state.decorations[id] ?? 0
   const cost = nextDecorationCost(def, owned)
   if (!Number.isFinite(cost) || state.money < cost) return false
