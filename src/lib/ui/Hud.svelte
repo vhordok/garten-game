@@ -8,8 +8,10 @@
   import { toastLogUnseen } from './toasts'
   import { availableSkillPoints } from '../game/skills'
   import { expeditionReady } from '../game/expeditions'
+  import { CREATURES } from '../data/creatures'
+  import { creatureLevel, isCreatureAttracted } from '../game/creatures'
   import { crossEligibility, discoverableVariants } from '../game/seedlab'
-  import { comboMultiplier, comboWindowSeconds, marketFactor, maxScratchTickets } from '../game/modifiers'
+  import { comboMultiplier, comboWindowSeconds, gardenBeauty, marketFactor, maxScratchTickets } from '../game/modifiers'
   import { gameStore } from '../game/state'
   import { formatNumber } from '../util/format'
   import { playSound } from './fx/audio'
@@ -30,6 +32,7 @@
     onOpenSeedLab,
     onOpenGallery,
     onOpenExpeditions,
+    onOpenCreatures,
     onOpenToastLog,
   }: {
     onOpenInventory: () => void
@@ -45,6 +48,7 @@
     onOpenSeedLab: () => void
     onOpenGallery: () => void
     onOpenExpeditions: () => void
+    onOpenCreatures: () => void
     onOpenToastLog: () => void
   } = $props()
 
@@ -52,6 +56,10 @@
   // claim). The store churns every frame (plots grow), so Date.now() stays fresh.
   const expeditionReadyNow = $derived(expeditionReady($gameStore, Date.now()))
   const expeditionOut = $derived(!!$gameStore.activeExpedition)
+  // PHASE 69: nudge the creatures button when a new animal can be befriended
+  const creatureHint = $derived(
+    CREATURES.some((c) => creatureLevel($gameStore, c.id) === 0 && isCreatureAttracted($gameStore, c, gardenBeauty($gameStore)))
+  )
 
   // PHASE 28: only MEANINGFUL ready goals light the badge — trivial chores
   // (cheap upgrade, cash a ticket) shouldn't keep it permanently lit.
@@ -234,6 +242,11 @@
   <button class="pxbtn" onclick={onOpenExpeditions} aria-label="Expeditionen" title="Expeditionen — schick deinen Gärtner los und sammle Relikte">
     🧭
     {#if expeditionReadyNow}<span class="dot prestige" aria-hidden="true"></span>{:else if expeditionOut}<span class="dot" aria-hidden="true"></span>{/if}
+  </button>
+
+  <button class="pxbtn" onclick={onOpenCreatures} aria-label="Garten-Bewohner" title="Garten-Bewohner — Tiere anlocken, anfreunden und füttern">
+    🦔
+    {#if creatureHint}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">

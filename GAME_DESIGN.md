@@ -1963,3 +1963,25 @@ HUD-Button 🧭 (Punkt wenn unterwegs, Prestige-Punkt wenn zurück). Echtzeit vi
 → läuft auch offline (du kommst zurück und wählst). SAVE_VERSION 36: neue Felder `activeExpedition`/
 `relics`/`expeditionsDone` (Migration defaultet null/{}/0). check/build grün, Tests 83/83 (Gate,
 Zeit-Sperre, sicher/Wagnis-Roll, Relikt-Wirkung, Save-Roundtrip).
+
+### 9.71 Phase 69 — Garten-Bewohner: ein lebendiger Garten (SAVE_VERSION 37)
+
+Teil 2 des Spielerwunschs (Tiere). Ein gepflegter Garten **lockt Tiere an** — und macht aus dem
+toten Feld eine lebendige Szene. `data/creatures.ts` + `game/creatures.ts` + `ui/CreaturesPanel.svelte`:
+
+- **8 Tiere** (Marienkäfer→Garteneule), jedes über eine **monotone Bedingung** angelockt, die an
+  bestehende Systeme bindet → echte Ziele: Gartenschönheit (Biene/Schmetterling), Deko (Igel),
+  Zierpflanzen (Frosch), Weltensaat (Vogel), Relikte/Expeditionen (Fuchs), Level (Eule).
+- **Anfreunden** (gratis, sobald angelockt) → dann **Füttern mit Überschuss-Ernte**
+  (`freeStock = Lager − questReserviert`, größte Stacks zuerst) hebt die Freundschaftsstufe und den
+  **dauerhaften Bonus** (Ertrag/Tempo/Kompost/Verkauf/Glück). Das gibt dem riesigen Lager endlich
+  einen Sinn — und einen Grund, den Auto-Verkauf (Phase 63) zu pausieren = echte Entscheidung.
+- Boni über `creatureBonus(state, effect)` an yield/growth/sellPrice/compostGain/ticketLuck → eine
+  weitere permanente Achse (überlebt Prestige + Weltensaat).
+- **Sichtbar:** angefreundete Tiere wuseln/fliegen sanft wippend durch die Szene (Scene.svelte,
+  gehashte Plätze, `prefers-reduced-motion` aus). HUD-Button 🦔 (Punkt, wenn ein neues Tier
+  anfreundbar ist).
+
+Kein Import-Zyklus (gardenBeauty wird als Param übergeben). SAVE_VERSION 37: neues Feld `creatures`
+(Migration defaultet {}). check/build grün, Tests 84/84 (Anlocken, Anfreunden, Füttern-Verbrauch,
+Bonus, Save-Roundtrip).

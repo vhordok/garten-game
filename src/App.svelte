@@ -11,6 +11,7 @@
   import FxLayer from './lib/ui/fx/FxLayer.svelte'
   import GalleryPanel from './lib/ui/GalleryPanel.svelte'
   import ExpeditionPanel from './lib/ui/ExpeditionPanel.svelte'
+  import CreaturesPanel from './lib/ui/CreaturesPanel.svelte'
   import GoalsPanel from './lib/ui/GoalsPanel.svelte'
   import GoldenFirefly from './lib/ui/GoldenFirefly.svelte'
   import { registerShakeTarget } from './lib/ui/fx/shake'
@@ -37,7 +38,7 @@
   let { offline }: { offline: OfflineReport | null } = $props()
 
   let openPanel = $state<
-    | 'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'goals' | 'skills' | 'seedlab' | 'gallery' | 'expeditions' | 'toastlog' | 'tutorial' | null
+    | 'inventory' | 'settings' | 'shop' | 'quests' | 'scratch' | 'prestige' | 'daily' | 'achievements' | 'goals' | 'skills' | 'seedlab' | 'gallery' | 'expeditions' | 'creatures' | 'toastlog' | 'tutorial' | null
   >(null)
   // the world stage is the shake target — fixed HUD/hotbar stay put
   let stageEl: HTMLElement
@@ -145,6 +146,7 @@
     onOpenSeedLab={() => (openPanel = 'seedlab')}
     onOpenGallery={() => (openPanel = 'gallery')}
     onOpenExpeditions={() => (openPanel = 'expeditions')}
+    onOpenCreatures={() => (openPanel = 'creatures')}
     onOpenToastLog={() => (openPanel = 'toastlog')}
   />
   <main bind:this={stageEl}>
@@ -194,6 +196,8 @@
   <GalleryPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'expeditions'}
   <ExpeditionPanel onClose={() => (openPanel = null)} />
+{:else if openPanel === 'creatures'}
+  <CreaturesPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'toastlog'}
   <ToastLogPanel onClose={() => (openPanel = null)} />
 {:else if openPanel === 'tutorial'}
