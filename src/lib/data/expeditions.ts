@@ -103,3 +103,80 @@ export function expeditionById(id: string): ExpeditionDef | undefined {
 export function isExpeditionUnlocked(def: ExpeditionDef, worldResets: number): boolean {
   return worldResets >= (def.unlockWorlds ?? 0)
 }
+
+// ── PHASE 76: return events ──────────────────────────────────────────────────
+// When an expedition comes back, a small narrative EVENT frames the press-your-
+// luck choice — varied story + options instead of a fixed Sicher/Wagnis. The
+// option `mode` maps to the reward roll in game/expeditions.ts:
+//   safe   → 1 relic from the safe pool (guaranteed)
+//   risky  → 1 rarer relic from the risky pool at riskSuccess%, else nothing
+//   double → 2 relics from the safe pool (guaranteed) — the steady middle path
+export type ExpeditionMode = 'safe' | 'risky' | 'double'
+
+export interface ExpeditionOption {
+  label: string
+  hint: string
+  mode: ExpeditionMode
+}
+export interface ExpeditionEvent {
+  id: string
+  text: string
+  options: ExpeditionOption[]
+}
+
+export const EXPEDITION_EVENTS: ExpeditionEvent[] = [
+  {
+    id: 'truhe',
+    text: 'Im Dickicht steht eine verschlossene Truhe.',
+    options: [
+      { label: '🔨 Aufbrechen', hint: 'Wagnis — Chance auf ein seltenes Relikt', mode: 'risky' },
+      { label: '🗝️ Schloss knacken', hint: 'sicher: 1 Relikt', mode: 'safe' },
+    ],
+  },
+  {
+    id: 'gabelung',
+    text: 'Eine Weggabelung — links unbekannt, rechts vertraut.',
+    options: [
+      { label: '🌫️ Unbekannter Pfad', hint: 'Wagnis — Chance auf ein seltenes Relikt', mode: 'risky' },
+      { label: '🧭 Bekannter Weg', hint: 'sicher: 1 Relikt', mode: 'safe' },
+    ],
+  },
+  {
+    id: 'haendler',
+    text: 'Ein fahrender Händler bietet einen Tausch an.',
+    options: [
+      { label: '🤝 Handeln', hint: 'sicher: 2 Relikte', mode: 'double' },
+      { label: '🎲 Auf Glück hoffen', hint: 'Wagnis — Chance auf ein seltenes Relikt', mode: 'risky' },
+    ],
+  },
+  {
+    id: 'hoehle',
+    text: 'Eine dunkle Höhle gähnt vor dir.',
+    options: [
+      { label: '🔦 Tief hinein', hint: 'Wagnis — Chance auf ein seltenes Relikt', mode: 'risky' },
+      { label: '🧺 Am Eingang sammeln', hint: 'sicher: 1 Relikt', mode: 'safe' },
+    ],
+  },
+  {
+    id: 'fund',
+    text: 'Etwas glänzt verheißungsvoll im Geröll.',
+    options: [
+      { label: '⛏️ Ausgraben', hint: 'sicher: 2 Relikte', mode: 'double' },
+      { label: '👜 Schnell mitnehmen', hint: 'sicher: 1 Relikt', mode: 'safe' },
+    ],
+  },
+  {
+    id: 'sturm',
+    text: 'Ein Sturm zieht auf, der Rückweg wird heikel.',
+    options: [
+      { label: '🌩️ Durchhalten', hint: 'Wagnis — Chance auf ein seltenes Relikt', mode: 'risky' },
+      { label: '⛺ Unterstellen', hint: 'sicher: 1 Relikt', mode: 'safe' },
+    ],
+  },
+]
+
+/** Stable per-trip event (derived from endsAt → no extra save state). */
+export function expeditionEvent(endsAt: number): ExpeditionEvent {
+  const i = Math.abs(Math.floor(endsAt / 1000)) % EXPEDITION_EVENTS.length
+  return EXPEDITION_EVENTS[i]
+}

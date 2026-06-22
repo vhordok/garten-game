@@ -5,7 +5,7 @@
 // start/claim in notify()ing helpers. Time is real (Date.now), so this paces
 // itself regardless of the gold/yield runaway.
 
-import { EXPEDITIONS, expeditionById, isExpeditionUnlocked } from '../data/expeditions'
+import { EXPEDITIONS, expeditionById, isExpeditionUnlocked, type ExpeditionMode } from '../data/expeditions'
 import { RELICS, type RelicEffect } from '../data/relics'
 import type { GameState } from './types'
 
@@ -58,7 +58,7 @@ export function startExpedition(state: GameState, id: string, now = Date.now()):
 
 export interface ExpeditionResult {
   expeditionId: string
-  choice: 'safe' | 'risky'
+  choice: ExpeditionMode
   success: boolean
   relicId: string | null
   copies: number
@@ -70,13 +70,15 @@ function grant(state: GameState, relicId: string, copies: number): void {
 }
 
 /**
- * Claim a returned expedition with a press-your-luck choice. `safe` always
- * yields one relic from the safe pool; `risky` has a success chance for a rarer
- * relic (and may grant several copies), else nothing. Returns the outcome (for
- * the toast/UI) or null if there's nothing to claim. RNG via Math.random so
- * tests can stub it (withBoringRng).
+ * Claim a returned expedition with a press-your-luck choice (framed by a return
+ * event, PHASE 76). Modes:
+ *   safe   → one relic from the safe pool (guaranteed)
+ *   double → two relics from the safe pool (guaranteed)
+ *   risky  → one rarer relic from the risky pool at riskSuccess%, else nothing
+ * Returns the outcome (for the toast/UI) or null if there's nothing to claim.
+ * RNG via Math.random so tests can stub it (withBoringRng).
  */
-export function claimExpedition(state: GameState, choice: 'safe' | 'risky', now = Date.now()): ExpeditionResult | null {
+export function claimExpedition(state: GameState, choice: ExpeditionMode = 'safe', now = Date.now()): ExpeditionResult | null {
   const exp = state.activeExpedition
   if (!exp) return null
   const def = expeditionById(exp.id)
@@ -92,9 +94,11 @@ export function claimExpedition(state: GameState, choice: 'safe' | 'risky', now 
       result = { expeditionId: def.id, choice, success: false, relicId: null, copies: 0 }
     }
   } else {
+    // safe (1) or double (2) — guaranteed relics from the safe pool
+    const copies = choice === 'double' ? 2 : 1
     const relicId = def.safePool[Math.floor(Math.random() * def.safePool.length)]
-    grant(state, relicId, 1)
-    result = { expeditionId: def.id, choice, success: true, relicId, copies: 1 }
+    grant(state, relicId, copies)
+    result = { expeditionId: def.id, choice, success: true, relicId, copies }
   }
 
   state.activeExpedition = null
