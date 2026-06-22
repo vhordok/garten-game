@@ -2054,3 +2054,13 @@ Relikte gibt's erst bei Rückkehr (sicher/Wagnis-Wahl). Klarer gemacht: die lauf
 `ExpeditionPanel` zeigt jetzt „🎁 Bei Rückkehr wählst du sicher/Wagnis und bekommst dein Relikt —
 läuft auch offline weiter." Reine UI-Klarstellung, keine Logik-/Save-Änderung. check/build grün,
 Tests 86/86.
+
+### 9.77 Phase 75 — Benachrichtigung wenn eine Expedition zurück ist (keine Save-Änderung)
+
+Spieler-Wunsch: man wird nicht informiert, wenn die Reise zurück ist. Neuer Transition-Watcher in
+`App.svelte` (wie die Erfolge-/Kampagnen-/Unlock-Toasts): der Store tickt jede Frame, daher wird
+`Date.now() ≥ endsAt` laufend geprüft und beim Übergang **einmal** ein Toast gefeuert: „🧭 Expedition
+zurück: … — jetzt abholen (sicher/Wagnis)!". Eine schlichte `let`-Variable (kein `$state`, kein
+Effekt-Loop) merkt sich die schon gemeldete Expeditions-ID; zurückgesetzt, sobald keine aktiv ist.
+Feuert auch nach Offline/Reload, sobald der Store wieder tickt. Reine UI-Benachrichtigung, keine
+Logik-/Save-Änderung. check/build grün, Tests 86/86.

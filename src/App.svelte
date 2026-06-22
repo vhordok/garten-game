@@ -3,6 +3,7 @@
   import { PLANTS } from './lib/data/plants'
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
+  import { expeditionById } from './lib/data/expeditions'
   import { playSound, startAtmosphere } from './lib/ui/fx/audio'
   import AchievementsPanel from './lib/ui/AchievementsPanel.svelte'
   import { ACHIEVEMENTS, TIER_NAMES } from './lib/data/achievements'
@@ -127,6 +128,26 @@
       }
     }
     knownUnlocks = unlocked.map((p) => p.id)
+  })
+
+  // PHASE 75: announce a returned expedition (real-time gate, not a state field —
+  // the store ticks every frame, so Date.now() is re-checked; fires once per trip).
+  let expeditionNotified = ''
+  $effect(() => {
+    const exp = $gameStore.activeExpedition
+    if (!exp) {
+      expeditionNotified = ''
+      return
+    }
+    if (Date.now() >= exp.endsAt && expeditionNotified !== exp.id) {
+      expeditionNotified = exp.id
+      const def = expeditionById(exp.id)
+      pushToast(`🧭 Expedition zurück: ${def?.name ?? ''} — jetzt abholen (sicher/Wagnis)!`, '🧭', 9000, {
+        priority: 'important',
+        key: 'exp-return',
+      })
+      playSound('levelup')
+    }
   })
 </script>
 
