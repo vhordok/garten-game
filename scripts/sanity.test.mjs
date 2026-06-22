@@ -1865,6 +1865,18 @@ test('PHASE 61: world milestones grant permanent, derived perks from worldResets
   assert.equal(starseedGain(deep), 1, 'no worlds yet → just the depth')
   deep.worldResets = 5
   assert.equal(starseedGain(deep), 1 + 1, 'world-5 milestone adds +1 Sternensaat per sowing')
+
+  // PHASE 66: endless yield tier past the last fixed milestone (never stops)
+  assert.equal(worldMilestoneBonus(20, 'yield'), 0.25 + 1.5, 'at world 20: only fixed yield milestones')
+  assert.ok(worldMilestoneBonus(25, 'yield') > worldMilestoneBonus(20, 'yield'), 'past 20 keeps growing')
+  assert.ok(
+    Math.abs(worldMilestoneBonus(30, 'yield') - worldMilestoneBonus(20, 'yield') - 10 * 0.02) < 1e-9,
+    '10 worlds past the last milestone = +20% endless yield'
+  )
+  const e1 = fresh()
+  const e2 = fresh()
+  e2.worldResets = 50
+  assert.ok(yieldMultiplier(e2) > yieldMultiplier(e1), 'endless world tier lifts the yield multiplier')
 })
 
 test('PHASE 60: plot timer reflects REAL seconds, not raw growth-progress units', () => {

@@ -1913,3 +1913,15 @@ gedimmt). Zwei neue 16×16-Sprites (Portal-Ring violett/blau, Sternenkugel auf S
 
 Save-sicher: `decorations` existiert, neue IDs → 0, `unlockWorlds` ist reine Daten. check/build
 grün, Tests 81/81 (Gate sperrt Kauf, frei ab Welt N, Schönheit greift, ungegatete Deko sofort).
+
+### 9.68 Phase 66 — endlose Welten-Meilenstein-Stufe (keine Save-Änderung)
+
+Die fixen Welten-Meilensteine enden bei Welt 20 — der Wunsch war *endloser* Progress. Jetzt zahlt
+die Weltensaat-Achse für immer: jede gesäte Welt über dem letzten Meilenstein hinaus gibt dauerhaft
+**+2 % Ertrag** (`ENDLESS_WORLD_YIELD_PER`), gefaltet direkt in `worldMilestoneBonus(…, 'yield')` →
+automatisch über `yieldMultiplier` gewirkt (keine neue Verdrahtung). `endlessWorldYield(worldResets)`
++ `LAST_WORLD_MILESTONE` exportiert; das PrestigePanel zeigt nach dem letzten Meilenstein „♾️ Endlos:
+jede Welt über N = +2 % Ertrag — aktuell +X %".
+
+Reine Daten/Formel/UI, abgeleitet aus `worldResets`, keine Save-Änderung. check/build grün,
+Tests 81/81 (fix bei 20, wächst danach, +20 % nach 10 Welten, hebt den Multiplikator).

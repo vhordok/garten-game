@@ -28,12 +28,25 @@ export const WORLD_MILESTONES: WorldMilestone[] = [
   { world: 20, label: 'Weltenmeister', desc: '+2 Sternensaat je Weltensaat', effect: 'starseedGain', value: 2 },
 ]
 
-/** Summed value of all reached world milestones with the given effect. */
+/** PHASE 66: the last fixed milestone's world, after which the endless yield
+ * tier kicks in — so the Weltensaat axis never stops paying off. */
+export const LAST_WORLD_MILESTONE = WORLD_MILESTONES[WORLD_MILESTONES.length - 1].world
+/** +yield per world sown beyond the last fixed milestone (endless). */
+export const ENDLESS_WORLD_YIELD_PER = 0.02
+
+/** Endless yield bonus from every world sown past the last fixed milestone. */
+export function endlessWorldYield(worldResets: number): number {
+  return Math.max(0, worldResets - LAST_WORLD_MILESTONE) * ENDLESS_WORLD_YIELD_PER
+}
+
+/** Summed value of all reached world milestones with the given effect. The
+ * 'yield' effect also folds in the endless past-20 tier (PHASE 66). */
 export function worldMilestoneBonus(worldResets: number, effect: WorldMilestoneEffect): number {
   let sum = 0
   for (const m of WORLD_MILESTONES) {
     if (worldResets >= m.world && m.effect === effect) sum += m.value
   }
+  if (effect === 'yield') sum += endlessWorldYield(worldResets)
   return sum
 }
 

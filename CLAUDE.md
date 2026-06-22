@@ -331,4 +331,7 @@ Parzellen-Gates über mehrere Weltensaat-Wiederaufstiege), voll datengetrieben �
 distinkte reife Sprites (Sternensaat-Motiv neu eingefärbt). Keine Save-Änderung. Phase 65 (§9.67):
 sichtbare Weltensaat-Belohnung — 2 kosmische Deko-Objekte (Sternenportal ab 1 Welt, Sternenkugel ab
 3 Welten) via neuem DecorationDef.unlockWorlds-Gate (isDecorationUnlocked gatet Kauf+Galerie-Anzeige),
-2 neue 16×16-Sprites, landschaften in die Szene. Keine Save-Änderung. Stand SAVE_VERSION 34.
+2 neue 16×16-Sprites, landschaften in die Szene. Keine Save-Änderung. Phase 66 (§9.68): endlose
+Welten-Meilenstein-Stufe — jede Welt über dem letzten Meilenstein (20) gibt dauerhaft +2 % Ertrag
+(endlessWorldYield, in worldMilestoneBonus('yield') gefaltet → auto über yieldMultiplier), Panel zeigt
+„♾️ Endlos". Reine Daten, keine Save-Änderung. Stand SAVE_VERSION 34.
