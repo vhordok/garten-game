@@ -7,6 +7,7 @@
   import { activeGoals } from '../game/goals'
   import { toastLogUnseen } from './toasts'
   import { availableSkillPoints } from '../game/skills'
+  import { expeditionReady } from '../game/expeditions'
   import { crossEligibility, discoverableVariants } from '../game/seedlab'
   import { comboMultiplier, comboWindowSeconds, marketFactor, maxScratchTickets } from '../game/modifiers'
   import { gameStore } from '../game/state'
@@ -28,6 +29,7 @@
     onOpenSkills,
     onOpenSeedLab,
     onOpenGallery,
+    onOpenExpeditions,
     onOpenToastLog,
   }: {
     onOpenInventory: () => void
@@ -42,8 +44,14 @@
     onOpenSkills: () => void
     onOpenSeedLab: () => void
     onOpenGallery: () => void
+    onOpenExpeditions: () => void
     onOpenToastLog: () => void
   } = $props()
+
+  // PHASE 68: light the expeditions button when a run has returned (ready to
+  // claim). The store churns every frame (plots grow), so Date.now() stays fresh.
+  const expeditionReadyNow = $derived(expeditionReady($gameStore, Date.now()))
+  const expeditionOut = $derived(!!$gameStore.activeExpedition)
 
   // PHASE 28: only MEANINGFUL ready goals light the badge — trivial chores
   // (cheap upgrade, cash a ticket) shouldn't keep it permanently lit.
@@ -221,6 +229,11 @@
   <button class="pxbtn" onclick={onOpenGallery} aria-label="Ziergalerie" title="Ziergalerie — Zierpflanzen sammeln für dauerhafte Schönheit">
     ✿
     {#if galleryHint}<span class="dot" aria-hidden="true"></span>{/if}
+  </button>
+
+  <button class="pxbtn" onclick={onOpenExpeditions} aria-label="Expeditionen" title="Expeditionen — schick deinen Gärtner los und sammle Relikte">
+    🧭
+    {#if expeditionReadyNow}<span class="dot prestige" aria-hidden="true"></span>{:else if expeditionOut}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">

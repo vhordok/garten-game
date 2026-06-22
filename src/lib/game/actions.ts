@@ -8,6 +8,12 @@ import { compostUpgradeById, compostUpgradeCost } from '../data/compostUpgrades'
 import { isOrnamental, nextOrnamentalCost } from './gallery'
 import { purchaseDecoration } from './decorations'
 import { purchaseStarUpgrade, starseedGain, starUpgradeBonus } from './worldseed'
+import {
+  claimExpedition as claimExpeditionPure,
+  relicBonus,
+  startExpedition as startExpeditionPure,
+  type ExpeditionResult,
+} from './expeditions'
 import { parcelBonus } from '../data/milestones'
 import { worldMilestoneBonus } from '../data/worldMilestones'
 import { skillById } from '../data/skills'
@@ -492,7 +498,8 @@ export function compostGain(state: GameState): number {
         skillBonus(state, 'compostGain') +
         variantBonus(state, 'compostGain') +
         starUpgradeBonus(state, 'compostGain') +
-        worldMilestoneBonus(state.worldResets ?? 0, 'compostGain')) *
+        worldMilestoneBonus(state.worldResets ?? 0, 'compostGain') +
+        relicBonus(state, 'compostGain')) *
       event
   )
   // subtract compost already CLAIMED (pool + spent) so spending on the compost
@@ -568,6 +575,21 @@ export function weltensaat(): number {
   refillQuests(s)
   notify()
   return gain
+}
+
+/** PHASE 68: send an expedition (one slot). True on success. */
+export function sendExpedition(id: string): boolean {
+  const ok = startExpeditionPure(getState(), id)
+  if (ok) notify()
+  return ok
+}
+
+/** PHASE 68: claim a returned expedition with a safe/risky choice. Returns the
+ * outcome (relic granted or a risky miss) for the UI, or null if not ready. */
+export function collectExpedition(choice: 'safe' | 'risky'): ExpeditionResult | null {
+  const result = claimExpeditionPure(getState(), choice)
+  if (result) notify()
+  return result
 }
 
 /** PHASE 53: buy one level of a Sternenkammer upgrade with Sternensaat. */

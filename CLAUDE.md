@@ -338,4 +338,11 @@ Welten-Meilenstein-Stufe — jede Welt über dem letzten Meilenstein (20) gibt d
 Weltensaat musste man Skillpunkte „nachholen", weil totalSkillPoints aus state.parcels ablas (das
 Weltensaat zurücksetzt); neuer High-Water-Mark maxParcels (überlebt Weltensaat, leaseParcel hebt ihn,
 sanitize hält ihn ≥ parcels) → Pool bricht nicht mehr ein. SAVE_VERSION 35 (Migration default =
-aktuelle Parzellen). Stand SAVE_VERSION 35.
+aktuelle Parzellen). Phase 68 (§9.70): Expeditionen & Relikte (data/expeditions.ts + relics.ts +
+game/expeditions.ts + ui/ExpeditionPanel.svelte) — neues echtzeit-gegatetes System gegen „Endgame in
+Minuten durch": schick den Gärtner auf eine Wall-Clock-Reise (5min–24h, 1 Slot), bei Rückkehr Press-
+your-luck (sicher=1 Relikt / Wagnis=Chance auf seltenes), Relikte sind 8 permanente Sammel-Boni
+(überstehen Prestige+Weltensaat, relicBonus an yield/growth/sellPrice/compostGain/ticketLuck) — eine
+Progressionsachse, die der Multiplikator-Runaway NICHT beschleunigen kann. HUD 🧭, läuft offline.
+SAVE_VERSION 36 (neue Felder activeExpedition/relics/expeditionsDone, Migration default null/{}/0).
+Stand SAVE_VERSION 36.

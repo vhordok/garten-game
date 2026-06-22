@@ -1941,3 +1941,25 @@ hebt die Marke, `sanitize` hält sie ≥ `parcels` (alte Saves erben den aktuell
 nach vorn). SAVE_VERSION 35, Migration v34→v35 (default = aktuelle Parzellen).
 
 check/build grün, Tests 82/82 (Pool bleibt nach Weltensaat, High-Water steigt beim Pachten).
+
+### 9.70 Phase 68 — Expeditionen & Relikte: ein echtzeit-gegatetes neues System (SAVE_VERSION 36)
+
+Spieler-Diagnose: das Endgame ist „in Minuten durch und einseitig" — der Multiplikator-Runaway macht
+jede gold-/ertrags-gegatete Hürde sofort trivial. Antwort: eine **neue Aktivität, die auf Echtzeit
+läuft** und vom Runaway nicht beschleunigt werden kann.
+
+**Expeditionen** (`data/expeditions.ts` + `game/expeditions.ts` + `ui/ExpeditionPanel.svelte`): schick
+den Gärtner auf eine Reise mit Wall-Clock-Dauer (5 min → 24 h, ein Slot). Bei Rückkehr eine
+**Press-your-luck-Entscheidung** — *sicher* (garantiert 1 Relikt) oder *Wagnis* (Chance auf ein
+selteneres, sonst nichts). 5 Ziele (Blumenwiese→Sternenpfad, letztes via `unlockWorlds` gegatet).
+
+**Relikte** (`data/relics.ts`): 8 permanente, stapelbare Sammel-Boni (Ertrag/Tempo/Verkauf/Kompost/
+Glück) in 3 Seltenheiten — **überstehen Prestige UND Weltensaat**. `relicBonus(state, effect)` ist an
+yield/growth/sellPrice/compostGain/ticketLuck eingehängt → eine neue permanente Progressionsachse,
+die nur über Zeit wächst (nicht über die Runaway-Zahlen). Gold-Kosten geben Frühspiel-Reibung; spät
+ist der echte Preis der Zeit-Slot.
+
+HUD-Button 🧭 (Punkt wenn unterwegs, Prestige-Punkt wenn zurück). Echtzeit via `Date.now()`/`endsAt`
+→ läuft auch offline (du kommst zurück und wählst). SAVE_VERSION 36: neue Felder `activeExpedition`/
+`relics`/`expeditionsDone` (Migration defaultet null/{}/0). check/build grün, Tests 83/83 (Gate,
+Zeit-Sperre, sicher/Wagnis-Roll, Relikt-Wirkung, Save-Roundtrip).
