@@ -2055,6 +2055,22 @@ test('PHASE 59: number/duration formatting is robust at extreme scale', () => {
   assert.equal(formatDuration(-5), '0s', 'negative clamps to 0s')
 })
 
+test('PHASE 71: goal panel surfaces a returned expedition + new-system nudges', () => {
+  const s = fresh()
+  s.activeExpedition = { id: 'wiese', endsAt: Date.now() - 1000 } // already returned
+  const g = activeGoals(s).find((x) => x.id === 'expedition-claim')
+  assert.ok(g && g.ready, 'returned expedition shows a ready claim goal')
+  // not while still travelling
+  const s2 = fresh()
+  s2.activeExpedition = { id: 'wiese', endsAt: Date.now() + 60_000 }
+  assert.ok(!activeGoals(s2).some((x) => x.id === 'expedition-claim'), 'no claim goal while travelling')
+  // first-time discovery nudge for the new systems is offered to a fresh player
+  const s3 = fresh()
+  s3.money = 1e9
+  const ids = activeGoals(s3).map((x) => x.id)
+  assert.ok(ids.includes('build-expedition') || ids.includes('build-tier'), 'a new-system nudge is offered')
+})
+
 test('PHASE 70: achievement tracks for expeditions, relics and creatures', () => {
   const expDef = ACHIEVEMENTS.find((a) => a.id === 'expeditionen')
   const relDef = ACHIEVEMENTS.find((a) => a.id === 'relikte')

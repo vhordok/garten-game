@@ -22,6 +22,10 @@ import { gardenBeauty, growthMultiplier, masteryLevel, masteryThreshold, nextSpe
 import { availableSkillPoints } from './skills'
 import { crossEligibility, discoverableVariants, produceStatus } from './seedlab'
 import { VARIANTS } from '../data/variants'
+import { EXPEDITIONS } from '../data/expeditions'
+import { CREATURES } from '../data/creatures'
+import { expeditionReady } from './expeditions'
+import { befriendedCount, isCreatureAttracted } from './creatures'
 import type { GameState } from './types'
 
 export type GoalTier = 'kurz' | 'mittel' | 'lang' | 'endgame'
@@ -671,6 +675,24 @@ function buildGoal(state: GameState): Goal | null {
       why: 'Glückslos lässt öfter Rubbellose in der Ernte liegen',
     })
   }
+  // PHASE 71: surface the two new activity systems as first-time discovery nudges
+  // (they vanish once engaged; the achievement tracks + HUD dots guide afterwards).
+  if ((state.expeditionsDone ?? 0) === 0 && !state.activeExpedition && state.money >= EXPEDITIONS[0].cost) {
+    candidates.push({
+      id: 'build-expedition',
+      icon: '🧭',
+      label: 'Erste Expedition losschicken',
+      why: 'Echtzeit-Reise → sammle Relikte: dauerhafte Boni, die der Zahlen-Runaway nicht überholt',
+    })
+  }
+  if (befriendedCount(state) === 0 && CREATURES.some((c) => isCreatureAttracted(state, c, gardenBeauty(state)))) {
+    candidates.push({
+      id: 'build-tier',
+      icon: '🐾',
+      label: 'Erstes Gartentier anfreunden',
+      why: 'Lebendiger Garten + dauerhafter Bonus; füttere es mit Überschuss-Ernte',
+    })
+  }
   if (candidates.length === 0) return null
   // deterministic rotation: changes across prestiges, stable within one
   const pick = candidates[state.parcels % candidates.length]
@@ -762,6 +784,24 @@ function beautyGoal(state: GameState): Goal | null {
   }
 }
 
+/** PHASE 71: a returned expedition awaits its press-your-luck claim — a real,
+ * rewarding ready action (a relic is on the line). */
+function expeditionGoal(state: GameState): Goal | null {
+  if (!expeditionReady(state, Date.now())) return null
+  return {
+    id: 'expedition-claim',
+    tier: 'kurz',
+    icon: '🧭',
+    label: 'Expedition abholen',
+    reward: 'Ein Relikt wartet',
+    current: 1,
+    target: 1,
+    fraction: 1,
+    ready: true,
+    why: 'Deine Reise ist zurück — triff deine Wahl (sicher / Wagnis)',
+  }
+}
+
 const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endgame: 3 }
 
 /**
@@ -772,6 +812,7 @@ const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endg
 export function activeGoals(state: GameState): Goal[] {
   const goals = [
     campaignGoal(state),
+    expeditionGoal(state),
     worldseedGoal(state),
     plantGoal(state),
     upgradeGoal(state),
