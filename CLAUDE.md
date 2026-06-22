@@ -364,4 +364,7 @@ Geschenk = Herz-Streicheln); collectGift/isGiftReady/giftReward, feedCreature en
 (neues Feld creatureGifts, Migration default {}). Phase 73 (§9.75): Hotfix — CreatureLayer-„movers"-
 $effect las+schrieb movers (Svelte-5-Endlosschleife, fror Reaktivität ein → kein Panel ging mehr auf);
 jetzt nur am gameStore hängend, movers-Read/Write in untrack + Reassign nur bei Mengenänderung, z-index
-60→15. Stand SAVE_VERSION 38.
+60→15. Phase 74 (§9.76): Expeditions-Klartext — laufende Reise zeigt „Belohnung bei Rückkehr".
+Phase 75 (§9.77): Toast „🧭 Expedition zurück — jetzt abholen", wenn eine Reise endet (Transition-
+Watcher in App.svelte, plain let statt $state → kein Effekt-Loop, feuert auch nach Reload). Reine
+UI, keine Save-Änderung. Stand SAVE_VERSION 38.
