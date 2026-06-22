@@ -9,6 +9,7 @@ import { achievementBonus } from './achievements'
 import { decorationBeauty } from './decorations'
 import { worldseedYieldFactor, starUpgradeBonus } from './worldseed'
 import { variantBonus, variantEventBonus } from './seedlab'
+import { relicBonus } from './expeditions'
 import { parcelBonus } from '../data/milestones'
 import { worldMilestoneBonus } from '../data/worldMilestones'
 import { plantById } from '../data/plants'
@@ -65,7 +66,8 @@ export function growthMultiplier(state: GameState): number {
     worldMilestoneBonus(state.worldResets ?? 0, 'growth') +
     compostUpgradeBonus(state, 'growth') +
     achievementBonus(state, 'growth') +
-    variantBonus(state, 'growth')
+    variantBonus(state, 'growth') +
+    relicBonus(state, 'growth')
   // PHASE 17: a beautiful garden (beauty milestone) speeds the whole garden up
   const aura = 1 + beautyMilestoneBonus(gardenBeauty(state), 'growth')
   return (
@@ -115,7 +117,8 @@ export function yieldMultiplier(state: GameState): number {
     1 +
     parcelBonus(state.parcels, 'yield') +
     worldMilestoneBonus(state.worldResets ?? 0, 'yield') +
-    compostUpgradeBonus(state, 'yield')
+    compostUpgradeBonus(state, 'yield') +
+    relicBonus(state, 'yield')
   // PHASE 17: beauty-milestone aura + skill-tree (Gartenplanung) yield;
   // PHASE 20: seed-lab variant yield bonus
   const meta =
@@ -319,7 +322,7 @@ export function sellMultiplier(state: GameState): number {
   // PHASE 62: Sternenmarkt (Sternenkammer) lifts the sell price permanently
   return (
     multiplierFor(state, 'sellPrice') *
-    (1 + starUpgradeBonus(state, 'sellPrice')) *
+    (1 + starUpgradeBonus(state, 'sellPrice') + relicBonus(state, 'sellPrice')) *
     beautyMultiplier(state) *
     marketFactor(state) *
     boom
@@ -392,6 +395,7 @@ export function scratchDropChance(state: GameState, cycleSeconds: number, catego
     effectBonus(state, 'scratchLuck') +
     parcelBonus(state.parcels, 'ticketLuck') +
     starUpgradeBonus(state, 'ticketLuck') +
+    relicBonus(state, 'ticketLuck') +
     beautyMilestoneBonus(gardenBeauty(state), 'ticketLuck') +
     skillBonus(state, 'scratchLuck') +
     achievementBonus(state, 'ticketLuck') +

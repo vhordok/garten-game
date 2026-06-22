@@ -6,6 +6,8 @@ import { initAchievementTiers } from './achievements'
 import { initCampaign } from './campaign'
 import { CAMPAIGN } from '../data/campaign'
 import { decorationById } from '../data/decorations'
+import { expeditionById } from '../data/expeditions'
+import { RELICS } from '../data/relics'
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES } from '../data/compostUpgrades'
 import { STAR_UPGRADES } from '../data/starUpgrades'
@@ -19,7 +21,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 35
+export const SAVE_VERSION = 36
 
 interface SaveEnvelope {
   version: number
@@ -241,6 +243,11 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // sanitize() seeds it to the current `parcels` so prestige-derived skill
       // points survive Weltensaat (which resets parcels) going forward.
       return { ...envelope, version: 35 }
+    case 35:
+      // v35 → v36: PHASE 68 Expeditionen — new `activeExpedition` / `relics` /
+      // `expeditionsDone`. sanitize() defaults them to null / {} / 0, so old
+      // saves simply have no expedition running and no relics yet.
+      return { ...envelope, version: 36 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -499,6 +506,26 @@ function sanitize(raw: unknown): GameState {
     }
   }
   state.starUpgrades = starUpgrades
+
+  // PHASE 68 Expeditionen: active run (known id + finite endsAt), relics
+  // (known ids, clamped counts), completed stat
+  state.activeExpedition = null
+  if (typeof r.activeExpedition === 'object' && r.activeExpedition !== null) {
+    const ae = r.activeExpedition as Record<string, unknown>
+    if (typeof ae.id === 'string' && expeditionById(ae.id) && Number.isFinite(ae.endsAt)) {
+      state.activeExpedition = { id: ae.id, endsAt: Number(ae.endsAt) }
+    }
+  }
+  const relics: Record<string, number> = {}
+  if (typeof r.relics === 'object' && r.relics !== null) {
+    const raw = r.relics as Record<string, unknown>
+    for (const def of RELICS) {
+      const n = Math.floor(clampNumber(raw[def.id], 0, 0, 1e9))
+      if (n > 0) relics[def.id] = n
+    }
+  }
+  state.relics = relics
+  state.expeditionsDone = Math.floor(clampNumber(r.expeditionsDone, 0, 0, 1e9))
 
   const rec = (typeof r.records === 'object' && r.records !== null ? r.records : {}) as Record<string, unknown>
   state.records = {

@@ -116,6 +116,15 @@ import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, to
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
 import { autoHarvestRate, autoSowRate, autoSellInterval } from '../src/lib/game/modifiers.ts'
 import { isHelperUpgrade, toggleHelperPause } from '../src/lib/game/actions.ts'
+import { expeditionById, isExpeditionUnlocked } from '../src/lib/data/expeditions.ts'
+import {
+  startExpedition,
+  claimExpedition,
+  expeditionReady,
+  relicCount,
+  relicBonus,
+  totalRelics,
+} from '../src/lib/game/expeditions.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
 import { eventMasteryMult, gardenBeauty } from '../src/lib/game/modifiers.ts'
@@ -1781,6 +1790,66 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
     assert.ok(getState().campaign < CAMPAIGN.length, 'the endgame chapters remain ahead of a parcel-8 player')
     assert.equal(currentCampaignStep(getState()).id, 'landlord', 'next chapter is the first endgame one')
   })
+})
+
+test('PHASE 68: expeditions — real-time gate, relics, press-your-luck claim', () => {
+  const s = fresh()
+  s.money = 1e30
+  const wiese = expeditionById('wiese')
+  assert.ok(isExpeditionUnlocked(wiese, 0), 'wiese available from the start')
+  const sternenpfad = expeditionById('sternenpfad')
+  assert.ok(!isExpeditionUnlocked(sternenpfad, 0), 'sternenpfad gated by worlds')
+  assert.ok(isExpeditionUnlocked(sternenpfad, 1), 'sternenpfad unlocks after a world')
+
+  // start: one slot, costs gold, sets a wall-clock timer
+  const now = 1_000_000
+  assert.equal(startExpedition(s, 'wiese', now), true, 'started an expedition')
+  assert.ok(s.activeExpedition && s.activeExpedition.id === 'wiese', 'slot occupied')
+  assert.equal(s.money, 1e30 - wiese.cost, 'gold cost deducted')
+  assert.equal(startExpedition(s, 'wald', now), false, 'only one expedition at a time')
+
+  // not claimable until the duration elapses (real time, runaway-proof)
+  assert.equal(expeditionReady(s, now + 1000), false, 'still travelling')
+  assert.equal(claimExpedition(s, 'safe', now + 1000), null, 'cannot claim early')
+  const done = now + wiese.durationSeconds * 1000
+  assert.equal(expeditionReady(s, done), true, 'returned after the duration')
+
+  // safe claim always grants exactly one relic from the safe pool
+  const r = claimExpedition(s, 'safe', done)
+  assert.ok(r && r.success && r.relicId && wiese.safePool.includes(r.relicId), 'safe relic from pool')
+  assert.equal(relicCount(s, r.relicId), 1, 'relic added to the collection')
+  assert.equal(s.activeExpedition, null, 'slot freed after claim')
+  assert.equal(s.expeditionsDone, 1, 'completed stat advanced')
+
+  // relics feed the permanent multipliers (survive prestige + Weltensaat)
+  const baseYield = yieldMultiplier(fresh())
+  const g = fresh()
+  g.relics = { weltenkern: 3 }
+  assert.ok(relicBonus(g, 'yield') > 0 && yieldMultiplier(g) > baseYield, 'relics lift the yield multiplier')
+
+  // risky claim can miss (forced fail above the success chance)
+  const s2 = fresh()
+  s2.money = 1e30
+  startExpedition(s2, 'wiese', now)
+  const orig = Math.random
+  Math.random = () => 0.999
+  const miss = claimExpedition(s2, 'risky', done)
+  Math.random = orig
+  assert.ok(miss && !miss.success && miss.relicId === null, 'a risky miss grants nothing')
+  assert.equal(totalRelics(s2), 0, 'no relic on a miss')
+
+  // save round-trip: active expedition, relics and the stat all persist
+  const s3 = fresh()
+  s3.relics = { sonnenstein: 2 }
+  s3.activeExpedition = { id: 'wald', endsAt: 5_000_000 }
+  s3.expeditionsDone = 3
+  const blob = exportSave()
+  replaceState(createDefaultState())
+  importSave(blob)
+  const loaded = getState()
+  assert.equal(loaded.relics.sonnenstein, 2, 'relics persist through save/load')
+  assert.ok(loaded.activeExpedition && loaded.activeExpedition.id === 'wald', 'active expedition persists')
+  assert.equal(loaded.expeditionsDone, 3, 'completed stat persists')
 })
 
 test('PHASE 67: skill points use the parcel high-water mark, survive Weltensaat', () => {
