@@ -9,7 +9,7 @@
   import { availableSkillPoints } from '../game/skills'
   import { expeditionReady } from '../game/expeditions'
   import { CREATURES } from '../data/creatures'
-  import { creatureLevel, isCreatureAttracted } from '../game/creatures'
+  import { creatureLevel, isCreatureAttracted, isGiftReady } from '../game/creatures'
   import { crossEligibility, discoverableVariants } from '../game/seedlab'
   import { comboMultiplier, comboWindowSeconds, gardenBeauty, marketFactor, maxScratchTickets } from '../game/modifiers'
   import { gameStore } from '../game/state'
@@ -59,6 +59,10 @@
   // PHASE 69: nudge the creatures button when a new animal can be befriended
   const creatureHint = $derived(
     CREATURES.some((c) => creatureLevel($gameStore, c.id) === 0 && isCreatureAttracted($gameStore, c, gardenBeauty($gameStore)))
+  )
+  // PHASE 77: stronger cue when a befriended creature has a gift ready to collect
+  const creatureGiftReady = $derived(
+    CREATURES.some((c) => creatureLevel($gameStore, c.id) > 0 && isGiftReady($gameStore, c.id, Date.now()))
   )
 
   // PHASE 28: only MEANINGFUL ready goals light the badge — trivial chores
@@ -244,9 +248,9 @@
     {#if expeditionReadyNow}<span class="dot prestige" aria-hidden="true"></span>{:else if expeditionOut}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
-  <button class="pxbtn" onclick={onOpenCreatures} aria-label="Garten-Bewohner" title="Garten-Bewohner — Tiere anlocken, anfreunden und füttern">
+  <button class="pxbtn" onclick={onOpenCreatures} aria-label="Garten-Bewohner" title="Garten-Bewohner — Tiere anlocken, anfreunden, Geschenke abholen">
     🦔
-    {#if creatureHint}<span class="dot" aria-hidden="true"></span>{/if}
+    {#if creatureGiftReady}<span class="dot prestige" aria-hidden="true"></span>{:else if creatureHint}<span class="dot" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="pxbtn" onclick={onOpenAchievements} aria-label="Erfolge" title="Erfolge — jeder gibt +1 % Ertrag">

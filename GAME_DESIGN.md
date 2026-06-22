@@ -2077,3 +2077,16 @@ Das Event ist **stabil pro Reise** aus `endsAt` abgeleitet (`expeditionEvent`) �
 Das Panel zeigt Event-Text + dynamische Options-Buttons; `ExpeditionMode`/`ExpeditionResult` um
 `double` erweitert. Mehr Abwechslung und echte Risiko-Entscheidungen statt Binär-Wahl. check/build
 grün, Tests 87/87 (Event stabil + valide Modi, double = 2 Relikte).
+
+### 9.79 Phase 77 — QA-Runde + HUD-Geschenk-Anzeige (keine Save-Änderung)
+
+Nach dem Freeze-Bug (9.75) eine bewusste QA-Runde über alles Neue der Session: alle neuen Svelte-
+Komponenten auf das Read+Write-`$effect`-Loop-Muster geprüft (sauber — CreatureLayer nutzt `untrack`,
+die Uhr-Effekte schreiben nur `now`, Herzen laufen im Event-Handler), `diagnose`/`playtest` ohne
+Warnungen, Relikt-/Tier-Boni bei Extremskala alle endlich & gesund (relicBonus +1600 % Ertrag,
+creatureBonus +45 % Wachstum, kein Overflow). 87/87 Tests, check/build grün.
+
+Kleine Lücke geschlossen: man sah nicht, wann ein Tier ein Geschenk bereit hat, ohne Garten/Panel zu
+öffnen. Der HUD-🦔-Button zeigt jetzt einen kräftigen Punkt (wie der Expeditions-Fertig-Punkt), sobald
+ein angefreundetes Tier ein 🎁 hat — der schwächere Befreunden-Hinweis bleibt nachrangig. Reine UI,
+keine Save-Änderung.

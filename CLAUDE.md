@@ -370,4 +370,7 @@ Watcher in App.svelte, plain let statt $state → kein Effekt-Loop, feuert auch 
 UI, keine Save-Änderung. Phase 76 (§9.78): Expeditions-Rückkehr-Events — statt fix Sicher/Wagnis
 rahmt ein zufälliges Ereignis (Truhe/Gabelung/Händler/Höhle/Fund/Sturm, stabil aus endsAt abgeleitet,
 kein Save-Feld) die Wahl; Optionen-Modi safe/double/risky (double=2 Relikte sicher), claimExpedition
-+ Panel datengetrieben. Reine UI/Logik, keine Save-Änderung. Stand SAVE_VERSION 38.
++ Panel datengetrieben. Reine UI/Logik, keine Save-Änderung. Phase 77 (§9.79): QA-Runde (kein
+Effekt-Loop in neuen Komponenten, diagnose/playtest sauber, Boni endlich bei Extremskala) + HUD-🦔
+zeigt kräftigen Punkt, wenn ein Tier ein Geschenk bereit hat. Reine UI, keine Save-Änderung. Stand
+SAVE_VERSION 38.
