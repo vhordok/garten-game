@@ -120,12 +120,12 @@ import { expeditionById, isExpeditionUnlocked } from '../src/lib/data/expedition
 import { creatureById } from '../src/lib/data/creatures.ts'
 import {
   befriendCreature,
-  feedCreature,
+  collectGift,
   creatureBonus,
   creatureLevel,
   isCreatureAttracted,
-  totalFreeStock,
-  feedCost,
+  isGiftReady,
+  giftReward,
 } from '../src/lib/game/creatures.ts'
 import {
   startExpedition,
@@ -1802,25 +1802,32 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
   })
 })
 
-test('PHASE 69: creatures — attract, befriend, feed surplus produce, bonus, save', () => {
+test('PHASE 69/72: creatures — attract, befriend, roam-and-collect gifts, bonus, save', () => {
   const s = fresh()
-  s.quests = [] // no reservations, so freeStock == inventory
   const bee = creatureById('biene') // attract: beauty ≥ 0.5
   assert.equal(isCreatureAttracted(s, bee, 0), false, 'bee needs a blooming garden')
-  assert.equal(befriendCreature(s, 'biene', 0), false, 'cannot befriend before attracted')
+  assert.equal(befriendCreature(s, 'biene', 0, 1000), false, 'cannot befriend before attracted')
   assert.equal(isCreatureAttracted(s, bee, 1), true, 'beauty 1 attracts the bee')
-  assert.equal(befriendCreature(s, 'biene', 1), true, 'befriended')
+  assert.equal(befriendCreature(s, 'biene', 1, 1000), true, 'befriended at t=1000')
   assert.equal(creatureLevel(s, 'biene'), 1, 'friendship level 1')
-  assert.equal(befriendCreature(s, 'biene', 1), false, 'cannot befriend twice')
+  assert.equal(befriendCreature(s, 'biene', 1, 1000), false, 'cannot befriend twice')
 
-  // feeding consumes surplus produce and raises the level
-  const cost = feedCost(bee, 1)
-  assert.equal(feedCreature(s, 'biene'), false, 'no produce → cannot feed')
-  s.inventory = { erdbeere: cost + 10 }
-  assert.ok(totalFreeStock(s) >= cost, 'enough free produce now')
-  assert.equal(feedCreature(s, 'biene'), true, 'fed with surplus produce')
-  assert.equal(creatureLevel(s, 'biene'), 2, 'friendship level rose')
-  assert.equal(s.inventory.erdbeere, 10, 'exactly the cost was consumed')
+  // PHASE 72: a gift cooks on a real-time timer — not ready right away, then ready
+  assert.equal(isGiftReady(s, 'biene', 1000), false, 'no gift right after befriending')
+  const done = 1000 + bee.giftSeconds * 1000
+  assert.equal(isGiftReady(s, 'biene', done), true, 'gift ready after giftSeconds')
+  assert.equal(collectGift(s, 'biene', 1000), null, 'cannot collect early')
+
+  // collecting grants the reward, raises friendship, and restarts the timer
+  const ticketsBefore = s.scratchTickets
+  const fertBefore = s.fertilizerCharges
+  const reward = collectGift(s, 'biene', done)
+  assert.ok(reward && reward.amount > 0, 'collected a gift')
+  const got = bee.gift === 'tickets' ? s.scratchTickets - ticketsBefore : s.fertilizerCharges - fertBefore
+  assert.equal(got, reward.amount, 'reward currency granted')
+  assert.equal(creatureLevel(s, 'biene'), 2, 'friendship rose on collect')
+  assert.equal(isGiftReady(s, 'biene', done), false, 'timer restarted after collect')
+  assert.ok(giftReward(bee, 5).amount > giftReward(bee, 1).amount, 'higher friendship → bigger gift')
 
   // bonus feeds the permanent multipliers
   const base = yieldMultiplier(fresh())
@@ -1831,13 +1838,15 @@ test('PHASE 69: creatures — attract, befriend, feed surplus produce, bonus, sa
   // the ladybug is attractable from the very start (level ≥ 1)
   assert.equal(isCreatureAttracted(fresh(), creatureById('marienkaefer'), 0), true, 'ladybug from the start')
 
-  // save round-trip
+  // save round-trip (friendship + gift timers)
   const s3 = fresh()
   s3.creatures = { igel: 3 }
+  s3.creatureGifts = { igel: 5000 }
   const blob = exportSave()
   replaceState(createDefaultState())
   importSave(blob)
-  assert.equal(getState().creatures.igel, 3, 'creatures persist through save/load')
+  assert.equal(getState().creatures.igel, 3, 'friendship persists through save/load')
+  assert.equal(getState().creatureGifts.igel, 5000, 'gift timer persists')
 })
 
 test('PHASE 68: expeditions — real-time gate, relics, press-your-luck claim', () => {

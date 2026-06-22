@@ -50,6 +50,7 @@ export function createDefaultState(now = Date.now()): GameState {
     relics: {},
     expeditionsDone: 0,
     creatures: {},
+    creatureGifts: {},
     licenses: 0,
     records: { bestHarvest: 0, longestCombo: 0, biggestWin: 0, bestBeauty: 0 },
     history: [],

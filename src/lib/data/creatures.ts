@@ -10,6 +10,8 @@
 export type CreatureEffect = 'yield' | 'growth' | 'compostGain' | 'sellPrice' | 'ticketLuck'
 /** what draws the animal in (all monotonic, so attraction is permanent) */
 export type AttractKind = 'level' | 'beauty' | 'decorations' | 'ornamentals' | 'worldResets' | 'relics'
+/** PHASE 72: a roaming creature periodically brings a gift you click to collect */
+export type GiftKind = 'tickets' | 'fertilizer'
 
 export interface CreatureDef {
   id: string
@@ -21,9 +23,11 @@ export interface CreatureDef {
   /** bonus fraction per friendship level */
   perLevel: number
   maxLevel: number
-  /** produce units the FIRST feed costs (scales up per level) */
-  feedBase: number
-  feedFactor: number
+  /** PHASE 72: the gift this creature brings, and how often (real seconds). The
+   * reward amount scales with friendship level; collecting also raises it. */
+  gift: GiftKind
+  giftBase: number
+  giftSeconds: number
 }
 
 export const CREATURES: CreatureDef[] = [
@@ -36,8 +40,9 @@ export const CREATURES: CreatureDef[] = [
     effect: 'ticketLuck',
     perLevel: 0.02,
     maxLevel: 10,
-    feedBase: 50,
-    feedFactor: 1.5,
+    gift: 'tickets',
+    giftBase: 2,
+    giftSeconds: 300,
   },
   {
     id: 'biene',
@@ -48,8 +53,9 @@ export const CREATURES: CreatureDef[] = [
     effect: 'growth',
     perLevel: 0.03,
     maxLevel: 15,
-    feedBase: 100,
-    feedFactor: 1.5,
+    gift: 'fertilizer',
+    giftBase: 1,
+    giftSeconds: 600,
   },
   {
     id: 'schmetterling',
@@ -60,8 +66,9 @@ export const CREATURES: CreatureDef[] = [
     effect: 'yield',
     perLevel: 0.03,
     maxLevel: 15,
-    feedBase: 200,
-    feedFactor: 1.5,
+    gift: 'tickets',
+    giftBase: 3,
+    giftSeconds: 600,
   },
   {
     id: 'igel',
@@ -72,8 +79,9 @@ export const CREATURES: CreatureDef[] = [
     effect: 'compostGain',
     perLevel: 0.05,
     maxLevel: 10,
-    feedBase: 500,
-    feedFactor: 1.6,
+    gift: 'fertilizer',
+    giftBase: 1,
+    giftSeconds: 900,
   },
   {
     id: 'frosch',
@@ -84,8 +92,9 @@ export const CREATURES: CreatureDef[] = [
     effect: 'growth',
     perLevel: 0.04,
     maxLevel: 12,
-    feedBase: 800,
-    feedFactor: 1.6,
+    gift: 'tickets',
+    giftBase: 4,
+    giftSeconds: 900,
   },
   {
     id: 'gartenvogel',
@@ -96,8 +105,9 @@ export const CREATURES: CreatureDef[] = [
     effect: 'yield',
     perLevel: 0.05,
     maxLevel: 20,
-    feedBase: 2000,
-    feedFactor: 1.6,
+    gift: 'fertilizer',
+    giftBase: 2,
+    giftSeconds: 1800,
   },
   {
     id: 'fuchs',
@@ -108,8 +118,9 @@ export const CREATURES: CreatureDef[] = [
     effect: 'sellPrice',
     perLevel: 0.04,
     maxLevel: 12,
-    feedBase: 5000,
-    feedFactor: 1.7,
+    gift: 'tickets',
+    giftBase: 8,
+    giftSeconds: 1800,
   },
   {
     id: 'eule',
@@ -120,8 +131,9 @@ export const CREATURES: CreatureDef[] = [
     effect: 'yield',
     perLevel: 0.06,
     maxLevel: 20,
-    feedBase: 10000,
-    feedFactor: 1.7,
+    gift: 'fertilizer',
+    giftBase: 3,
+    giftSeconds: 3600,
   },
 ]
 

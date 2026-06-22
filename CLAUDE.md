@@ -357,4 +357,8 @@ Expeditionen+Tiere sichtbar + geben dem Maxed-Spieler neue Abzeichen; Metriken i
 ohne Version-Bump (Track-Append wie 9.60). Phase 71 (§9.73): neue Systeme im Ziel-Panel (game/goals.ts)
 — Erstkontakt-Nudges in buildGoal („Erste Expedition/Erstes Tier", discovery, weg nach Engagement) +
 expeditionGoal (ready „Expedition abholen" sobald zurück). Reine Führungslogik, keine Save-Änderung.
-Stand SAVE_VERSION 37.
+Phase 72 (§9.74): Garten-Bewohner lebendig & interaktiv — Tiere LAUFEN/FLIEGEN durch den Garten
+(ui/CreatureLayer.svelte, rAF-Pathing, eigene Klick-Ebene), Füttern ersetzt durch GESCHENKE
+(Echtzeit-Timer → 🎁 anklicken im Garten/Panel → Rubbellose/Dünger + Freundschaftsstufe; Klick ohne
+Geschenk = Herz-Streicheln); collectGift/isGiftReady/giftReward, feedCreature entfernt. SAVE_VERSION 38
+(neues Feld creatureGifts, Migration default {}). Stand SAVE_VERSION 38.
