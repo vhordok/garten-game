@@ -334,4 +334,8 @@ sichtbare Weltensaat-Belohnung — 2 kosmische Deko-Objekte (Sternenportal ab 1 
 2 neue 16×16-Sprites, landschaften in die Szene. Keine Save-Änderung. Phase 66 (§9.68): endlose
 Welten-Meilenstein-Stufe — jede Welt über dem letzten Meilenstein (20) gibt dauerhaft +2 % Ertrag
 (endlessWorldYield, in worldMilestoneBonus('yield') gefaltet → auto über yieldMultiplier), Panel zeigt
-„♾️ Endlos". Reine Daten, keine Save-Änderung. Stand SAVE_VERSION 34.
+„♾️ Endlos". Reine Daten, keine Save-Änderung. Phase 67 (§9.69): Skill-Punkt-Bug gefixt — nach
+Weltensaat musste man Skillpunkte „nachholen", weil totalSkillPoints aus state.parcels ablas (das
+Weltensaat zurücksetzt); neuer High-Water-Mark maxParcels (überlebt Weltensaat, leaseParcel hebt ihn,
+sanitize hält ihn ≥ parcels) → Pool bricht nicht mehr ein. SAVE_VERSION 35 (Migration default =
+aktuelle Parzellen). Stand SAVE_VERSION 35.

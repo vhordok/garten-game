@@ -190,6 +190,10 @@ export interface GameState {
   maxUnlockEarned: number
   /** leased parcels (starts at 1); raises the plot cap */
   parcels: number
+  /** PHASE 67: highest parcel count ever reached (high-water mark). Survives
+   * Weltensaat (which resets `parcels`) so permanent skill points derived from
+   * prestige depth never vanish on a world reset. */
+  maxParcels: number
   /** prestige currency: permanent yield/growth bonuses (spendable pool) */
   compost: number
   /** compost spent on compost-garden upgrades; compost+compostSpent = total ever

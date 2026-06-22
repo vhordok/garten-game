@@ -13,6 +13,7 @@ export function createDefaultState(now = Date.now()): GameState {
     lifetimeEarned: 0,
     maxUnlockEarned: 0,
     parcels: 1,
+    maxParcels: 1,
     compost: 0,
     compostSpent: 0,
     compostUpgrades: {},

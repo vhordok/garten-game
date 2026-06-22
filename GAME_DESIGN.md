@@ -1925,3 +1925,19 @@ jede Welt über N = +2 % Ertrag — aktuell +X %".
 
 Reine Daten/Formel/UI, abgeleitet aus `worldResets`, keine Save-Änderung. check/build grün,
 Tests 81/81 (fix bei 20, wächst danach, +20 % nach 10 Welten, hebt den Multiplikator).
+
+### 9.69 Phase 67 — Skill-Punkt-Bug nach Weltensaat (SAVE_VERSION 35)
+
+Spieler-Bug: nach einer Weltensaat musste man erst alle alten Skillpunkte „nachholen", bevor neue
+kamen. Ursache: `totalSkillPoints` leitete die Parzellen-Punkte aus `state.parcels` ab — aber
+**Weltensaat setzt `parcels` zurück**, während die gekauften (permanenten) Skills bleiben. Damit
+brach der Punkte-Pool ein (`available = total − spent` → 0/Defizit), und man musste sich bis zur
+alten Parzellenzahl hochpachten, um wieder neue Punkte zu sehen.
+
+Fix: neuer **High-Water-Mark** `maxParcels` (höchste je erreichte Parzellenzahl), der die Weltensaat
+überlebt. `totalSkillPoints` nutzt `max(maxParcels, parcels)` → der Pool sinkt nie durch einen
+Welt-Reset; neue Punkte gibt es erst, wenn man die alte Tiefe *übertrifft* (korrekt). `leaseParcel`
+hebt die Marke, `sanitize` hält sie ≥ `parcels` (alte Saves erben den aktuellen Stand, kein Defizit
+nach vorn). SAVE_VERSION 35, Migration v34→v35 (default = aktuelle Parzellen).
+
+check/build grün, Tests 82/82 (Pool bleibt nach Weltensaat, High-Water steigt beim Pachten).
