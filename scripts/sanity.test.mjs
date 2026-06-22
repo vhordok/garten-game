@@ -134,6 +134,7 @@ import {
   relicCount,
   relicBonus,
   totalRelics,
+  companionRiskBonus,
 } from '../src/lib/game/expeditions.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
@@ -1849,6 +1850,43 @@ test('PHASE 69/72: creatures — attract, befriend, roam-and-collect gifts, bonu
   assert.equal(getState().creatureGifts.igel, 5000, 'gift timer persists')
 })
 
+test('PHASE 78: creature companion boosts risky expeditions', () => {
+  const s = fresh()
+  s.money = 1e30
+  // bonus needs a befriended creature, scales per level, capped at +30%
+  assert.equal(companionRiskBonus(s, 'fuchs'), 0, 'unbefriended companion → no bonus')
+  s.creatures = { fuchs: 10 }
+  assert.ok(Math.abs(companionRiskBonus(s, 'fuchs') - 0.2) < 1e-9, 'level 10 → +20% (0.02/level)')
+  s.creatures = { fuchs: 100 }
+  assert.ok(companionRiskBonus(s, 'fuchs') <= 0.3 + 1e-9, 'capped at +30%')
+
+  // starting with a companion stores it; a non-befriended one is dropped
+  s.creatures = { fuchs: 5 }
+  const now = 1000
+  startExpedition(s, 'wiese', 'igel', now) // igel not befriended → dropped
+  assert.equal(s.activeExpedition.companion, undefined, 'invalid companion dropped')
+  s.activeExpedition = null
+  startExpedition(s, 'wiese', 'fuchs', now)
+  assert.equal(s.activeExpedition.companion, 'fuchs', 'valid companion stored')
+
+  // the risky claim uses the boosted chance (would fail without the companion)
+  s.creatures = { fuchs: 15 } // +30% → wiese 0.6 + 0.3 = 0.9
+  const done = now + expeditionById('wiese').durationSeconds * 1000
+  const orig = Math.random
+  Math.random = () => 0.85 // fails at 0.6, succeeds at 0.9
+  const r = claimExpedition(s, 'risky', done)
+  Math.random = orig
+  assert.ok(r && r.success, 'companion bonus pushed the risky roll to success')
+
+  // companion survives save/load
+  const s2 = fresh()
+  s2.activeExpedition = { id: 'wiese', endsAt: 5_000_000, companion: 'fuchs' }
+  const blob = exportSave()
+  replaceState(createDefaultState())
+  importSave(blob)
+  assert.equal(getState().activeExpedition.companion, 'fuchs', 'companion persists through save/load')
+})
+
 test('PHASE 76: expedition return events + double-reward mode', () => {
   // an event is stable per trip (derived from endsAt) and has valid options
   const ev = expeditionEvent(123456000)
@@ -1861,7 +1899,7 @@ test('PHASE 76: expedition return events + double-reward mode', () => {
   const s = fresh()
   s.money = 1e30
   const now = 1000
-  startExpedition(s, 'wiese', now)
+  startExpedition(s, 'wiese', undefined, now)
   const done = now + expeditionById('wiese').durationSeconds * 1000
   const r = claimExpedition(s, 'double', done)
   assert.ok(r && r.copies === 2, 'double yields two copies')
@@ -1879,10 +1917,10 @@ test('PHASE 68: expeditions — real-time gate, relics, press-your-luck claim', 
 
   // start: one slot, costs gold, sets a wall-clock timer
   const now = 1_000_000
-  assert.equal(startExpedition(s, 'wiese', now), true, 'started an expedition')
+  assert.equal(startExpedition(s, 'wiese', undefined, now), true, 'started an expedition')
   assert.ok(s.activeExpedition && s.activeExpedition.id === 'wiese', 'slot occupied')
   assert.equal(s.money, 1e30 - wiese.cost, 'gold cost deducted')
-  assert.equal(startExpedition(s, 'wald', now), false, 'only one expedition at a time')
+  assert.equal(startExpedition(s, 'wald', undefined, now), false, 'only one expedition at a time')
 
   // not claimable until the duration elapses (real time, runaway-proof)
   assert.equal(expeditionReady(s, now + 1000), false, 'still travelling')
@@ -1906,7 +1944,7 @@ test('PHASE 68: expeditions — real-time gate, relics, press-your-luck claim', 
   // risky claim can miss (forced fail above the success chance)
   const s2 = fresh()
   s2.money = 1e30
-  startExpedition(s2, 'wiese', now)
+  startExpedition(s2, 'wiese', undefined, now)
   const orig = Math.random
   Math.random = () => 0.999
   const miss = claimExpedition(s2, 'risky', done)

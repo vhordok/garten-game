@@ -8,7 +8,7 @@ import { CAMPAIGN } from '../data/campaign'
 import { decorationById } from '../data/decorations'
 import { expeditionById } from '../data/expeditions'
 import { RELICS } from '../data/relics'
-import { CREATURES } from '../data/creatures'
+import { CREATURES, creatureById } from '../data/creatures'
 import { CONFIG } from '../data/config'
 import { COMPOST_UPGRADES } from '../data/compostUpgrades'
 import { STAR_UPGRADES } from '../data/starUpgrades'
@@ -524,7 +524,9 @@ function sanitize(raw: unknown): GameState {
   if (typeof r.activeExpedition === 'object' && r.activeExpedition !== null) {
     const ae = r.activeExpedition as Record<string, unknown>
     if (typeof ae.id === 'string' && expeditionById(ae.id) && Number.isFinite(ae.endsAt)) {
-      state.activeExpedition = { id: ae.id, endsAt: Number(ae.endsAt) }
+      // PHASE 78: keep a valid creature companion if present
+      const companion = typeof ae.companion === 'string' && creatureById(ae.companion) ? ae.companion : undefined
+      state.activeExpedition = { id: ae.id, endsAt: Number(ae.endsAt), companion }
     }
   }
   const relics: Record<string, number> = {}

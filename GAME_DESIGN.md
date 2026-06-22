@@ -2090,3 +2090,18 @@ Kleine Lücke geschlossen: man sah nicht, wann ein Tier ein Geschenk bereit hat,
 öffnen. Der HUD-🦔-Button zeigt jetzt einen kräftigen Punkt (wie der Expeditions-Fertig-Punkt), sobald
 ein angefreundetes Tier ein 🎁 hat — der schwächere Befreunden-Hinweis bleibt nachrangig. Reine UI,
 keine Save-Änderung.
+
+### 9.80 Phase 78 — Tiere als Expeditions-Begleiter (verknüpft die zwei neuen Systeme)
+
+Die zwei neuen Systeme (Expeditionen, Tiere) waren getrennte Menüs. Jetzt zahlen sie aufeinander ein:
+beim Losschicken kann **ein angefreundetes Tier mit auf Reise** — es hebt die **Wagnis-Erfolgschance**
+um Freundschaftsstufe × 2 % (gedeckelt +30 %, `companionRiskBonus`). Echte Entscheidung (welches Ziel
++ welcher Begleiter), und die in Phase 72 aktiv erspielte Tier-Freundschaft wird auf Expeditionen
+nutzbar.
+
+`activeExpedition.companion?: string` (nur befriendete IDs, `startExpedition` verwirft ungültige);
+`claimExpedition`-Risky-Roll nutzt `riskSuccess + companionRiskBonus`. UI: Begleiter-Picker (Chips
+mit +%-Hinweis) über den Reisezielen, Begleiter + effektive Wagnis-Chance auf der laufenden Karte.
+Kein Save-Version-Bump (optionales Sub-Feld, sanitize hält nur gültige Creature-IDs). check/build
+grün, Tests 88/88 (Bonus skaliert/gedeckelt, ungültiger Begleiter verworfen, Roll geboostet, Save-
+Roundtrip).
