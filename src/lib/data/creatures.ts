@@ -155,7 +155,9 @@ export function attractLabel(def: CreatureDef): string {
     case 'ornamentals':
       return `ab ${value} Zierpflanzen`
     case 'worldResets':
-      return `ab ${value} Weltensaat`
+      // clarity: it's about ACTUALLY sowing a world (worldResets), not merely
+      // being able to — players read "ab 1 Weltensaat" as the latter (PHASE 79)
+      return value === 1 ? `nachdem du 1× Weltensaat gesät hast` : `nach ${value}× Weltensaat-Säen`
     case 'relics':
       return `ab ${value} Relikten`
   }

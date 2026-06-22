@@ -2105,3 +2105,10 @@ mit +%-Hinweis) über den Reisezielen, Begleiter + effektive Wagnis-Chance auf d
 Kein Save-Version-Bump (optionales Sub-Feld, sanitize hält nur gültige Creature-IDs). check/build
 grün, Tests 88/88 (Bonus skaliert/gedeckelt, ungültiger Begleiter verworfen, Roll geboostet, Save-
 Roundtrip).
+
+### 9.81 Phase 79 — Klarere Tier-Freischalt-Beschriftung (keine Save-Änderung)
+
+Spieler-Verwirrung: der Gartenvogel zeigte „🔒 ab 1 Weltensaat" — gelesen als „sobald du Weltensaat
+*kannst*", gemeint ist aber „sobald du **gesät hast**" (`worldResets ≥ 1`). `attractLabel` für
+`worldResets` jetzt eindeutig: „nachdem du 1× Weltensaat gesät hast" / „nach N× Weltensaat-Säen".
+Kein Mechanik-/Save-Bug — reine Textklarstellung. check/build grün, Tests 88/88.
