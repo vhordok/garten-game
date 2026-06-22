@@ -354,4 +354,7 @@ Szene (wippende Emoji), HUD 🦔. Kein Zyklus (gardenBeauty als Param). SAVE_VER
 creatures, Migration default {}). Phase 70 (§9.72): die neuen Systeme ins Erfolgs-System eingebunden —
 3 Tracks (Entdecker/expeditionsDone, Reliktsammler/Σ Relikte, Tierfreund/angefreundete Tiere) machen
 Expeditionen+Tiere sichtbar + geben dem Maxed-Spieler neue Abzeichen; Metriken import-frei, save-sicher
-ohne Version-Bump (Track-Append wie 9.60). Stand SAVE_VERSION 37.
+ohne Version-Bump (Track-Append wie 9.60). Phase 71 (§9.73): neue Systeme im Ziel-Panel (game/goals.ts)
+— Erstkontakt-Nudges in buildGoal („Erste Expedition/Erstes Tier", discovery, weg nach Engagement) +
+expeditionGoal (ready „Expedition abholen" sobald zurück). Reine Führungslogik, keine Save-Änderung.
+Stand SAVE_VERSION 37.

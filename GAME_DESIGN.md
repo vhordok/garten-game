@@ -1999,3 +1999,16 @@ Metriken lesen den State inline (import-frei, kein Zyklus). Jede beanspruchte St
 Bonus + Skillpunkte (Gold/Legendär) wie jeder Track. Save-sicher **ohne Version-Bump** (wie der
 Track-Append in 9.60): `achievementTiers` ist ein offener Record; tiefe Spieler beanspruchen erfüllte
 Stufen beim Tick (kleine Booster/Lose, kein Kompost/keine Flut). check/build grün, Tests 85/85.
+
+### 9.73 Phase 71 — neue Systeme im Ziel-Panel (keine Save-Änderung)
+
+Letzte Führungs-Lücke: das Ziel-Panel (HUD ✨, „woran arbeite ich") erwähnte Expeditionen/Tiere
+nicht. `game/goals.ts`:
+- **Erstkontakt-Nudges** in `buildGoal` (discovery, verschwinden nach Engagement): „Erste Expedition
+  losschicken" (wenn `expeditionsDone===0`, keine aktiv, leistbar) und „Erstes Gartentier anfreunden"
+  (wenn noch keins angefreundet und eins anlockbar).
+- **`expeditionGoal`** (neu, kurz-Horizont, ready): „Expedition abholen", sobald eine Reise
+  zurückgekehrt ist (Date.now ≥ endsAt) — eine echte, belohnende Sofort-Aktion (Relikt wartet), in
+  `activeGoals` direkt hinter der Kampagne einsortiert.
+
+Reine UI-/Führungslogik, keine Save-Änderung. check/build grün, Tests 86/86.
