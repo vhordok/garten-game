@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EXPEDITIONS, expeditionById, isExpeditionUnlocked } from '../data/expeditions'
+  import { EXPEDITIONS, expeditionById, expeditionEvent, isExpeditionUnlocked, type ExpeditionMode } from '../data/expeditions'
   import { RELICS, relicById, RARITY_COLOR } from '../data/relics'
   import { collectExpedition, sendExpedition } from '../game/actions'
   import { expeditionReady, expeditionRemainingMs, relicCount, totalRelics } from '../game/expeditions'
@@ -34,7 +34,7 @@
     }
   }
 
-  function claim(choice: 'safe' | 'risky') {
+  function claim(choice: ExpeditionMode) {
     const r = collectExpedition(choice)
     if (!r) return
     if (r.success && r.relicId) {
@@ -71,19 +71,19 @@
         </span>
       </div>
       {#if ready}
+        {@const event = expeditionEvent(active.endsAt)}
+        <p class="event-text">{event.text}</p>
         <div class="choices">
-          <button class="pxbtn safe" onclick={() => claim('safe')}>
-            🧺 Sicher
-            <span class="cdesc num">garantiert 1 Relikt</span>
-          </button>
-          <button class="pxbtn risky" onclick={() => claim('risky')}>
-            🎲 Wagnis
-            <span class="cdesc num">{Math.round(activeDef.riskSuccess * 100)} % auf seltenes Relikt</span>
-          </button>
+          {#each event.options as opt (opt.label)}
+            <button class="pxbtn" class:risky={opt.mode === 'risky'} onclick={() => claim(opt.mode)}>
+              {opt.label}
+              <span class="cdesc num">{opt.mode === 'risky' ? `${Math.round(activeDef.riskSuccess * 100)} % auf seltenes Relikt` : opt.hint}</span>
+            </button>
+          {/each}
         </div>
       {:else}
         <div class="progress"><span style:width="{100 - (remaining / (activeDef.durationSeconds * 1000)) * 100}%"></span></div>
-        <span class="travel-hint num">🎁 Bei Rückkehr wählst du sicher/Wagnis und bekommst dein Relikt — läuft auch offline weiter.</span>
+        <span class="travel-hint num">🎁 Bei Rückkehr triffst du eine Entscheidung und bekommst dein Relikt — läuft auch offline weiter.</span>
       {/if}
     </div>
   {/if}
@@ -191,6 +191,12 @@
     font-size: 0.72rem;
     color: var(--c-mist);
     margin-top: 6px;
+  }
+  .event-text {
+    margin: 2px 0 8px;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--c-cloud);
   }
   .choices {
     display: flex;

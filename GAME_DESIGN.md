@@ -2064,3 +2064,16 @@ zurück: … — jetzt abholen (sicher/Wagnis)!". Eine schlichte `let`-Variable 
 Effekt-Loop) merkt sich die schon gemeldete Expeditions-ID; zurückgesetzt, sobald keine aktiv ist.
 Feuert auch nach Offline/Reload, sobald der Store wieder tickt. Reine UI-Benachrichtigung, keine
 Logik-/Save-Änderung. check/build grün, Tests 86/86.
+
+### 9.78 Phase 76 — Expeditions-Rückkehr-Events mit echten Entscheidungen (keine Save-Änderung)
+
+Statt immer fix „Sicher/Wagnis" rahmt bei der Rückkehr jetzt ein kleines **Ereignis** die Wahl
+(`EXPEDITION_EVENTS` in data/expeditions.ts): verschlossene Truhe, Weggabelung, fahrender Händler,
+dunkle Höhle, glänzender Fund, aufziehender Sturm. Jedes Event hat 2 Optionen mit eigenem Modus →
+`claimExpedition`-Roll:
+- `safe` → 1 Relikt sicher · `double` → 2 Relikte sicher · `risky` → seltenes Relikt mit riskSuccess%.
+
+Das Event ist **stabil pro Reise** aus `endsAt` abgeleitet (`expeditionEvent`) → kein neues Save-Feld.
+Das Panel zeigt Event-Text + dynamische Options-Buttons; `ExpeditionMode`/`ExpeditionResult` um
+`double` erweitert. Mehr Abwechslung und echte Risiko-Entscheidungen statt Binär-Wahl. check/build
+grün, Tests 87/87 (Event stabil + valide Modi, double = 2 Relikte).

@@ -367,4 +367,7 @@ jetzt nur am gameStore hängend, movers-Read/Write in untrack + Reassign nur bei
 60→15. Phase 74 (§9.76): Expeditions-Klartext — laufende Reise zeigt „Belohnung bei Rückkehr".
 Phase 75 (§9.77): Toast „🧭 Expedition zurück — jetzt abholen", wenn eine Reise endet (Transition-
 Watcher in App.svelte, plain let statt $state → kein Effekt-Loop, feuert auch nach Reload). Reine
-UI, keine Save-Änderung. Stand SAVE_VERSION 38.
+UI, keine Save-Änderung. Phase 76 (§9.78): Expeditions-Rückkehr-Events — statt fix Sicher/Wagnis
+rahmt ein zufälliges Ereignis (Truhe/Gabelung/Händler/Höhle/Fund/Sturm, stabil aus endsAt abgeleitet,
+kein Save-Feld) die Wahl; Optionen-Modi safe/double/risky (double=2 Relikte sicher), claimExpedition
++ Panel datengetrieben. Reine UI/Logik, keine Save-Änderung. Stand SAVE_VERSION 38.

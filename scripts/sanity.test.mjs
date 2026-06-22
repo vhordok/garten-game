@@ -116,7 +116,7 @@ import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, to
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
 import { autoHarvestRate, autoSowRate, autoSellInterval } from '../src/lib/game/modifiers.ts'
 import { isHelperUpgrade, toggleHelperPause } from '../src/lib/game/actions.ts'
-import { expeditionById, isExpeditionUnlocked } from '../src/lib/data/expeditions.ts'
+import { expeditionById, isExpeditionUnlocked, expeditionEvent, EXPEDITION_EVENTS } from '../src/lib/data/expeditions.ts'
 import { creatureById } from '../src/lib/data/creatures.ts'
 import {
   befriendCreature,
@@ -1847,6 +1847,25 @@ test('PHASE 69/72: creatures — attract, befriend, roam-and-collect gifts, bonu
   importSave(blob)
   assert.equal(getState().creatures.igel, 3, 'friendship persists through save/load')
   assert.equal(getState().creatureGifts.igel, 5000, 'gift timer persists')
+})
+
+test('PHASE 76: expedition return events + double-reward mode', () => {
+  // an event is stable per trip (derived from endsAt) and has valid options
+  const ev = expeditionEvent(123456000)
+  assert.ok(ev && ev.options.length >= 2, 'event has at least two options')
+  assert.equal(expeditionEvent(123456000).id, ev.id, 'event stable for the same endsAt')
+  for (const e of EXPEDITION_EVENTS)
+    for (const o of e.options) assert.ok(['safe', 'risky', 'double'].includes(o.mode), `valid mode ${o.mode}`)
+
+  // the 'double' option grants two guaranteed relics from the safe pool
+  const s = fresh()
+  s.money = 1e30
+  const now = 1000
+  startExpedition(s, 'wiese', now)
+  const done = now + expeditionById('wiese').durationSeconds * 1000
+  const r = claimExpedition(s, 'double', done)
+  assert.ok(r && r.copies === 2, 'double yields two copies')
+  assert.equal(totalRelics(s), 2, 'two relics collected')
 })
 
 test('PHASE 68: expeditions — real-time gate, relics, press-your-luck claim', () => {

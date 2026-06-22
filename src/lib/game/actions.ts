@@ -14,6 +14,7 @@ import {
   startExpedition as startExpeditionPure,
   type ExpeditionResult,
 } from './expeditions'
+import type { ExpeditionMode } from '../data/expeditions'
 import {
   befriendCreature as befriendCreaturePure,
   creatureBonus,
@@ -606,9 +607,9 @@ export function sendExpedition(id: string): boolean {
   return ok
 }
 
-/** PHASE 68: claim a returned expedition with a safe/risky choice. Returns the
- * outcome (relic granted or a risky miss) for the UI, or null if not ready. */
-export function collectExpedition(choice: 'safe' | 'risky'): ExpeditionResult | null {
+/** PHASE 68/76: claim a returned expedition with the chosen event option.
+ * Returns the outcome (relic granted or a risky miss) for the UI, or null. */
+export function collectExpedition(choice: ExpeditionMode): ExpeditionResult | null {
   const result = claimExpeditionPure(getState(), choice)
   if (result) notify()
   return result
