@@ -2,7 +2,13 @@
   import { CONFIG } from '../data/config'
   import { COMPOST_UPGRADES, compostUpgradeCost } from '../data/compostUpgrades'
   import { PARCEL_MILESTONES, nextMilestone } from '../data/milestones'
-  import { WORLD_MILESTONES, nextWorldMilestone } from '../data/worldMilestones'
+  import {
+    WORLD_MILESTONES,
+    nextWorldMilestone,
+    endlessWorldYield,
+    LAST_WORLD_MILESTONE,
+    ENDLESS_WORLD_YIELD_PER,
+  } from '../data/worldMilestones'
   import { buyCompostUpgrade, buyStarUpgrade, compostGain, leaseParcel, leaseRequirement, weltensaat } from '../game/actions'
   import { canWeltensaat, starseedBanked, starseedGain, starUpgradeLevel, worldseedYieldFactor } from '../game/worldseed'
   import { STAR_UPGRADES, starUpgradeCost } from '../data/starUpgrades'
@@ -266,6 +272,12 @@
     {#if nextWorldMilestone($gameStore.worldResets ?? 0)}
       {@const wsNext = nextWorldMilestone($gameStore.worldResets ?? 0)}
       <p class="hint">Nächste Welt-Belohnung: <b>Welt {wsNext?.world}</b> — {wsNext?.desc}.</p>
+    {:else}
+      {@const endless = Math.round(endlessWorldYield($gameStore.worldResets ?? 0) * 100)}
+      <p class="hint">
+        ♾️ <b>Endlos:</b> jede Welt über {LAST_WORLD_MILESTONE} gibt +{Math.round(ENDLESS_WORLD_YIELD_PER * 100)} %
+        Ertrag dauerhaft{#if endless > 0} — aktuell <b>+{endless} %</b>{/if}.
+      </p>
     {/if}
 
     {#if seenWeltensaat}
