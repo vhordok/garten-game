@@ -36,6 +36,8 @@ export function attractMetric(state: GameState, kind: AttractKind, beauty: numbe
       return state.worldResets ?? 0
     case 'relics':
       return Object.values(state.relics ?? {}).reduce((a, b) => a + b, 0)
+    case 'expeditions':
+      return state.expeditionsDone ?? 0
   }
 }
 
