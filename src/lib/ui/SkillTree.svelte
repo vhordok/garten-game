@@ -30,20 +30,34 @@
     gluecksrausch: 'kristallbeere-3',
     saatgutforschung: 'kosmoshanf-3',
   }
+  // fallback sprite by effect, so the many PHASE-85 nodes get fitting icons too
+  const SPRITE_BY_EFFECT: Record<string, string> = {
+    yield: 'erdbeere-3',
+    crit: 'kometbeere-3',
+    growth: 'kosmoshanf-3',
+    beauty: 'feuerlilie-3',
+    questReward: 'drachenfrucht-3',
+    sellPrice: 'aeonenkern-3',
+    compostGain: 'glyzinie-3',
+    offline: 'goldahorn-3',
+    scratchLuck: 'himbeere-3',
+    crossDiscount: 'galaxieorchidee-3',
+  }
+  const iconFor = (def: SkillDef) => SPRITE[def.id] ?? SPRITE_BY_EFFECT[def.effect] ?? 'erdbeere-3'
 
-  // each branch radiates at a fixed angle; chain depth = distance from the root
-  // the three LONG branches (ernte/markt/zier, depth 3) sit 120° apart so the
-  // tree spreads evenly; the shorter branches fill the gaps between them.
+  // PHASE 85: a RECURSIVE radial layout so the tree handles real splits (a node
+  // with several children fans them out within its angular sector). Each of the
+  // root's six branches gets a base angle + a 58° sector; descendants subdivide.
   const ANGLE: Record<SkillDef['branch'], number> = {
     wurzel: 0,
     ernte: -90, // up
-    kompost: -30, // upper-right (depth 2)
+    kompost: -30, // upper-right
     markt: 30, // lower-right
-    glueck: 90, // down (depth 2)
+    glueck: 90, // down
     zier: 150, // lower-left
-    labor: 210, // upper-left (depth 1)
+    labor: 210, // upper-left
   }
-  const RING = 15 // % radius per depth step
+  const RING = 8.5 // % radius per depth step
   const CX = 50
   const CY = 50
 
@@ -56,11 +70,42 @@
     }
     return d
   }
+
+  // children map + recursive placement
+  const KIDS = new Map<string, SkillDef[]>()
+  for (const s of SKILLS) {
+    if (s.prereq) {
+      if (!KIDS.has(s.prereq)) KIDS.set(s.prereq, [])
+      KIDS.get(s.prereq)!.push(s)
+    }
+  }
+  const POS = new Map<string, { x: number; y: number }>()
+  function place(id: string, angle: number, sector: number) {
+    const d = depth(id)
+    const a = (angle * Math.PI) / 180
+    POS.set(id, { x: CX + d * RING * Math.cos(a), y: CY + d * RING * Math.sin(a) })
+    const kids = KIDS.get(id) ?? []
+    if (!kids.length) return
+    const w = sector / kids.length
+    let cur = angle - sector / 2 + w / 2
+    for (const k of kids) {
+      place(k.id, cur, w)
+      cur += w
+    }
+  }
+  const root = SKILLS.find((s) => !s.prereq)!
+  POS.set(root.id, { x: CX, y: CY })
+  for (const c of KIDS.get(root.id) ?? []) place(c.id, ANGLE[c.branch], 58)
+  // safety: if the tree ever grows deep enough to overflow, scale it down to fit
+  let maxR = 0
+  for (const p of POS.values()) maxR = Math.max(maxR, Math.hypot(p.x - CX, p.y - CY))
+  const FIT = 44
+  if (maxR > FIT) {
+    const sc = FIT / maxR
+    for (const [id, p] of POS) POS.set(id, { x: CX + (p.x - CX) * sc, y: CY + (p.y - CY) * sc })
+  }
   function pos(def: SkillDef): { x: number; y: number } {
-    if (!def.prereq) return { x: CX, y: CY }
-    const a = (ANGLE[def.branch] * Math.PI) / 180
-    const r = depth(def.id) * RING
-    return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) }
+    return POS.get(def.id) ?? { x: CX, y: CY }
   }
 
   const NODES = SKILLS.map((def) => ({ def, ...pos(def) }))
@@ -70,8 +115,8 @@
     const a = pos(skillById(d.prereq!)!)
     const b = pos(d)
     const ang = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI
-    const leaves = [0.32, 0.6].map((t) => ({ cx: a.x + (b.x - a.x) * t, cy: a.y + (b.y - a.y) * t }))
-    const flower = i % 2 === 0 ? { cx: a.x + (b.x - a.x) * 0.46, cy: a.y + (b.y - a.y) * 0.46 } : null
+    const leaves = [{ cx: a.x + (b.x - a.x) * 0.5, cy: a.y + (b.y - a.y) * 0.5 }]
+    const flower = i % 3 === 0 ? { cx: a.x + (b.x - a.x) * 0.42, cy: a.y + (b.y - a.y) * 0.42 } : null
     return { x1: a.x, y1: a.y, x2: b.x, y2: b.y, key: d.id, ang, leaves, flower }
   })
 
@@ -108,12 +153,12 @@
     {/each}
     {#each EDGES as e (e.key + '-a')}
       {#each e.leaves as lf}
-        <ellipse cx={lf.cx} cy={lf.cy} rx="1.8" ry="0.9" class="leaf" transform="rotate({e.ang + 40} {lf.cx} {lf.cy})" />
-        <ellipse cx={lf.cx} cy={lf.cy} rx="1.8" ry="0.9" class="leaf" transform="rotate({e.ang - 40} {lf.cx} {lf.cy})" />
+        <ellipse cx={lf.cx} cy={lf.cy} rx="1.1" ry="0.55" class="leaf" transform="rotate({e.ang + 40} {lf.cx} {lf.cy})" />
+        <ellipse cx={lf.cx} cy={lf.cy} rx="1.1" ry="0.55" class="leaf" transform="rotate({e.ang - 40} {lf.cx} {lf.cy})" />
       {/each}
       {#if e.flower}
-        <circle cx={e.flower.cx} cy={e.flower.cy} r="1.5" class="fl" />
-        <circle cx={e.flower.cx} cy={e.flower.cy} r="0.6" class="flc" />
+        <circle cx={e.flower.cx} cy={e.flower.cy} r="1" class="fl" />
+        <circle cx={e.flower.cx} cy={e.flower.cy} r="0.42" class="flc" />
       {/if}
     {/each}
   </svg>
@@ -130,7 +175,7 @@
       {#if nodeClass(n.def.id) === 'locked'}
         <span class="ico q">?</span>
       {:else}
-        <img class="ico-sprite" src={spriteUrl(SPRITE[n.def.id])} alt="" />
+        <img class="ico-sprite" src={spriteUrl(iconFor(n.def))} alt="" />
       {/if}
       {#if lvl > 0}<span class="lvl num">{lvl}{n.def.maxLevel > 1 ? `/${n.def.maxLevel}` : ''}</span>{/if}
     </button>
@@ -143,7 +188,7 @@
       {#if !selStatus.prereqMet}
         <span class="d-ico">🔒</span>
       {:else}
-        <img class="d-sprite" src={spriteUrl(SPRITE[selDef.id])} alt="" />
+        <img class="d-sprite" src={spriteUrl(iconFor(selDef))} alt="" />
       {/if}
       <span>
         <b>{selDef.name}</b>
@@ -189,17 +234,17 @@
   /* three-layer vines (dark casing → green stem → bright core) + leaf/flower accents */
   .vd {
     stroke: #16331a;
-    stroke-width: 4.6;
+    stroke-width: 2.6;
     stroke-linecap: round;
   }
   .vm {
     stroke: var(--c-leaf1);
-    stroke-width: 2.9;
+    stroke-width: 1.7;
     stroke-linecap: round;
   }
   .vl {
     stroke: var(--c-leaf2);
-    stroke-width: 1.2;
+    stroke-width: 0.7;
     stroke-linecap: round;
     opacity: 0.85;
   }
@@ -216,7 +261,7 @@
   .node {
     position: absolute;
     transform: translate(-50%, -50%);
-    width: 11.5%;
+    width: 5.6%;
     aspect-ratio: 1;
     display: flex;
     flex-direction: column;
