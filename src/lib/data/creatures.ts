@@ -9,7 +9,7 @@
 
 export type CreatureEffect = 'yield' | 'growth' | 'compostGain' | 'sellPrice' | 'ticketLuck'
 /** what draws the animal in (all monotonic, so attraction is permanent) */
-export type AttractKind = 'level' | 'beauty' | 'decorations' | 'ornamentals' | 'worldResets' | 'relics'
+export type AttractKind = 'level' | 'beauty' | 'decorations' | 'ornamentals' | 'worldResets' | 'relics' | 'expeditions'
 /** PHASE 72: a roaming creature periodically brings a gift you click to collect */
 export type GiftKind = 'tickets' | 'fertilizer'
 
@@ -135,6 +135,47 @@ export const CREATURES: CreatureDef[] = [
     giftBase: 3,
     giftSeconds: 3600,
   },
+  // PHASE 80: three more creatures drawn by the OTHER new systems, so doing
+  // expeditions / collecting relics / sowing worlds visibly populates the garden.
+  {
+    id: 'eichhoernchen',
+    name: 'Eichhörnchen',
+    emoji: '🐿️',
+    desc: 'Folgt dem abenteuerlustigen Gärtner heim und hortet Glück.',
+    attract: { kind: 'expeditions', value: 3 },
+    effect: 'ticketLuck',
+    perLevel: 0.03,
+    maxLevel: 12,
+    gift: 'tickets',
+    giftBase: 5,
+    giftSeconds: 1200,
+  },
+  {
+    id: 'dachs',
+    name: 'Dachs',
+    emoji: '🦡',
+    desc: 'Wittert deine Relikt-Sammlung und gräbt nach mehr Ertrag.',
+    attract: { kind: 'relics', value: 12 },
+    effect: 'yield',
+    perLevel: 0.05,
+    maxLevel: 15,
+    gift: 'fertilizer',
+    giftBase: 3,
+    giftSeconds: 2400,
+  },
+  {
+    id: 'schildkroete',
+    name: 'Schildkröte',
+    emoji: '🐢',
+    desc: 'Uralt und weltklug — kommt erst, wenn du Welten gesät hast.',
+    attract: { kind: 'worldResets', value: 2 },
+    effect: 'growth',
+    perLevel: 0.05,
+    maxLevel: 15,
+    gift: 'fertilizer',
+    giftBase: 2,
+    giftSeconds: 1800,
+  },
 ]
 
 const byId = new Map(CREATURES.map((c) => [c.id, c]))
@@ -160,5 +201,7 @@ export function attractLabel(def: CreatureDef): string {
       return value === 1 ? `nachdem du 1× Weltensaat gesät hast` : `nach ${value}× Weltensaat-Säen`
     case 'relics':
       return `ab ${value} Relikten`
+    case 'expeditions':
+      return `ab ${value} abgeschlossenen Expeditionen`
   }
 }

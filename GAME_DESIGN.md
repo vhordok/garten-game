@@ -2112,3 +2112,11 @@ Spieler-Verwirrung: der Gartenvogel zeigte „🔒 ab 1 Weltensaat" — gelesen 
 *kannst*", gemeint ist aber „sobald du **gesät hast**" (`worldResets ≥ 1`). `attractLabel` für
 `worldResets` jetzt eindeutig: „nachdem du 1× Weltensaat gesät hast" / „nach N× Weltensaat-Säen".
 Kein Mechanik-/Save-Bug — reine Textklarstellung. check/build grün, Tests 88/88.
+
+### 9.82 Phase 80 — 3 neue Tiere, an die anderen neuen Systeme gebunden (keine Save-Änderung)
+
+Die Tier-Sammlung war bei 8 — und drei Systeme (Expeditionen/Relikte/Weltensaat) lockten noch keine
+eigenen Tiere. Neue `AttractKind 'expeditions'` (Metrik `expeditionsDone`) + 3 Tiere: 🐿️ Eichhörnchen
+(ab 3 Expeditionen, Los-Chance), 🦡 Dachs (ab 12 Relikten, Ertrag), 🐢 Schildkröte (ab 2× Weltensaat,
+Wachstum). So bevölkern die neuen Aktivitäten den Garten sichtbar weiter. CreatureLayer/Panel rendern
+sie generisch; Save-sicher (neue IDs nicht angefreundet). check/build grün, Tests 88/88.

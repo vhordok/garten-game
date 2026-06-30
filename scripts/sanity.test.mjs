@@ -1839,6 +1839,14 @@ test('PHASE 69/72: creatures — attract, befriend, roam-and-collect gifts, bonu
   // the ladybug is attractable from the very start (level ≥ 1)
   assert.equal(isCreatureAttracted(fresh(), creatureById('marienkaefer'), 0), true, 'ladybug from the start')
 
+  // PHASE 80: new creatures tied to the other systems (expeditions metric)
+  const squirrel = creatureById('eichhoernchen')
+  assert.ok(squirrel && squirrel.attract.kind === 'expeditions', 'squirrel drawn by expeditions')
+  const e = fresh()
+  assert.equal(isCreatureAttracted(e, squirrel, 0), false, 'squirrel needs expeditions done')
+  e.expeditionsDone = 3
+  assert.equal(isCreatureAttracted(e, squirrel, 0), true, 'squirrel attracted after 3 expeditions')
+
   // save round-trip (friendship + gift timers)
   const s3 = fresh()
   s3.creatures = { igel: 3 }
