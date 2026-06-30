@@ -1974,6 +1974,22 @@ test('PHASE 68: expeditions — real-time gate, relics, press-your-luck claim', 
   assert.equal(loaded.expeditionsDone, 3, 'completed stat persists')
 })
 
+test('PHASE 84: deep level + parcels survive save/load (no stale clamp)', () => {
+  const s = fresh()
+  s.level = 1_141_199
+  s.parcels = 5000
+  s.maxParcels = 5000
+  const before = totalSkillPoints(s)
+  const blob = exportSave()
+  replaceState(createDefaultState())
+  importSave(blob)
+  const g = getState()
+  assert.equal(g.level, 1_141_199, 'million-level survives load (was clamped to 9999)')
+  assert.equal(g.parcels, 5000, 'deep parcels survive load (was clamped to 1000)')
+  assert.equal(g.maxParcels, 5000, 'maxParcels survives load')
+  assert.equal(totalSkillPoints(g), before, 'skill points are not crushed on reload')
+})
+
 test('PHASE 67: skill points use the parcel high-water mark, survive Weltensaat', () => {
   const s = fresh()
   s.parcels = CONFIG.weltensaatMinParcels + 25

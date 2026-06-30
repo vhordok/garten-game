@@ -2155,3 +2155,15 @@ iteriert, bis es gut aussieht (`scratchpad`-Harness). Ergebnis in `ui/SkillTree.
   (gelernt grün, lernbar heller Puls, MAX gold), Stufen-Badge gerahmt.
 
 Reine UI, gleiche Logik/Daten, keine Save-Änderung. check/build grün, Tests 88/88.
+
+### 9.86 Phase 84 — KRITISCH: Level/Parzellen-Clamp zerstörte tiefe Spielstände (Save-sicher)
+
+Spieler-Bug: Skillpunkte (verdient + frei) fielen nach Reload auf 0. Ursache empirisch gefunden
+(Save/Load-Roundtrip-Probe): `sanitize` klammerte `level` auf **max 9999** und `parcels` auf **1000** —
+veraltete Obergrenzen aus der Zeit vor dem Level-Softcap (Level erreichen Millionen, der Spieler war
+bei 1.141.199). Beim Laden wurde Level 1.141.199 → 9999 zerquetscht, was die level-abgeleiteten
+Skillpunkte (57.162 → 602) zerstörte; da Ausgegebene > Rest, zeigte „frei" 0. Fix: Clamp-Decken auf
+`1e12` (Level) bzw. `1e6` (parcels/maxParcels) angehoben → tiefe Werte überleben den Reload (Plots
+werden nicht auto-erzeugt, daher unkritisch). Neuer Regressionstest. **Hinweis:** bereits durch frühere
+Buggy-Reloads auf 9999 gespeicherte Level sind verloren; der Fix stoppt weiteren Verlust. check/build
+grün, Tests 89/89.
