@@ -2120,3 +2120,13 @@ eigenen Tiere. Neue `AttractKind 'expeditions'` (Metrik `expeditionsDone`) + 3 T
 (ab 3 Expeditionen, Los-Chance), 🦡 Dachs (ab 12 Relikten, Ertrag), 🐢 Schildkröte (ab 2× Weltensaat,
 Wachstum). So bevölkern die neuen Aktivitäten den Garten sichtbar weiter. CreatureLayer/Panel rendern
 sie generisch; Save-sicher (neue IDs nicht angefreundet). check/build grün, Tests 88/88.
+
+### 9.83 Phase 81 — visueller Skill-Tree (Reben-Knotengraph) (keine Save-Änderung)
+
+Spielerwunsch (Mockup): der Skill-Tree als **visueller Knotengraph** statt Liste. Neuer
+`ui/SkillTree.svelte` zeichnet den vorhandenen Prereq-Baum (Wurzel `gartenplanung` + 6 Äste) radial:
+Wurzel im Zentrum, jeder Ast strahlt unter festem Winkel aus, Kettentiefe = Radius; SVG-**Reben**
+verbinden je Prereq→Kind. Knoten-Zustände aus `skillStatus`: gelernt (grün, mit Stufe), lernbar
+(pulsierender grüner Glow), nächster (grau), gesperrt (oranges „?"), MAX (gold). Klick → Detailkarte
+mit „Lernen"/„MAX" (`buySkill`/`buySkillMax`). `SkillsPanel` zeigt jetzt den Baum + Legende statt der
+Liste. Reine UI, keine Save-Änderung. check/build grün, Tests 88/88.

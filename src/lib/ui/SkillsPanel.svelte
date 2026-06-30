@@ -1,40 +1,16 @@
 <script lang="ts">
   import { CONFIG } from '../data/config'
-  import { BRANCH_LABEL, skillById, SKILLS, type SkillDef } from '../data/skills'
-  import { buySkill, buySkillMax, respecSkills } from '../game/actions'
-  import { availableSkillPoints, skillStatus, totalSkillPoints } from '../game/skills'
+  import { respecSkills } from '../game/actions'
+  import { availableSkillPoints, totalSkillPoints } from '../game/skills'
   import { gameStore } from '../game/state'
   import { playSound } from './fx/audio'
-  import { coinBurst } from './fx/particles'
   import Overlay from './Overlay.svelte'
+  import SkillTree from './SkillTree.svelte'
 
   let { onClose }: { onClose: () => void } = $props()
 
   const available = $derived(availableSkillPoints($gameStore))
   const total = $derived(totalSkillPoints($gameStore))
-
-  // PHASE 32: include glueck + labor (previously defined but never rendered)
-  const BRANCHES: SkillDef['branch'][] = ['wurzel', 'ernte', 'markt', 'zier', 'kompost', 'glueck', 'labor']
-
-  function handleBuyMax(e: MouseEvent, id: string) {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    if (buySkillMax(id) > 0) {
-      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 16)
-      playSound('buy')
-    } else {
-      playSound('error')
-    }
-  }
-
-  function handleBuy(e: MouseEvent, id: string) {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    if (buySkill(id)) {
-      coinBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 12)
-      playSound('buy')
-    } else {
-      playSound('error')
-    }
-  }
 
   const hasSkills = $derived(Object.keys($gameStore.skills).length > 0)
   const canRespec = $derived(hasSkills && $gameStore.compost >= CONFIG.skillRespecCompost)
@@ -60,42 +36,13 @@
     {/if}
   </div>
 
-  {#each BRANCHES as branch (branch)}
-    {@const list = SKILLS.filter((s) => s.branch === branch)}
-    <h3 class="branch">{BRANCH_LABEL[branch]}</h3>
-    <ul class="skill-list">
-      {#each list as skill (skill.id)}
-        {@const st = skillStatus($gameStore, skill.id) ?? { level: 0, maxed: false, prereqMet: false, affordable: false, canBuy: false, cost: skill.cost }}
-        {@const prereq = skill.prereq ? skillById(skill.prereq) : null}
-        <li class="skill" class:owned={st.level > 0} class:locked={!st.prereqMet}>
-          <span class="s-body">
-            <span class="s-head">
-              <b>{skill.name}</b>
-              <span class="s-lvl num">Stufe {st.level}/{skill.maxLevel}</span>
-            </span>
-            <span class="s-desc">{skill.desc}</span>
-            {#if !st.prereqMet && prereq}
-              <span class="s-req num">braucht zuerst „{prereq.name}"</span>
-            {/if}
-          </span>
-          {#if st.maxed}
-            <span class="s-max">MAX</span>
-          {:else}
-            <span class="s-buy">
-              <button class="pxbtn small num" disabled={!st.canBuy} onclick={(e) => handleBuy(e, skill.id)}>
-                ✦ {st.cost}
-              </button>
-              {#if skill.maxLevel > 50}
-                <button class="pxbtn small num" disabled={!st.canBuy} onclick={(e) => handleBuyMax(e, skill.id)} title="So viele Stufen kaufen, wie Punkte reichen">
-                  MAX
-                </button>
-              {/if}
-            </span>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-  {/each}
+  <SkillTree />
+
+  <p class="legend num">
+    <span class="lg owned">●</span> gelernt · <span class="lg avail">●</span> lernbar ·
+    <span class="lg ready">●</span> nächster · <span class="lg locked">?</span> gesperrt ·
+    <span class="lg maxed">●</span> MAX
+  </p>
 </Overlay>
 
 <style>
@@ -129,89 +76,35 @@
     font-weight: 700;
   }
 
-  .branch {
-    margin: 12px 0 6px;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--c-gold2);
-  }
-
-  .skill-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-  }
-
-  .skill {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    padding: 7px 9px;
-    background: var(--c-night1);
-    border: 1px solid var(--c-edge);
-    border-left: 3px solid var(--c-steel);
-  }
-
-  .skill.owned {
-    border-left-color: var(--c-plum2);
-  }
-
-  .skill.locked {
-    opacity: 0.55;
-  }
-
-  .s-body {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-    flex: 1;
-  }
-
-  .s-head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.84rem;
-    color: var(--c-white);
-  }
-
-  .s-lvl {
-    font-size: 0.7rem;
-    color: var(--c-mist);
-  }
-
-  .s-desc {
-    font-size: 0.74rem;
-    color: var(--c-cloud);
-    line-height: 1.35;
-  }
-
-  .s-req {
-    font-size: 0.7rem;
-    color: var(--c-gold2);
-  }
-
-  .s-max {
-    flex: none;
-    font-weight: 700;
-    font-size: 0.8rem;
-    color: var(--c-plum3);
-  }
-
   .pxbtn.small {
     flex: none;
   }
 
-  .s-buy {
-    flex: none;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: stretch;
+  /* PHASE 81: legend for the visual tree node states */
+  .legend {
+    margin: 10px 0 0;
+    font-size: 0.72rem;
+    color: var(--c-mist);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .lg {
+    font-weight: 700;
+  }
+  .lg.owned {
+    color: var(--c-leaf4);
+  }
+  .lg.avail {
+    color: var(--c-leaf4);
+    text-shadow: 0 0 6px var(--c-leaf4);
+  }
+  .lg.ready {
+    color: var(--c-mist);
+  }
+  .lg.locked {
+    color: var(--c-gold2);
+  }
+  .lg.maxed {
+    color: var(--c-gold2);
   }
 </style>

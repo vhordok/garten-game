@@ -372,5 +372,4 @@ rahmt ein zufälliges Ereignis (Truhe/Gabelung/Händler/Höhle/Fund/Sturm, stabi
 kein Save-Feld) die Wahl; Optionen-Modi safe/double/risky (double=2 Relikte sicher), claimExpedition
 + Panel datengetrieben. Reine UI/Logik, keine Save-Änderung. Phase 77 (§9.79): QA-Runde (kein
 Effekt-Loop in neuen Komponenten, diagnose/playtest sauber, Boni endlich bei Extremskala) + HUD-🦔
-zeigt kräftigen Punkt, wenn ein Tier ein Geschenk bereit hat. Reine UI, keine Save-Änderung. Stand
-SAVE_VERSION 38.
+zeigt kräftigen Punkt, wenn ein Tier ein Geschenk bereit hat. Reine UI, keine Save-Änderung. Phase 81 (§9.83): visueller Skill-Tree (ui/SkillTree.svelte) — Prereq-Baum als radialer Reben-Knotengraph, Knoten-Zustände aus skillStatus, Klick→Detailkarte mit Lernen/MAX; SkillsPanel zeigt Baum+Legende statt Liste. Stand SAVE_VERSION 38.
