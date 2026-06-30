@@ -65,6 +65,7 @@ export function growthMultiplier(state: GameState): number {
     1 +
     parcelBonus(state.parcels, 'growth') +
     worldMilestoneBonus(state.worldResets ?? 0, 'growth') +
+    skillBonus(state, 'growth') +
     compostUpgradeBonus(state, 'growth') +
     achievementBonus(state, 'growth') +
     variantBonus(state, 'growth') +
@@ -325,7 +326,7 @@ export function sellMultiplier(state: GameState): number {
   // PHASE 62: Sternenmarkt (Sternenkammer) lifts the sell price permanently
   return (
     multiplierFor(state, 'sellPrice') *
-    (1 + starUpgradeBonus(state, 'sellPrice') + relicBonus(state, 'sellPrice') + creatureBonus(state, 'sellPrice')) *
+    (1 + starUpgradeBonus(state, 'sellPrice') + relicBonus(state, 'sellPrice') + creatureBonus(state, 'sellPrice') + skillBonus(state, 'sellPrice')) *
     beautyMultiplier(state) *
     marketFactor(state) *
     boom
@@ -422,6 +423,7 @@ export function offlineCapHours(state: GameState): number {
     (state.upgrades['sternenuhr'] ?? 0) * CONFIG.sternenuhrOfflinePerLevel +
     parcelBonus(state.parcels, 'offline') +
     worldMilestoneBonus(state.worldResets ?? 0, 'offline') +
+    skillBonus(state, 'offline') +
     starUpgradeBonus(state, 'offline') +
     compostUpgradeBonus(state, 'offline')
   )

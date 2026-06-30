@@ -2167,3 +2167,17 @@ Skillpunkte (57.162 → 602) zerstörte; da Ausgegebene > Rest, zeigte „frei" 
 werden nicht auto-erzeugt, daher unkritisch). Neuer Regressionstest. **Hinweis:** bereits durch frühere
 Buggy-Reloads auf 9999 gespeicherte Level sind verloren; der Fix stoppt weiteren Verlust. check/build
 grün, Tests 89/89.
+
+### 9.87 Phase 85 — Skill-Tree 5× erweitert (Verzweigungen) (keine Save-Änderung)
+
+Spielerwunsch: „mindestens 5× mehr, mehr Spaltungen". 15 → **75 Skills**: +60 neue Knoten, die je
+Ast tiefer gehen UND **abzweigen** (Spine + Seiten-Splits mit kurzen Schwänzen). 3 neue, an
+vorhandene Modifier eingehängte Effekte: `growth` (growthMultiplier), `sellPrice` (sellMultiplier),
+`offline` (offlineCapHours) — der Rest nutzt bestehende (yield/crit/beauty/questReward/compostGain/
+scratchLuck/crossDiscount). Bestehende 15 IDs unverändert → gekaufte Skills bleiben.
+
+`ui/SkillTree.svelte`: **rekursives Radial-Layout** — jeder Ast bekommt einen Winkel + 58°-Sektor, Kinder
+fächern rekursiv im Sektor auf (echte Verzweigungen statt Einzelketten). Max-Tiefe 5, Knoten kleiner
+(5,6 %), Akzente verkleinert, plus Auto-Scale-Sicherung. Per Chromium-Render verifiziert, dass die 75
+Knoten sauber in die Fläche passen. Neue Skills nutzen ein Effekt-basiertes Sprite-Fallback. Reine
+Daten/UI/Wiring, keine Save-Änderung. check/build grün, Tests 89/89.
