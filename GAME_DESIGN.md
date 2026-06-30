@@ -2141,3 +2141,17 @@ Lücken; Knoten 13 %→**10 %** kleiner, Radius/Ring 14→**15** größer → kl
 statt Emoji (je Skill ein distinktes reifes Pflanzen-Sprite, wie im Mockup) — gerendert via `spriteUrl`,
 auf Knotengröße skaliert. Reine UI, gleiche Logik/Daten, keine Save-Änderung. check/build grün, Tests
 88/88.
+
+### 9.85 Phase 83 — Skill-Tree-Politur: lush & ansprechend (keine Save-Änderung)
+
+Spieler: sah „immer noch nicht ansprechend genug" aus. Diesmal **visuell verifiziert** statt blind:
+eine HTML-Nachbildung des Baums via vorinstalliertem Chromium gerendert/gescreenshotet und das Design
+iteriert, bis es gut aussieht (`scratchpad`-Harness). Ergebnis in `ui/SkillTree.svelte` portiert:
+- **Hintergrund-Glühen** hinter der Wurzel (radial-gradient) → der Baum wirkt gewachsen, nicht
+  diagrammhaft.
+- **Reben dreischichtig** (dunkle Hülle → grüner Stamm → heller Kern) mit **Blatt-Paaren** und kleinen
+  **Blüten-Akzenten** (pink + goldener Kern) entlang jeder Rebe (wie im Mockup).
+- **Knoten mit Tiefe**: Verlaufs-BG + Innen-Highlight + Schlagschatten; dezente Zustands-Glows
+  (gelernt grün, lernbar heller Puls, MAX gold), Stufen-Badge gerahmt.
+
+Reine UI, gleiche Logik/Daten, keine Save-Änderung. check/build grün, Tests 88/88.

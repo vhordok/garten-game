@@ -64,10 +64,15 @@
   }
 
   const NODES = SKILLS.map((def) => ({ def, ...pos(def) }))
-  const EDGES = SKILLS.filter((d) => d.prereq).map((d) => {
+  // each vine carries a couple of leaf pairs and (on every other edge) a small
+  // flower, for the lush look — all derived from the edge geometry.
+  const EDGES = SKILLS.filter((d) => d.prereq).map((d, i) => {
     const a = pos(skillById(d.prereq!)!)
     const b = pos(d)
-    return { x1: a.x, y1: a.y, x2: b.x, y2: b.y, key: d.id }
+    const ang = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI
+    const leaves = [0.32, 0.6].map((t) => ({ cx: a.x + (b.x - a.x) * t, cy: a.y + (b.y - a.y) * t }))
+    const flower = i % 2 === 0 ? { cx: a.x + (b.x - a.x) * 0.46, cy: a.y + (b.y - a.y) * 0.46 } : null
+    return { x1: a.x, y1: a.y, x2: b.x, y2: b.y, key: d.id, ang, leaves, flower }
   })
 
   let selected = $state<string | null>('gartenplanung')
@@ -97,8 +102,19 @@
 <div class="tree">
   <svg class="links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     {#each EDGES as e (e.key)}
-      <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} class="vine-bg" />
-      <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} class="vine-fg" />
+      <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} class="vd" />
+      <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} class="vm" />
+      <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} class="vl" />
+    {/each}
+    {#each EDGES as e (e.key + '-a')}
+      {#each e.leaves as lf}
+        <ellipse cx={lf.cx} cy={lf.cy} rx="1.8" ry="0.9" class="leaf" transform="rotate({e.ang + 40} {lf.cx} {lf.cy})" />
+        <ellipse cx={lf.cx} cy={lf.cy} rx="1.8" ry="0.9" class="leaf" transform="rotate({e.ang - 40} {lf.cx} {lf.cy})" />
+      {/each}
+      {#if e.flower}
+        <circle cx={e.flower.cx} cy={e.flower.cy} r="1.5" class="fl" />
+        <circle cx={e.flower.cx} cy={e.flower.cy} r="0.6" class="flc" />
+      {/if}
     {/each}
   </svg>
   {#each NODES as n (n.def.id)}
@@ -159,6 +175,9 @@
     max-width: 560px;
     margin: 6px auto 0;
     aspect-ratio: 1;
+    /* a soft glow behind the root makes the tree feel grown, not diagrammed */
+    background: radial-gradient(circle at 50% 47%, #1d2d22 0%, #131b27 44%, var(--c-night0) 80%);
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6);
   }
   .links {
     position: absolute;
@@ -167,57 +186,74 @@
     height: 100%;
     overflow: visible;
   }
-  /* bolder, clearly-visible vines (the backbone of the tree) */
-  .vine-bg {
-    stroke: var(--c-leaf1);
-    stroke-width: 3;
+  /* three-layer vines (dark casing → green stem → bright core) + leaf/flower accents */
+  .vd {
+    stroke: #16331a;
+    stroke-width: 4.6;
     stroke-linecap: round;
   }
-  .vine-fg {
-    stroke: var(--c-leaf4);
-    stroke-width: 1.3;
+  .vm {
+    stroke: var(--c-leaf1);
+    stroke-width: 2.9;
     stroke-linecap: round;
+  }
+  .vl {
+    stroke: var(--c-leaf2);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    opacity: 0.85;
+  }
+  .leaf {
+    fill: var(--c-leaf2);
+  }
+  .fl {
+    fill: #d98ab5;
+  }
+  .flc {
+    fill: var(--c-gold2);
   }
 
   .node {
     position: absolute;
     transform: translate(-50%, -50%);
-    width: 10%;
+    width: 11.5%;
     aspect-ratio: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--c-night1);
+    background: linear-gradient(#232d40, var(--c-night1));
     border: 2px solid var(--c-edge);
     cursor: pointer;
     padding: 0;
     line-height: 1;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 8px 10px rgba(255, 255, 255, 0.04);
   }
   .ico-sprite {
     width: 78%;
     height: 78%;
     object-fit: contain;
     image-rendering: pixelated;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
   }
   .ico.q {
-    font-size: clamp(0.7rem, 3vw, 1.1rem);
+    font-size: clamp(0.8rem, 3.2vw, 1.2rem);
   }
   .lvl {
     position: absolute;
-    bottom: -2px;
-    right: -2px;
+    bottom: -3px;
+    right: -3px;
     font-size: 0.6rem;
     background: var(--c-night0);
+    border: 1px solid var(--c-edge);
     color: var(--c-leaf4);
-    padding: 0 2px;
+    padding: 0 3px;
+    font-weight: 700;
   }
 
   /* states */
   .node.locked {
     border-color: var(--c-gold0);
-    opacity: 0.85;
   }
   .node.locked .ico {
     color: var(--c-gold2);
@@ -228,16 +264,18 @@
   }
   .node.avail {
     border-color: var(--c-leaf4);
-    box-shadow: 0 0 9px 1px color-mix(in srgb, var(--c-leaf4) 70%, transparent);
+    box-shadow: 0 0 11px 2px color-mix(in srgb, var(--c-leaf4) 47%, transparent), 0 3px 5px rgba(0, 0, 0, 0.6);
     animation: pulse 1.4s ease-in-out infinite;
   }
   .node.owned {
     border-color: var(--c-leaf4);
-    background: color-mix(in srgb, var(--c-leaf2) 30%, var(--c-night1));
+    box-shadow: 0 0 8px 1px color-mix(in srgb, var(--c-leaf4) 27%, transparent), 0 3px 5px rgba(0, 0, 0, 0.6),
+      inset 0 0 0 1px color-mix(in srgb, var(--c-leaf4) 20%, transparent);
   }
   .node.maxed {
     border-color: var(--c-gold2);
-    background: color-mix(in srgb, var(--c-gold1) 30%, var(--c-night1));
+    background: linear-gradient(#3a3320, #211a10);
+    box-shadow: 0 0 13px 2px color-mix(in srgb, var(--c-gold2) 53%, transparent), 0 3px 5px rgba(0, 0, 0, 0.6);
   }
   .node.sel {
     outline: 2px solid var(--c-cloud);
