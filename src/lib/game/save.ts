@@ -297,10 +297,10 @@ function sanitize(raw: unknown): GameState {
   state.lifetimeEarned = clampNumber(r.lifetimeEarned, state.totalEarned, state.totalEarned)
   // old saves: seed the quest floor from the current round so orders stay on tier
   state.maxUnlockEarned = clampNumber(r.maxUnlockEarned, state.totalEarned, state.totalEarned)
-  state.parcels = Math.floor(clampNumber(r.parcels, 1, 1, 1000))
+  state.parcels = Math.floor(clampNumber(r.parcels, 1, 1, 1e6))
   // PHASE 67: high-water mark — never below the current parcel count (so old
   // saves without the field, or any tampering, keep a consistent skill pool)
-  state.maxParcels = Math.max(Math.floor(clampNumber(r.maxParcels, 1, 1, 1000)), state.parcels)
+  state.maxParcels = Math.max(Math.floor(clampNumber(r.maxParcels, 1, 1, 1e6)), state.parcels)
   state.compost = Math.floor(clampNumber(r.compost, 0, 0, 1e9))
   state.compostSpent = Math.floor(clampNumber(r.compostSpent, 0, 0, 1e15))
 
@@ -372,7 +372,10 @@ function sanitize(raw: unknown): GameState {
   }
   state.pausedHelpers = paused
 
-  state.level = Math.floor(clampNumber(r.level, 1, 1, 9999))
+  // PHASE 84: levels reach the millions in the late game (level softcap), so the
+  // old 9999 ceiling silently crushed deep players' level on every load (and with
+  // it their level-derived skill points). Cap high enough to never bite.
+  state.level = Math.floor(clampNumber(r.level, 1, 1, 1e12))
   state.xp = clampNumber(r.xp, 0)
   state.createdAt = clampNumber(r.createdAt, state.createdAt)
 
