@@ -9,37 +9,41 @@
   import { skillLevel, skillStatus } from '../game/skills'
   import { gameStore } from '../game/state'
   import { playSound } from './fx/audio'
+  import { spriteUrl } from './pixel/render'
 
-  // thematic icon per skill (kept here so the data layer stays unchanged)
-  const ICON: Record<string, string> = {
-    gartenplanung: '🌳',
-    erntefokus: '✨',
-    ueppige_ernte: '🌾',
-    ahnenwissen: '📜',
-    haendlerblick: '🛒',
-    grosshandel: '📦',
-    marktimperium: '🏛️',
-    schaugarten: '🌷',
-    parkanlage: '🏞️',
-    zierkrone: '👑',
-    tiefwurzel: '🪵',
-    kompostmeister: '♻️',
-    gluecksklee: '🍀',
-    gluecksrausch: '🎰',
-    saatgutforschung: '🧪',
+  // a distinct pixel-plant sprite per node, matching the game's art (like the
+  // mockup). Decorative — the detail card carries the actual meaning.
+  const SPRITE: Record<string, string> = {
+    gartenplanung: 'eiche-3',
+    erntefokus: 'erdbeere-3',
+    ueppige_ernte: 'kuerbis-3',
+    ahnenwissen: 'galaxieorchidee-3',
+    haendlerblick: 'drachenfrucht-3',
+    grosshandel: 'kometbeere-3',
+    marktimperium: 'aeonenkern-3',
+    schaugarten: 'feuerlilie-3',
+    parkanlage: 'hortensie-3',
+    zierkrone: 'ewigrose-3',
+    tiefwurzel: 'goldahorn-3',
+    kompostmeister: 'glyzinie-3',
+    gluecksklee: 'himbeere-3',
+    gluecksrausch: 'kristallbeere-3',
+    saatgutforschung: 'kosmoshanf-3',
   }
 
   // each branch radiates at a fixed angle; chain depth = distance from the root
+  // the three LONG branches (ernte/markt/zier, depth 3) sit 120° apart so the
+  // tree spreads evenly; the shorter branches fill the gaps between them.
   const ANGLE: Record<SkillDef['branch'], number> = {
     wurzel: 0,
-    ernte: -90,
-    markt: -30,
-    zier: 30,
-    glueck: 90,
-    labor: 150,
-    kompost: 210,
+    ernte: -90, // up
+    kompost: -30, // upper-right (depth 2)
+    markt: 30, // lower-right
+    glueck: 90, // down (depth 2)
+    zier: 150, // lower-left
+    labor: 210, // upper-left (depth 1)
   }
-  const RING = 14 // % radius per depth step
+  const RING = 15 // % radius per depth step
   const CX = 50
   const CY = 50
 
@@ -107,7 +111,11 @@
       title={n.def.name}
       onclick={() => (selected = n.def.id)}
     >
-      <span class="ico">{nodeClass(n.def.id) === 'locked' ? '?' : ICON[n.def.id] ?? '◆'}</span>
+      {#if nodeClass(n.def.id) === 'locked'}
+        <span class="ico q">?</span>
+      {:else}
+        <img class="ico-sprite" src={spriteUrl(SPRITE[n.def.id])} alt="" />
+      {/if}
       {#if lvl > 0}<span class="lvl num">{lvl}{n.def.maxLevel > 1 ? `/${n.def.maxLevel}` : ''}</span>{/if}
     </button>
   {/each}
@@ -116,7 +124,11 @@
 {#if selDef && selStatus}
   <div class="detail" class:lockd={!selStatus.prereqMet}>
     <div class="d-head">
-      <span class="d-ico">{!selStatus.prereqMet ? '🔒' : ICON[selDef.id] ?? '◆'}</span>
+      {#if !selStatus.prereqMet}
+        <span class="d-ico">🔒</span>
+      {:else}
+        <img class="d-sprite" src={spriteUrl(SPRITE[selDef.id])} alt="" />
+      {/if}
       <span>
         <b>{selDef.name}</b>
         <span class="d-branch num">{BRANCH_LABEL[selDef.branch]} · Stufe {selStatus.level}{selDef.maxLevel > 1 ? `/${selDef.maxLevel}` : ''}</span>
@@ -144,7 +156,7 @@
   .tree {
     position: relative;
     width: 100%;
-    max-width: 520px;
+    max-width: 560px;
     margin: 6px auto 0;
     aspect-ratio: 1;
   }
@@ -153,22 +165,24 @@
     inset: 0;
     width: 100%;
     height: 100%;
+    overflow: visible;
   }
+  /* bolder, clearly-visible vines (the backbone of the tree) */
   .vine-bg {
     stroke: var(--c-leaf1);
-    stroke-width: 1.6;
+    stroke-width: 3;
     stroke-linecap: round;
   }
   .vine-fg {
     stroke: var(--c-leaf4);
-    stroke-width: 0.7;
+    stroke-width: 1.3;
     stroke-linecap: round;
   }
 
   .node {
     position: absolute;
     transform: translate(-50%, -50%);
-    width: 13%;
+    width: 10%;
     aspect-ratio: 1;
     display: flex;
     flex-direction: column;
@@ -181,8 +195,14 @@
     line-height: 1;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
-  .ico {
-    font-size: clamp(0.8rem, 3.4vw, 1.3rem);
+  .ico-sprite {
+    width: 78%;
+    height: 78%;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+  .ico.q {
+    font-size: clamp(0.7rem, 3vw, 1.1rem);
   }
   .lvl {
     position: absolute;
@@ -257,6 +277,12 @@
   }
   .d-ico {
     font-size: 1.5rem;
+  }
+  .d-sprite {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    image-rendering: pixelated;
   }
   .d-branch {
     display: block;

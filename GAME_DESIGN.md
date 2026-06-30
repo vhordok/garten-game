@@ -2130,3 +2130,14 @@ verbinden je Prereq→Kind. Knoten-Zustände aus `skillStatus`: gelernt (grün, 
 (pulsierender grüner Glow), nächster (grau), gesperrt (oranges „?"), MAX (gold). Klick → Detailkarte
 mit „Lernen"/„MAX" (`buySkill`/`buySkillMax`). `SkillsPanel` zeigt jetzt den Baum + Legende statt der
 Liste. Reine UI, keine Save-Änderung. check/build grün, Tests 88/88.
+
+### 9.84 Phase 82 — Skill-Tree-Überarbeitung (Layout + Pixel-Sprites) (keine Save-Änderung)
+
+Spieler-Feedback: der Skill-Tree (9.83) sah überladen aus und war fummelig (Knoten zu groß, klebten
+aneinander, Reben verdeckt). Überarbeitung von `ui/SkillTree.svelte`: (1) **ausbalanciertes Layout** —
+die drei langen Äste (Ernte/Markt/Zier, Tiefe 3) sitzen 120° auseinander, kurze Äste füllen die
+Lücken; Knoten 13 %→**10 %** kleiner, Radius/Ring 14→**15** größer → klare Abstände, keine Überlappung.
+(2) **kräftige sichtbare Reben** (Stroke 1,6/0,7 → 3/1,3). (3) **Pixel-Plant-Sprites** als Knoten-Icons
+statt Emoji (je Skill ein distinktes reifes Pflanzen-Sprite, wie im Mockup) — gerendert via `spriteUrl`,
+auf Knotengröße skaliert. Reine UI, gleiche Logik/Daten, keine Save-Änderung. check/build grün, Tests
+88/88.
