@@ -21,6 +21,7 @@
     cannabis: 'Hanf',
     magie: 'Magie',
     kosmos: 'Kosmisch',
+    goettlich: 'Göttlich',
     kreuzungen: 'Kreuzungen',
   }
 

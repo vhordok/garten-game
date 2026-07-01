@@ -40,6 +40,7 @@
     cannabis: 'Hanf',
     magie: 'Magie',
     kosmos: 'Kosmisch',
+    goettlich: 'Göttlich',
     kreuzungen: 'Kreuzungen',
   }
 
@@ -55,6 +56,7 @@
     cannabis: 'var(--c-leaf4)',
     magie: 'var(--c-blue2)',
     kosmos: 'var(--c-blue1)',
+    goettlich: 'var(--c-gold2)',
     kreuzungen: 'var(--c-plum1)',
   }
 
