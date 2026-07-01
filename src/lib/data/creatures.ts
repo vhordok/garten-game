@@ -3,9 +3,9 @@
 // expeditions' relics draw a fox …). Each attracted animal can be befriended and
 // then FED with surplus produce to raise its friendship level, which strengthens
 // a permanent passive bonus (survives prestige AND Weltensaat). They appear,
-// alive and animated, in the garden scene. Feeding gives the late-game produce
-// stockpile a real use — and a reason to pause auto-sell (PHASE 63). Pure data;
-// attraction/feeding/bonus logic lives in game/creatures.ts.
+// alive and animated, in the garden scene. Collecting their gifts (PHASE 72)
+// rewards keeping the garden lush. Pure data;
+// attraction/gift/bonus logic lives in game/creatures.ts.
 
 export type CreatureEffect = 'yield' | 'growth' | 'compostGain' | 'sellPrice' | 'ticketLuck'
 /** what draws the animal in (all monotonic, so attraction is permanent) */

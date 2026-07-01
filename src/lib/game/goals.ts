@@ -690,7 +690,7 @@ function buildGoal(state: GameState): Goal | null {
       id: 'build-tier',
       icon: '🐾',
       label: 'Erstes Gartentier anfreunden',
-      why: 'Lebendiger Garten + dauerhafter Bonus; füttere es mit Überschuss-Ernte',
+      why: 'Lebendiger Garten + dauerhafter Bonus; sammle später seine Geschenke ein',
     })
   }
   if (candidates.length === 0) return null

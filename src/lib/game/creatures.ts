@@ -1,9 +1,10 @@
 // Creature logic (PHASE 69). Attraction is derived from monotonic metrics
 // (level, beauty, decorations, ornamentals, worlds, relics) so an attracted
-// animal stays attracted. Befriending stores it; feeding surplus produce raises
-// its friendship level and its permanent passive bonus. Pure TS; actions.ts
-// wraps befriend/feed in notify()ing helpers. `gardenBeauty` is passed in (not
-// imported) to avoid a cycle with modifiers.
+// animal stays attracted. Befriending stores it; collecting the gifts it leaves
+// over time raises its friendship level and its permanent passive bonus (PHASE 72
+// replaced the old produce feeding). Pure TS; actions.ts wraps befriend/collect in
+// notify()ing helpers. `gardenBeauty` is passed in (not imported) to avoid a cycle
+// with modifiers.
 
 import { CREATURES, creatureById, type CreatureDef, type CreatureEffect, type AttractKind, type GiftKind } from '../data/creatures'
 import type { GameState } from './types'
