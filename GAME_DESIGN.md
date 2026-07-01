@@ -2195,3 +2195,13 @@ sichtbar, ohne ein Diagramm zu sein. Jede Zeile: Pixel-Sprite (30 px), Name, Stu
 maxLevel > 99), Beschreibung, Kauf/`MAX`/`gesperrt`-Status; Farb-Rand links kodiert eigen/max/gesperrt.
 Reine UI, keine Datei in `game/`/`data/` außer dem gelöschten Diagramm berührt, keine Save-Änderung.
 check/build grün, Tests 89/89.
+
+### 9.89 Phase 87 — Veraltete „Füttern"-Texte auf das Geschenk-System korrigiert (keine Save-Änderung)
+
+Diagnose-Fund: das Ziel-Panel („Erstes Gartentier anfreunden") warb noch mit **„füttere es mit
+Überschuss-Ernte"**, obwohl Phase 72 (§9.74) das Füttern durch das **Geschenk-System** ersetzt hat
+(`feedCreature` entfernt, Tiere legen über Echtzeit 🎁 ab, die man einsammelt). Die `why`-Begründung in
+`game/goals.ts` sagt jetzt „sammle später seine Geschenke ein"; zwei stale Header-Kommentare in
+`game/creatures.ts` und `data/creatures.ts` beschreiben ebenfalls wieder das Geschenk-Loop statt des
+alten Fütterns. Reine Text-/Kommentar-Korrektur, keine Logik-, Daten- oder Save-Änderung. check/build
+grün, Tests 89/89.
