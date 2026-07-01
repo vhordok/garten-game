@@ -2263,3 +2263,23 @@ läuft über die vorhandenen `relicBonus`/`relicSetBonus`-Summen + die datengetr
 mappt RELICS/RELIC_SETS/EXPEDITIONS, `RARITY_COLOR` um `mythic`=Plum ergänzt). check/build grün, Tests
 92/92 (neuer Test: mythischer Bund braucht alle 3, alte Capstone bleibt bei 8, Mythen nur aus tiefen
 Zielen, keine flache Reise leakt einen Mythos).
+
+### 9.93 Phase 91 — Zweiter, paralleler Expeditions-Slot (SAVE_VERSION 39)
+
+Nächster Schritt beim „Expeditionen vertiefen": ein **zweiter Slot**, sodass Weltensaat-Veteranen **zwei
+Reisen gleichzeitig** laufen lassen — die eigentliche Loop-Tiefe (parallele Entscheidungen statt einer
+seriellen Reise). Der Slot schaltet ab `SECOND_SLOT_WORLDS` (2) Weltensaat-Resets frei
+(`expeditionSlots(state)`). **Bewusst rückwärtskompatibel** umgesetzt statt Array-Umbau: Slot 0 bleibt
+`activeExpedition`, Slot 1 ist das neue `activeExpedition2`; alle Funktionen (`expeditionReady`/
+`expeditionRemainingMs`/`claimExpedition`) bekommen ein optionales `slot`-Argument mit Default 0 → jeder
+bestehende Aufruf und Test bleibt unverändert. `startExpedition` füllt den ersten freien freigeschalteten
+Slot; neue Helfer `expeditionInSlot`/`activeExpeditionCount`/`anyExpeditionReady`.
+
+UI: `ExpeditionPanel` rendert einen Block pro belegtem Slot (eigener Countdown/Claim je Slot, Companion je
+Slot), „Slots X/Y belegt"-Zeile, Senden nur gesperrt wenn ALLE Slots voll. `Hud` (Punkt), `goals`
+(Abhol-Ziel), und der Rückkehr-Toast in `App.svelte` prüfen jetzt beide Slots (per-Slot-Key → feuert
+einmal je Reise, kein Effekt-Loop). **SAVE_VERSION 39**: neues Feld `activeExpedition2`; Migration v38→v39
+defaultet es auf `null` (frei), `sanitize` validiert beide Slots über denselben Helfer → alte Saves laden
+unverändert, der Slot wird erst nach 2 Welten nutzbar. check/build grün, Tests 93/93 (neuer Test:
+1 Slot unter Schwelle, 2 parallele darüber, unabhängiges Claimen, beide überstehen Save/Load, alter Save
+defaultet frei; Migration v38→v39 separat verifiziert).

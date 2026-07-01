@@ -279,6 +279,9 @@ export interface GameState {
    * null. Real-time gated, so the multiplier runaway can't rush it. PHASE 78:
    * an optional befriended-creature companion that boosts the risky outcome. */
   activeExpedition: { id: string; endsAt: number; companion?: string } | null
+  /** PHASE 91 — the SECOND, parallel expedition slot (unlocks after enough
+   * Weltensaat resets, see expeditionSlots). Same shape as slot 0; null = free. */
+  activeExpedition2: { id: string; endsAt: number; companion?: string } | null
   /** PHASE 68 — owned relics (permanent stacking passive bonuses, survive
    * prestige AND Weltensaat). Collected by claiming expeditions. */
   relics: Record<string, number>

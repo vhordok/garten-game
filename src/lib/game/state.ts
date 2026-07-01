@@ -47,6 +47,7 @@ export function createDefaultState(now = Date.now()): GameState {
     starUpgrades: {},
     worldResets: 0,
     activeExpedition: null,
+    activeExpedition2: null,
     relics: {},
     expeditionsDone: 0,
     creatures: {},

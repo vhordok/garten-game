@@ -75,21 +75,59 @@ export function relicSetBonus(state: GameState, effect: RelicEffect): number {
 }
 
 /** Milliseconds left on the active expedition (0 = none / ready). */
-export function expeditionRemainingMs(state: GameState, now = Date.now()): number {
-  const exp = state.activeExpedition
+// ── PHASE 91: a SECOND expedition slot ───────────────────────────────────────
+// Weltensaat-veterans can run two expeditions in parallel (slot 1 unlocks at
+// SECOND_SLOT_WORLDS resets). Kept backward-compatible: slot 0 is the original
+// `activeExpedition`, slot 1 is `activeExpedition2`; every function defaults to
+// slot 0 so existing callers/tests are unchanged. `expeditionSlots` gates how
+// many are usable.
+export const SECOND_SLOT_WORLDS = 2
+
+/** How many expedition slots the player may use (1, or 2 after enough worlds). */
+export function expeditionSlots(state: GameState): number {
+  return (state.worldResets ?? 0) >= SECOND_SLOT_WORLDS ? 2 : 1
+}
+
+type ExpeditionRun = { id: string; endsAt: number; companion?: string } | null
+
+/** The active run in a given slot (0 = original, 1 = second). */
+export function expeditionInSlot(state: GameState, slot = 0): ExpeditionRun {
+  return slot === 1 ? state.activeExpedition2 : state.activeExpedition
+}
+function setSlot(state: GameState, slot: number, run: ExpeditionRun): void {
+  if (slot === 1) state.activeExpedition2 = run
+  else state.activeExpedition = run
+}
+
+/** Occupied slots (0/1/2). */
+export function activeExpeditionCount(state: GameState): number {
+  return (state.activeExpedition ? 1 : 0) + (state.activeExpedition2 ? 1 : 0)
+}
+
+export function expeditionRemainingMs(state: GameState, now = Date.now(), slot = 0): number {
+  const exp = expeditionInSlot(state, slot)
   if (!exp) return 0
   return Math.max(0, exp.endsAt - now)
 }
 
-/** Whether an expedition is out and has returned (ready to claim). */
-export function expeditionReady(state: GameState, now = Date.now()): boolean {
-  return !!state.activeExpedition && now >= state.activeExpedition.endsAt
+/** Whether the given slot has a returned expedition (ready to claim). */
+export function expeditionReady(state: GameState, now = Date.now(), slot = 0): boolean {
+  const exp = expeditionInSlot(state, slot)
+  return !!exp && now >= exp.endsAt
 }
 
-/** Send an expedition (one slot), optionally with a befriended-creature
- * companion. Pure: mutates state, returns true on success. */
+/** Whether ANY slot has a returned expedition. */
+export function anyExpeditionReady(state: GameState, now = Date.now()): boolean {
+  return expeditionReady(state, now, 0) || (expeditionSlots(state) > 1 && expeditionReady(state, now, 1))
+}
+
+/** Send an expedition into the first FREE unlocked slot, optionally with a
+ * befriended-creature companion. Pure: mutates state, returns true on success. */
 export function startExpedition(state: GameState, id: string, companion?: string, now = Date.now()): boolean {
-  if (state.activeExpedition) return false // one at a time
+  const slots = expeditionSlots(state)
+  let free = -1
+  for (let i = 0; i < slots; i++) if (!expeditionInSlot(state, i)) { free = i; break }
+  if (free === -1) return false // every slot busy
   const def = expeditionById(id)
   if (!def) return false
   if (!isExpeditionUnlocked(def, state.worldResets ?? 0)) return false
@@ -97,7 +135,7 @@ export function startExpedition(state: GameState, id: string, companion?: string
   // only a befriended creature may come along
   const valid = companion && creatureLevel(state, companion) > 0 ? companion : undefined
   state.money -= def.cost
-  state.activeExpedition = { id, endsAt: now + def.durationSeconds * 1000, companion: valid }
+  setSlot(state, free, { id, endsAt: now + def.durationSeconds * 1000, companion: valid })
   return true
 }
 
@@ -123,8 +161,8 @@ function grant(state: GameState, relicId: string, copies: number): void {
  * Returns the outcome (for the toast/UI) or null if there's nothing to claim.
  * RNG via Math.random so tests can stub it (withBoringRng).
  */
-export function claimExpedition(state: GameState, choice: ExpeditionMode = 'safe', now = Date.now()): ExpeditionResult | null {
-  const exp = state.activeExpedition
+export function claimExpedition(state: GameState, choice: ExpeditionMode = 'safe', now = Date.now(), slot = 0): ExpeditionResult | null {
+  const exp = expeditionInSlot(state, slot)
   if (!exp) return null
   const def = expeditionById(exp.id)
   if (!def || now < exp.endsAt) return null
@@ -148,7 +186,7 @@ export function claimExpedition(state: GameState, choice: ExpeditionMode = 'safe
     result = { expeditionId: def.id, choice, success: true, relicId, copies }
   }
 
-  state.activeExpedition = null
+  setSlot(state, slot, null)
   state.expeditionsDone = (state.expeditionsDone ?? 0) + 1
   return result
 }

@@ -22,7 +22,7 @@ import { UPGRADES } from '../data/upgrades'
 import { createDefaultState, emptyPlot, getState, replaceState } from './state'
 import type { GameState, PlotState, QuestItem, QuestKind } from './types'
 
-export const SAVE_VERSION = 38
+export const SAVE_VERSION = 39
 
 interface SaveEnvelope {
   version: number
@@ -259,6 +259,11 @@ function migrate(envelope: Record<string, unknown>): Record<string, unknown> | n
       // sanitize() defaults it to {}; befriended creatures whose timer is missing
       // simply have a gift ready immediately (start = 0), which is fine.
       return { ...envelope, version: 38 }
+    case 38:
+      // v38 → v39: PHASE 91 second expedition slot — new `activeExpedition2`.
+      // sanitize() defaults it to null (free); the slot only becomes usable after
+      // SECOND_SLOT_WORLDS Weltensaat resets, so old saves are unaffected.
+      return { ...envelope, version: 39 }
     case 25:
       // v25 → v26: PHASE 19 tiered achievements. The old `achievements` string[]
       // is dropped; `achievementTiers` is initialised from the loaded stats in
@@ -522,16 +527,17 @@ function sanitize(raw: unknown): GameState {
   state.starUpgrades = starUpgrades
 
   // PHASE 68 Expeditionen: active run (known id + finite endsAt), relics
-  // (known ids, clamped counts), completed stat
-  state.activeExpedition = null
-  if (typeof r.activeExpedition === 'object' && r.activeExpedition !== null) {
-    const ae = r.activeExpedition as Record<string, unknown>
-    if (typeof ae.id === 'string' && expeditionById(ae.id) && Number.isFinite(ae.endsAt)) {
-      // PHASE 78: keep a valid creature companion if present
-      const companion = typeof ae.companion === 'string' && creatureById(ae.companion) ? ae.companion : undefined
-      state.activeExpedition = { id: ae.id, endsAt: Number(ae.endsAt), companion }
-    }
+  // (known ids, clamped counts), completed stat. PHASE 91: two parallel slots.
+  const sanitizeRun = (raw: unknown): { id: string; endsAt: number; companion?: string } | null => {
+    if (typeof raw !== 'object' || raw === null) return null
+    const ae = raw as Record<string, unknown>
+    if (typeof ae.id !== 'string' || !expeditionById(ae.id) || !Number.isFinite(ae.endsAt)) return null
+    // PHASE 78: keep a valid creature companion if present
+    const companion = typeof ae.companion === 'string' && creatureById(ae.companion) ? ae.companion : undefined
+    return { id: ae.id, endsAt: Number(ae.endsAt), companion }
   }
+  state.activeExpedition = sanitizeRun(r.activeExpedition)
+  state.activeExpedition2 = sanitizeRun(r.activeExpedition2)
   const relics: Record<string, number> = {}
   if (typeof r.relics === 'object' && r.relics !== null) {
     const raw = r.relics as Record<string, unknown>

@@ -131,6 +131,11 @@ import {
   startExpedition,
   claimExpedition,
   expeditionReady,
+  expeditionSlots,
+  activeExpeditionCount,
+  expeditionInSlot,
+  anyExpeditionReady,
+  SECOND_SLOT_WORLDS,
   relicCount,
   relicBonus,
   relicSetBonus,
@@ -3702,6 +3707,56 @@ test('PHASE 90: mythic relic tier deepens expeditions — new sets, deep destina
   for (const e of shallow) for (const id of [...e.safePool, ...e.riskyPool]) {
     assert.ok(!mythic.some((m) => m.id === id), `shallow ${e.id} must not drop mythic ${id}`)
   }
+})
+
+test('PHASE 91: a second expedition slot unlocks with worlds (parallel runs)', () => {
+  const now = 2_000_000
+  // below the world threshold → one slot, backward-compatible
+  const s = fresh()
+  s.money = 1e40
+  s.worldResets = SECOND_SLOT_WORLDS - 1
+  assert.equal(expeditionSlots(s), 1, 'one slot below the world threshold')
+  assert.equal(startExpedition(s, 'wiese', undefined, now), true, 'first expedition sent')
+  assert.equal(startExpedition(s, 'wald', undefined, now), false, 'no second slot yet')
+  assert.equal(activeExpeditionCount(s), 1, 'one slot occupied')
+
+  // at/above the threshold → two slots run in parallel
+  const s2 = fresh()
+  s2.money = 1e40
+  s2.worldResets = SECOND_SLOT_WORLDS
+  assert.equal(expeditionSlots(s2), 2, 'second slot unlocked')
+  assert.equal(startExpedition(s2, 'wiese', undefined, now), true, 'slot 0 filled')
+  assert.equal(startExpedition(s2, 'wald', undefined, now), true, 'slot 1 filled in parallel')
+  assert.equal(startExpedition(s2, 'berge', undefined, now), false, 'both slots busy now')
+  assert.equal(activeExpeditionCount(s2), 2, 'two parallel expeditions')
+  assert.ok(expeditionInSlot(s2, 0)?.id === 'wiese' && expeditionInSlot(s2, 1)?.id === 'wald', 'slots hold their runs')
+
+  // each slot returns and is claimed independently
+  const wiese = expeditionById('wiese')
+  const wald = expeditionById('wald')
+  const doneWiese = now + wiese.durationSeconds * 1000
+  assert.equal(expeditionReady(s2, doneWiese, 0), true, 'slot 0 back')
+  assert.equal(expeditionReady(s2, doneWiese, 1), false, 'slot 1 (longer) still out')
+  assert.equal(anyExpeditionReady(s2, doneWiese), true, 'any-ready sees slot 0')
+  const r0 = claimExpedition(s2, 'safe', doneWiese, 0)
+  assert.ok(r0 && r0.success, 'claimed slot 0')
+  assert.equal(expeditionInSlot(s2, 0), null, 'slot 0 freed')
+  assert.ok(expeditionInSlot(s2, 1)?.id === 'wald', 'slot 1 untouched by the slot-0 claim')
+  // slot 0 is free again → can send while slot 1 still travels
+  assert.equal(startExpedition(s2, 'berge', undefined, doneWiese), true, 'refill slot 0 while slot 1 runs')
+
+  // both slots survive a save/load round-trip
+  const s3 = fresh()
+  s3.worldResets = SECOND_SLOT_WORLDS
+  s3.activeExpedition = { id: 'wiese', endsAt: 9_000_000 }
+  s3.activeExpedition2 = { id: 'wald', endsAt: 9_500_000, companion: 'fuchs' }
+  importSave(exportSave())
+  const loaded = getState()
+  assert.ok(loaded.activeExpedition?.id === 'wiese', 'slot 0 persists')
+  assert.ok(loaded.activeExpedition2?.id === 'wald', 'slot 1 persists')
+  // an old save with no activeExpedition2 field loads with the slot free (null)
+  const fresh2 = fresh()
+  assert.equal(fresh2.activeExpedition2, null, 'second slot defaults to free')
 })
 
 console.log(`\nAlle ${passed} Sanity-Tests bestanden.`)
