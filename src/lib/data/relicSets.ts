@@ -54,10 +54,31 @@ export const RELIC_SETS: RelicSetDef[] = [
     id: 'vollsammlung',
     name: 'Vollständige Sammlung',
     emoji: '🏆',
-    members: RELICS.map((r) => r.id),
+    // pinned to the eight ORIGINAL relics (PHASE 90): the mythic tier gets its own
+    // sets below, so adding it never revokes this bonus from a player who earned it.
+    members: RELICS.filter((r) => r.rarity !== 'mythic').map((r) => r.id),
     effect: 'yield',
     bonus: 0.5,
-    desc: 'Jedes Relikt mindestens einmal gefunden — dauerhaft +50 % Ertrag',
+    desc: 'Jedes gewöhnliche/seltene/legendäre Relikt gefunden — dauerhaft +50 % Ertrag',
+  },
+  // PHASE 90: the mythic tier — its own bund plus a grand capstone over EVERY relic.
+  {
+    id: 'mythischer_bund',
+    name: 'Mythischer Bund',
+    emoji: '🔱',
+    members: ['urrelikt', 'chronosplitter', 'fuellhornsiegel'],
+    effect: 'growth',
+    bonus: 0.6,
+    desc: 'Alle drei mythischen Relikte — dauerhaft +60 % Wachstumstempo',
+  },
+  {
+    id: 'allsammlung',
+    name: 'Allumfassende Sammlung',
+    emoji: '👑',
+    members: RELICS.map((r) => r.id),
+    effect: 'yield',
+    bonus: 1,
+    desc: 'JEDES Relikt gefunden, inklusive der mythischen — dauerhaft +100 % Ertrag',
   },
 ]
 
