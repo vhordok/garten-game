@@ -3622,6 +3622,18 @@ test('PHASE 89: „Göttlich" category — beyond cosmic, NO parcel gate (buy by
     assert.ok(p.unlockAtTotalEarned > topCosmos.unlockAtTotalEarned, `${p.id}: unlocks past cosmic`)
     assert.ok(p.regrowTime && p.regrowTime < p.growTime, `${p.id}: regrow plant`)
   }
+  // PHASE 92 pacing: WITHOUT a parcel gate, the earnings threshold is the only
+  // pacer — so each unlock gap must stay proportionate to the profit jump, or the
+  // ladder stalls (time-to-next balloons). Keep gap/profitRatio (≈ the T-ratio)
+  // bounded so the divine ladder flows smoothly like the early game.
+  for (let i = 1; i < divine.length; i++) {
+    const gap = divine[i].unlockAtTotalEarned / divine[i - 1].unlockAtTotalEarned
+    const profitRatio = steadyProfitPerSecond(divine[i]) / steadyProfitPerSecond(divine[i - 1])
+    assert.ok(
+      gap / profitRatio < 4,
+      `${divine[i].id}: unlock gap (${gap.toFixed(1)}×) must stay near its profit jump (${profitRatio.toFixed(1)}×) — no earning-wall stall`
+    )
+  }
   // reachable by EARNINGS alone with only a starter parcel count — no re-climb wall
   const first = divine[0]
   assert.equal(
