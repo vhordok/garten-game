@@ -1,9 +1,10 @@
 <script lang="ts">
   import { EXPEDITIONS, expeditionById, expeditionEvent, isExpeditionUnlocked, type ExpeditionMode } from '../data/expeditions'
   import { RELICS, relicById, RARITY_COLOR } from '../data/relics'
+  import { RELIC_SETS } from '../data/relicSets'
   import { CREATURES, creatureById } from '../data/creatures'
   import { collectExpedition, sendExpedition } from '../game/actions'
-  import { companionRiskBonus, expeditionReady, expeditionRemainingMs, relicCount, totalRelics } from '../game/expeditions'
+  import { companionRiskBonus, expeditionReady, expeditionRemainingMs, isRelicSetComplete, relicCount, relicSetOwned, totalRelics } from '../game/expeditions'
   import { creatureLevel } from '../game/creatures'
   import { gameStore } from '../game/state'
   import { formatDuration, formatNumber } from '../util/format'
@@ -137,6 +138,33 @@
             <PixelIcon name="coin" scale={1} />
             {formatNumber(e.cost)}
           </button>
+        {/if}
+      </li>
+    {/each}
+  </ul>
+
+  <h3 class="sec">Relikt-Bünde <span class="sec-note num">· sammle je 1× für einen dauerhaften Set-Bonus</span></h3>
+  <ul class="set-list">
+    {#each RELIC_SETS as s (s.id)}
+      {@const complete = isRelicSetComplete($gameStore, s.id)}
+      {@const owned = relicSetOwned($gameStore, s.id)}
+      <li class="set" class:complete>
+        <span class="semoji">{s.emoji}</span>
+        <span class="sbody">
+          <span class="shead">
+            <b>{s.name}</b>
+            <span class="sprog num">{owned}/{s.members.length}</span>
+          </span>
+          <span class="sdesc num">{s.desc}</span>
+          <span class="smembers">
+            {#each s.members as mid (mid)}
+              {@const m = relicById(mid)}
+              <span class="chip" class:have={relicCount($gameStore, mid) > 0} title={m?.name}>{m?.emoji}</span>
+            {/each}
+          </span>
+        </span>
+        {#if complete}
+          <span class="sdone num">✓ aktiv</span>
         {/if}
       </li>
     {/each}
@@ -331,6 +359,79 @@
     color: var(--c-plum2);
     font-size: 0.72rem;
     font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .set-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .set {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--c-night1);
+    border: 1px solid var(--c-edge);
+    border-left: 3px solid var(--c-steel);
+    opacity: 0.85;
+  }
+  .set.complete {
+    border-left-color: var(--c-gold2);
+    background: color-mix(in srgb, var(--c-gold2) 12%, var(--c-night1));
+    opacity: 1;
+  }
+  .semoji {
+    font-size: 1.5rem;
+    flex: none;
+    width: 30px;
+    text-align: center;
+  }
+  .sbody {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .shead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--c-white);
+    font-size: 0.86rem;
+  }
+  .sprog {
+    color: var(--c-leaf4);
+    font-size: 0.72rem;
+  }
+  .sdesc {
+    color: var(--c-mist);
+    font-size: 0.72rem;
+  }
+  .smembers {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .chip {
+    font-size: 0.9rem;
+    filter: grayscale(1);
+    opacity: 0.4;
+  }
+  .chip.have {
+    filter: none;
+    opacity: 1;
+  }
+  .sdone {
+    flex: none;
+    color: var(--c-gold2);
+    font-weight: 700;
+    font-size: 0.78rem;
     white-space: nowrap;
   }
 

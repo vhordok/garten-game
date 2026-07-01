@@ -133,9 +133,14 @@ import {
   expeditionReady,
   relicCount,
   relicBonus,
+  relicSetBonus,
+  isRelicSetComplete,
+  relicSetOwned,
   totalRelics,
   companionRiskBonus,
 } from '../src/lib/game/expeditions.ts'
+import { RELICS } from '../src/lib/data/relics.ts'
+import { RELIC_SETS } from '../src/lib/data/relicSets.ts'
 import { BEAUTY_MILESTONES, beautyMilestoneBonus } from '../src/lib/data/beautyMilestones.ts'
 import { effectiveHarvestValue } from '../src/lib/data/scratch.ts'
 import { eventMasteryMult, gardenBeauty } from '../src/lib/game/modifiers.ts'
@@ -3599,6 +3604,38 @@ test('offline progress runs through the same tick', () => {
   const report = applyOfflineProgress(Date.now() - PLANTS[0].growTime * 1000 - 5000)
   assert.ok(report !== null && report.ripened >= 1)
   assert.ok(plotReady(getState().plots[0]))
+})
+
+test('PHASE 88: relic sets grant a flat bonus only when every member is owned', () => {
+  const s = fresh()
+  s.relics = {}
+  // no relics → no set bonus anywhere
+  assert.equal(relicSetBonus(s, 'yield'), 0, 'empty: no yield set bonus')
+  assert.equal(isRelicSetComplete(s, 'urelemente'), false, 'empty: urelemente incomplete')
+
+  const urelemente = RELIC_SETS.find((x) => x.id === 'urelemente')
+  assert.ok(urelemente, 'urelemente set exists')
+  // owning a subset does not complete the set (no partial bonus)
+  s.relics[urelemente.members[0]] = 3 // stacking one relic ≠ breadth
+  assert.equal(relicSetOwned(s, 'urelemente'), 1, 'one distinct member owned')
+  assert.equal(isRelicSetComplete(s, 'urelemente'), false, 'partial: still incomplete')
+  assert.equal(relicSetBonus(s, 'yield'), 0, 'partial: no set bonus yet')
+
+  // own >= 1 of every member → set completes, flat bonus applies (once)
+  for (const id of urelemente.members) s.relics[id] = 1
+  assert.equal(isRelicSetComplete(s, 'urelemente'), true, 'complete: all members owned')
+  assert.equal(relicSetBonus(s, 'yield'), urelemente.bonus, 'complete: exactly the flat set bonus')
+
+  // extra copies of a member do NOT scale the set bonus (only completion matters)
+  s.relics[urelemente.members[0]] = 99
+  assert.equal(relicSetBonus(s, 'yield'), urelemente.bonus, 'flat: extra copies do not stack the set')
+
+  // full collection: owning every relic completes the capstone too (adds to yield)
+  for (const r of RELICS) s.relics[r.id] = 1
+  const voll = RELIC_SETS.find((x) => x.id === 'vollsammlung')
+  assert.ok(voll && isRelicSetComplete(s, 'vollsammlung'), 'full: capstone complete')
+  // yield sets = urelemente + vollsammlung both active → summed
+  assert.equal(relicSetBonus(s, 'yield'), urelemente.bonus + voll.bonus, 'full: yield sets sum')
 })
 
 console.log(`\nAlle ${passed} Sanity-Tests bestanden.`)
