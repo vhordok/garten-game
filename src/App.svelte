@@ -4,7 +4,9 @@
   import type { OfflineReport } from './lib/game/offline'
   import { gameStore } from './lib/game/state'
   import { expeditionById } from './lib/data/expeditions'
-  import { expeditionInSlot, expeditionSlots } from './lib/game/expeditions'
+  import { expeditionInSlot, expeditionReady, expeditionSlots } from './lib/game/expeditions'
+  import { CREATURES } from './lib/data/creatures'
+  import { isGiftReady } from './lib/game/creatures'
   import { playSound, startAtmosphere } from './lib/ui/fx/audio'
   import AchievementsPanel from './lib/ui/AchievementsPanel.svelte'
   import { ACHIEVEMENTS, TIER_NAMES } from './lib/data/achievements'
@@ -77,8 +79,26 @@
       }
       if (offline.autoHarvested > 0) parts.push(`Helfer ernteten ${formatNumber(offline.autoHarvested)}×`)
       if (offline.autoEarned > 0) parts.push(`+${formatNumber(offline.autoEarned)} Gold verdient`)
+      // PHASE 94: point returning players at the rewards waiting for them — real-time
+      // gated things (expeditions, creature gifts) don't self-announce on load.
+      const now = Date.now()
+      let expReturned = 0
+      for (let i = 0; i < expeditionSlots($gameStore); i++) if (expeditionReady($gameStore, now, i)) expReturned++
+      if (expReturned > 0) parts.push(`${expReturned} Expedition${expReturned === 1 ? '' : 'en'} zurück 🧭`)
+      const giftsReady = CREATURES.filter((c) => isGiftReady($gameStore, c.id, now)).length
+      if (giftsReady > 0) parts.push(`${giftsReady} Tier-Geschenk${giftsReady === 1 ? '' : 'e'} bereit 🎁`)
       const summary = parts.length > 0 ? ` — ${parts.join(', ')}!` : '.'
       pushToast(`Willkommen zurück! Du warst ${formatDuration(offline.awaySeconds)} weg${summary}`, '🌅', 10000, { priority: 'important' })
+      // PHASE 94: be honest when the offline cap truncated the away time — otherwise
+      // a long-absence player silently loses earnings and never learns why.
+      if (offline.awaySeconds > offline.simulatedSeconds + 60) {
+        pushToast(
+          `⏳ Offline-Ertrag auf ${formatDuration(offline.simulatedSeconds)} begrenzt. Nachteule/Sternenschlaf & Sternwarte heben das Limit.`,
+          '⏳',
+          9000,
+          { priority: 'normal', key: 'offline-cap' }
+        )
+      }
       playSound('welcome')
     }
   })
