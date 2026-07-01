@@ -116,7 +116,7 @@ import { toasts, pushToast, pushTicketToast, pushAggregateToast, clearToasts, to
 import { expectedQuestPayout } from '../src/lib/game/actions.ts'
 import { autoHarvestRate, autoSowRate, autoSellInterval } from '../src/lib/game/modifiers.ts'
 import { isHelperUpgrade, toggleHelperPause } from '../src/lib/game/actions.ts'
-import { expeditionById, isExpeditionUnlocked, expeditionEvent, EXPEDITION_EVENTS } from '../src/lib/data/expeditions.ts'
+import { EXPEDITIONS, expeditionById, isExpeditionUnlocked, expeditionEvent, EXPEDITION_EVENTS } from '../src/lib/data/expeditions.ts'
 import { creatureById } from '../src/lib/data/creatures.ts'
 import {
   befriendCreature,
@@ -3665,8 +3665,43 @@ test('PHASE 88: relic sets grant a flat bonus only when every member is owned', 
   for (const r of RELICS) s.relics[r.id] = 1
   const voll = RELIC_SETS.find((x) => x.id === 'vollsammlung')
   assert.ok(voll && isRelicSetComplete(s, 'vollsammlung'), 'full: capstone complete')
-  // yield sets = urelemente + vollsammlung both active → summed
-  assert.equal(relicSetBonus(s, 'yield'), urelemente.bonus + voll.bonus, 'full: yield sets sum')
+  // all yield sets active now sum (robust to added sets like the grand capstone)
+  const expectedYield = RELIC_SETS.filter((x) => x.effect === 'yield' && isRelicSetComplete(s, x.id)).reduce(
+    (n, x) => n + x.bonus,
+    0
+  )
+  assert.equal(relicSetBonus(s, 'yield'), expectedYield, 'full: all complete yield sets sum')
+  assert.ok(relicSetBonus(s, 'yield') >= urelemente.bonus + voll.bonus, 'full: at least urelemente + capstone')
+})
+
+test('PHASE 90: mythic relic tier deepens expeditions — new sets, deep destinations', () => {
+  const mythic = RELICS.filter((r) => r.rarity === 'mythic')
+  assert.ok(mythic.length === 3, 'three mythic relics exist')
+  // the mythic set completes only with all three mythics (breadth, like other sets)
+  const s = fresh()
+  s.relics = {}
+  assert.equal(isRelicSetComplete(s, 'mythischer_bund'), false, 'no mythics → bund incomplete')
+  for (const r of mythic) s.relics[r.id] = 1
+  assert.equal(isRelicSetComplete(s, 'mythischer_bund'), true, 'all three mythics → bund complete')
+  assert.ok(relicSetBonus(s, 'growth') > 0, 'mythic bund boosts growth')
+
+  // adding the mythic tier must NOT revoke the original 8-relic capstone
+  const s2 = fresh()
+  s2.relics = {}
+  for (const r of RELICS.filter((r) => r.rarity !== 'mythic')) s2.relics[r.id] = 1
+  assert.equal(isRelicSetComplete(s2, 'vollsammlung'), true, 'the 8 originals still complete Vollständige Sammlung')
+  assert.equal(isRelicSetComplete(s2, 'allsammlung'), false, 'the grand capstone still needs the mythics')
+
+  // the two deep destinations are the only mythic source, gated deep by worlds
+  const deep = EXPEDITIONS.filter((e) => (e.unlockWorlds ?? 0) >= 3)
+  assert.ok(deep.length >= 2, 'two deep (worlds ≥ 3) destinations exist')
+  const dropsMythic = new Set(deep.flatMap((e) => [...e.safePool, ...e.riskyPool]))
+  for (const r of mythic) assert.ok(dropsMythic.has(r.id), `${r.id} is obtainable from a deep destination`)
+  // no shallow destination leaks a mythic relic
+  const shallow = EXPEDITIONS.filter((e) => (e.unlockWorlds ?? 0) < 3)
+  for (const e of shallow) for (const id of [...e.safePool, ...e.riskyPool]) {
+    assert.ok(!mythic.some((m) => m.id === id), `shallow ${e.id} must not drop mythic ${id}`)
+  }
 })
 
 console.log(`\nAlle ${passed} Sanity-Tests bestanden.`)

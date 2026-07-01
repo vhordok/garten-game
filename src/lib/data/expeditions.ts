@@ -92,6 +92,35 @@ export const EXPEDITIONS: ExpeditionDef[] = [
     riskyCopies: 2,
     unlockWorlds: 1,
   },
+  // PHASE 90: two DEEP destinations for Weltensaat-veterans — long real-time
+  // journeys that are the only source of the mythic relic tier. They give the
+  // maxed player a fresh, time-gated chase past the Sternenpfad.
+  {
+    id: 'weltenriss',
+    name: 'Weltenriss',
+    emoji: '🌀',
+    desc: 'Ein Riss zwischen den Welten — jenseits davon warten mythische Relikte.',
+    durationSeconds: 12 * HOUR,
+    cost: 1e30,
+    safePool: ['weltenkern', 'zeitkristall', 'urrelikt'],
+    riskyPool: ['urrelikt', 'chronosplitter'],
+    riskSuccess: 0.45,
+    riskyCopies: 1,
+    unlockWorlds: 3,
+  },
+  {
+    id: 'schoepfungsquelle',
+    name: 'Schöpfungsquelle',
+    emoji: '🌌',
+    desc: 'Der Quell aller Schöpfung — die tiefste Reise, reich an mythischen Funden.',
+    durationSeconds: 48 * HOUR,
+    cost: 1e36,
+    safePool: ['urrelikt', 'chronosplitter', 'fuellhornsiegel'],
+    riskyPool: ['chronosplitter', 'fuellhornsiegel', 'urrelikt'],
+    riskSuccess: 0.5,
+    riskyCopies: 2,
+    unlockWorlds: 6,
+  },
 ]
 
 const byId = new Map(EXPEDITIONS.map((e) => [e.id, e]))

@@ -2245,3 +2245,21 @@ Weißgold-Lotus, Rosengold-Krone), sichtbar unterschieden von der blauen Kosmisc
 ergänzt. Reine Daten/Sprites/UI, **keine Save-Änderung** (neue Pflanzen-IDs sind für alte Saves einfach
 noch nicht freigeschaltet). check/build grün, Tests 91/91 (neuer Test: kein Parzellen-Gate, jenseits
 Kosmisch, per Einnahmen direkt kaufbar, eigene Growth-Spezialisierung, alle Sprites vorhanden).
+
+### 9.92 Phase 90 — Expeditionen vertiefen: mythischer Relikt-Tier (keine Save-Änderung)
+
+Spielerwunsch „Expeditionen vertiefen". Neuer, tiefster Relikt-Rang **`mythic`** mit 3 mythischen
+Relikten (Urrelikt +35 % Ertrag / Chronosplitter +28 % Tempo / Füllhornsiegel +22 % Kompost je Stück)
+und zwei **tiefen, Weltensaat-gegateten Reisezielen** als einzige Quelle: Weltenriss (12 h, ab 3
+Welten) und Schöpfungsquelle (48 h, ab 6 Welten) — echtzeit-lange Reisen, die den maxed Spieler mit
+einer frischen Zeit-Achse jenseits des Sternenpfads versorgen. Baut direkt auf dem Relikt-Bund-System
+(§9.90) auf: neuer **Mythischer Bund** (alle 3 Mythen → +60 % Tempo) plus grande Capstone
+**Allumfassende Sammlung** (JEDES Relikt inkl. Mythen → +100 % Ertrag). Die bestehende „Vollständige
+Sammlung" ist bewusst auf die **8 ursprünglichen** Relikte fixiert (`rarity !== 'mythic'`), damit der
+neue Tier keinem Spieler seinen bereits verdienten Set-Bonus wegnimmt.
+
+Vollständig **save-sicher**: `relics` ist bereits ein Record, alles ist Daten (Relikte/Ziele/Sets) und
+läuft über die vorhandenen `relicBonus`/`relicSetBonus`-Summen + die datengetriebene UI (ExpeditionPanel
+mappt RELICS/RELIC_SETS/EXPEDITIONS, `RARITY_COLOR` um `mythic`=Plum ergänzt). check/build grün, Tests
+92/92 (neuer Test: mythischer Bund braucht alle 3, alte Capstone bleibt bei 8, Mythen nur aus tiefen
+Zielen, keine flache Reise leakt einen Mythos).
