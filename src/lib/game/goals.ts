@@ -25,7 +25,7 @@ import { VARIANTS } from '../data/variants'
 import { EXPEDITIONS } from '../data/expeditions'
 import { RELIC_SETS } from '../data/relicSets'
 import { CREATURES } from '../data/creatures'
-import { expeditionReady, isRelicSetComplete, relicSetOwned } from './expeditions'
+import { activeExpeditionCount, anyExpeditionReady, isRelicSetComplete, relicSetOwned } from './expeditions'
 import { befriendedCount, isCreatureAttracted } from './creatures'
 import type { GameState } from './types'
 
@@ -678,7 +678,7 @@ function buildGoal(state: GameState): Goal | null {
   }
   // PHASE 71: surface the two new activity systems as first-time discovery nudges
   // (they vanish once engaged; the achievement tracks + HUD dots guide afterwards).
-  if ((state.expeditionsDone ?? 0) === 0 && !state.activeExpedition && state.money >= EXPEDITIONS[0].cost) {
+  if ((state.expeditionsDone ?? 0) === 0 && activeExpeditionCount(state) === 0 && state.money >= EXPEDITIONS[0].cost) {
     candidates.push({
       id: 'build-expedition',
       icon: '🧭',
@@ -788,7 +788,7 @@ function beautyGoal(state: GameState): Goal | null {
 /** PHASE 71: a returned expedition awaits its press-your-luck claim — a real,
  * rewarding ready action (a relic is on the line). */
 function expeditionGoal(state: GameState): Goal | null {
-  if (!expeditionReady(state, Date.now())) return null
+  if (!anyExpeditionReady(state, Date.now())) return null
   return {
     id: 'expedition-claim',
     tier: 'kurz',

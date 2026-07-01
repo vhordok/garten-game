@@ -612,8 +612,8 @@ export function sendExpedition(id: string, companion?: string): boolean {
 
 /** PHASE 68/76: claim a returned expedition with the chosen event option.
  * Returns the outcome (relic granted or a risky miss) for the UI, or null. */
-export function collectExpedition(choice: ExpeditionMode): ExpeditionResult | null {
-  const result = claimExpeditionPure(getState(), choice)
+export function collectExpedition(choice: ExpeditionMode, slot = 0): ExpeditionResult | null {
+  const result = claimExpeditionPure(getState(), choice, Date.now(), slot)
   if (result) notify()
   return result
 }

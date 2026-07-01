@@ -7,7 +7,7 @@
   import { activeGoals } from '../game/goals'
   import { toastLogUnseen } from './toasts'
   import { availableSkillPoints } from '../game/skills'
-  import { expeditionReady } from '../game/expeditions'
+  import { activeExpeditionCount, anyExpeditionReady } from '../game/expeditions'
   import { CREATURES } from '../data/creatures'
   import { creatureLevel, isCreatureAttracted, isGiftReady } from '../game/creatures'
   import { crossEligibility, discoverableVariants } from '../game/seedlab'
@@ -54,8 +54,8 @@
 
   // PHASE 68: light the expeditions button when a run has returned (ready to
   // claim). The store churns every frame (plots grow), so Date.now() stays fresh.
-  const expeditionReadyNow = $derived(expeditionReady($gameStore, Date.now()))
-  const expeditionOut = $derived(!!$gameStore.activeExpedition)
+  const expeditionReadyNow = $derived(anyExpeditionReady($gameStore, Date.now()))
+  const expeditionOut = $derived(activeExpeditionCount($gameStore) > 0)
   // PHASE 69: nudge the creatures button when a new animal can be befriended
   const creatureHint = $derived(
     CREATURES.some((c) => creatureLevel($gameStore, c.id) === 0 && isCreatureAttracted($gameStore, c, gardenBeauty($gameStore)))

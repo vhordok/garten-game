@@ -4,7 +4,7 @@
   import { RELIC_SETS } from '../data/relicSets'
   import { CREATURES, creatureById } from '../data/creatures'
   import { collectExpedition, sendExpedition } from '../game/actions'
-  import { companionRiskBonus, expeditionReady, expeditionRemainingMs, isRelicSetComplete, relicCount, relicSetOwned, totalRelics } from '../game/expeditions'
+  import { activeExpeditionCount, companionRiskBonus, expeditionInSlot, expeditionRemainingMs, expeditionReady, expeditionSlots, isRelicSetComplete, relicCount, relicSetOwned, totalRelics } from '../game/expeditions'
   import { creatureLevel } from '../game/creatures'
   import { gameStore } from '../game/state'
   import { formatDuration, formatNumber } from '../util/format'
@@ -22,11 +22,26 @@
     return () => clearInterval(t)
   })
 
-  const active = $derived($gameStore.activeExpedition)
-  const activeDef = $derived(active ? expeditionById(active.id) : undefined)
-  const remaining = $derived(expeditionRemainingMs($gameStore, now))
-  const ready = $derived(expeditionReady($gameStore, now))
   const worlds = $derived($gameStore.worldResets ?? 0)
+  // PHASE 91: up to two parallel slots. One view per occupied slot (depends on
+  // `now` so the countdown ticks live).
+  const slots = $derived(expeditionSlots($gameStore))
+  const slotViews = $derived(
+    [0, 1]
+      .filter((i) => i < slots && expeditionInSlot($gameStore, i))
+      .map((i) => {
+        const run = expeditionInSlot($gameStore, i)!
+        return {
+          i,
+          run,
+          def: expeditionById(run.id),
+          remaining: expeditionRemainingMs($gameStore, now, i),
+          ready: expeditionReady($gameStore, now, i),
+        }
+      })
+  )
+  const busy = $derived(activeExpeditionCount($gameStore))
+  const allBusy = $derived(busy >= slots)
 
   let lastResult = $state<string | null>(null)
   let companion = $state<string | null>(null)
@@ -41,8 +56,8 @@
     }
   }
 
-  function claim(choice: ExpeditionMode) {
-    const r = collectExpedition(choice)
+  function claim(choice: ExpeditionMode, slot: number) {
+    const r = collectExpedition(choice, slot)
     if (!r) return
     if (r.success && r.relicId) {
       const relic = relicById(r.relicId)
@@ -68,42 +83,48 @@
     dauerhafte Boni, die jede Prestige und Weltensaat überleben.
   </p>
 
-  {#if active && activeDef}
-    <div class="active" class:ready>
-      <div class="ahead">
-        <span class="aemoji">{activeDef.emoji}</span>
-        <span>
-          <b>{activeDef.name}</b>
-          <span class="asub num">{ready ? 'zurückgekehrt!' : `noch ${formatDuration(remaining / 1000)}`}</span>
-        </span>
-        {#if active.companion && creatureById(active.companion)}
-          <span class="companion num">{creatureById(active.companion)?.emoji} +{Math.round(companionRiskBonus($gameStore, active.companion) * 100)} % Wagnis</span>
+  {#if slots > 1}
+    <p class="slotcount num">🧭 Expeditions-Slots: {busy}/{slots} belegt{busy < slots ? ' — du kannst noch losschicken' : ''}</p>
+  {/if}
+
+  {#each slotViews as sv (sv.i)}
+    {#if sv.def}
+      <div class="active" class:ready={sv.ready}>
+        <div class="ahead">
+          <span class="aemoji">{sv.def.emoji}</span>
+          <span>
+            <b>{sv.def.name}</b>
+            <span class="asub num">{sv.ready ? 'zurückgekehrt!' : `noch ${formatDuration(sv.remaining / 1000)}`}</span>
+          </span>
+          {#if sv.run.companion && creatureById(sv.run.companion)}
+            <span class="companion num">{creatureById(sv.run.companion)?.emoji} +{Math.round(companionRiskBonus($gameStore, sv.run.companion) * 100)} % Wagnis</span>
+          {/if}
+        </div>
+        {#if sv.ready}
+          {@const event = expeditionEvent(sv.run.endsAt)}
+          {@const riskPct = Math.round((sv.def.riskSuccess + companionRiskBonus($gameStore, sv.run.companion)) * 100)}
+          <p class="event-text">{event.text}</p>
+          <div class="choices">
+            {#each event.options as opt (opt.label)}
+              <button class="pxbtn" class:risky={opt.mode === 'risky'} onclick={() => claim(opt.mode, sv.i)}>
+                {opt.label}
+                <span class="cdesc num">{opt.mode === 'risky' ? `${riskPct} % auf seltenes Relikt` : opt.hint}</span>
+              </button>
+            {/each}
+          </div>
+        {:else}
+          <div class="progress"><span style:width="{100 - (sv.remaining / (sv.def.durationSeconds * 1000)) * 100}%"></span></div>
+          <span class="travel-hint num">🎁 Bei Rückkehr triffst du eine Entscheidung und bekommst dein Relikt — läuft auch offline weiter.</span>
         {/if}
       </div>
-      {#if ready}
-        {@const event = expeditionEvent(active.endsAt)}
-        {@const riskPct = Math.round((activeDef.riskSuccess + companionRiskBonus($gameStore, active.companion)) * 100)}
-        <p class="event-text">{event.text}</p>
-        <div class="choices">
-          {#each event.options as opt (opt.label)}
-            <button class="pxbtn" class:risky={opt.mode === 'risky'} onclick={() => claim(opt.mode)}>
-              {opt.label}
-              <span class="cdesc num">{opt.mode === 'risky' ? `${riskPct} % auf seltenes Relikt` : opt.hint}</span>
-            </button>
-          {/each}
-        </div>
-      {:else}
-        <div class="progress"><span style:width="{100 - (remaining / (activeDef.durationSeconds * 1000)) * 100}%"></span></div>
-        <span class="travel-hint num">🎁 Bei Rückkehr triffst du eine Entscheidung und bekommst dein Relikt — läuft auch offline weiter.</span>
-      {/if}
-    </div>
-  {/if}
+    {/if}
+  {/each}
 
   {#if lastResult}
     <p class="result">{lastResult}</p>
   {/if}
 
-  {#if !active && friends.length > 0}
+  {#if !allBusy && friends.length > 0}
     <h3 class="sec">Begleiter <span class="sec-note num">· optional, hebt die Wagnis-Chance</span></h3>
     <div class="companions">
       <button class="comp" class:sel={companion === null} onclick={() => (companion = null)} title="ohne Begleiter">🚫</button>
@@ -125,7 +146,7 @@
     {#each EXPEDITIONS as e (e.id)}
       {@const unlocked = isExpeditionUnlocked(e, worlds)}
       {@const affordable = unlocked && $gameStore.money >= e.cost}
-      <li class="row" class:locked={!unlocked} class:busy={!!active}>
+      <li class="row" class:locked={!unlocked} class:busy={allBusy}>
         <span class="emoji">{e.emoji}</span>
         <span class="body">
           <span class="head"><b>{e.name}</b> <span class="dur num">⏱ {formatDuration(e.durationSeconds)}</span></span>
@@ -134,7 +155,7 @@
         {#if !unlocked}
           <span class="lockchip num">ab {e.unlockWorlds} 🌌</span>
         {:else}
-          <button class="pxbtn gold num send" disabled={!!active || !affordable} onclick={() => send(e.id)}>
+          <button class="pxbtn gold num send" disabled={allBusy || !affordable} onclick={() => send(e.id)}>
             <PixelIcon name="coin" scale={1} />
             {formatNumber(e.cost)}
           </button>
@@ -205,6 +226,12 @@
     font-weight: 400;
   }
 
+  .slotcount {
+    font-size: 0.78rem;
+    color: var(--c-gold2);
+    margin: 0 0 8px;
+    font-weight: 700;
+  }
   .active {
     border: 2px solid var(--c-blue1);
     background: color-mix(in srgb, var(--c-blue1) 12%, var(--c-night1));
