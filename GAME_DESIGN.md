@@ -2283,3 +2283,24 @@ defaultet es auf `null` (frei), `sanitize` validiert beide Slots über denselben
 unverändert, der Slot wird erst nach 2 Welten nutzbar. check/build grün, Tests 93/93 (neuer Test:
 1 Slot unter Schwelle, 2 parallele darüber, unabhängiges Claimen, beide überstehen Save/Load, alter Save
 defaultet frei; Migration v38→v39 separat verifiziert).
+
+### 9.94 Phase 92 — Balance-Audit + Göttlich-Pacing geglättet (keine Save-Änderung)
+
+Auf Wunsch ein **gründlicher Balance-Durchlauf** durch die echten Sim-/Diagnose-Skripte (balance.sim
+first-session + `day`-Horizont, playtest 20 Szenarien, diagnose, plus zwei neue Ad-hoc-Analysen: Leiter-
+Ratios und die **Time-to-next-unlock-Kurve** `T = nextUnlock / profit_s`). Befund: das Spiel ist grundsätzlich
+gesund — Erste-Session-Pacing sauber (Prestige ab 24m, stetige Unlocks), Systeme relevant, keine Softlocks,
+ROIs konsistent. Die späten „Stalls" der Kosmos-/Cannabis-Leiter (Kometbeere/Himmelshanf/… T-Ratio 15–52)
+sind **parzellen-gegatet** (P11–P48) → die Parzelle ist der eigentliche, gewollte Pacer (§9.26), die
+Einnahmen-Lücke bindet nachrangig. Als „tot" gemeldete Systeme (spec/beauty/mastery) sind bekannte
+synthetische Falsch-Positive (multiplikativ daueraktiv bzw. galerie-basierte Schönheit, von den
+synthetischen Ständen nicht bespielt).
+
+**Ein echter Fund, selbst verursacht:** die **Göttlich-Leiter (§9.91) hat KEIN Parzellen-Gate** (bewusst,
+Spielerwunsch), also ist die Einnahmen-Schwelle der einzige Pacer — und die war mit Lücken von 10–50× gegen
+einen Profit-Sprung von nur ~2,5× gesetzt → ~18× Stall pro Pflanze (reine Warte-Wand). Fix: Unlock-Schwellen
+auf **~3×-Stufen** neu gesetzt (Ätherblüte 1e48→3e47 … Allschöpfungsblüte 2e56→1e50), sodass Lücke ≈
+Profit-Sprung und die T-Ratio von ~18 auf **~1,2–1,4** fällt (glatt, milde gesunde Verzögerung wie das
+Frühspiel); der Kosmos→Göttlich-Übergang ist jetzt nahtlos. Reiner **Buff** (früher erreichbar), Daten-only,
+**keine Save-Änderung**. Neue Pacing-Invariante im Test (Lücke/Profit-Ratio < 4 über die Göttlich-Leiter →
+schützt vor Regression). check/build grün, Tests 93/93.

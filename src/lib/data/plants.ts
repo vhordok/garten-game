@@ -1062,7 +1062,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 80000,
     yield: 5000000,
     sellValue: 1e19,
-    unlockAtTotalEarned: 1e48,
+    unlockAtTotalEarned: 3e47,
   },
   {
     id: 'himmelslotus',
@@ -1076,7 +1076,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 81000,
     yield: 5000000,
     sellValue: 2.5e19,
-    unlockAtTotalEarned: 5e49,
+    unlockAtTotalEarned: 1e48,
   },
   {
     id: 'engelsrose',
@@ -1090,7 +1090,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 82000,
     yield: 5000000,
     sellValue: 6e19,
-    unlockAtTotalEarned: 2e51,
+    unlockAtTotalEarned: 3e48,
   },
   {
     id: 'paradiesbluete',
@@ -1104,7 +1104,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 83000,
     yield: 5000000,
     sellValue: 1.5e20,
-    unlockAtTotalEarned: 1e53,
+    unlockAtTotalEarned: 1e49,
   },
   {
     id: 'goetterfrucht',
@@ -1118,7 +1118,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 84000,
     yield: 5000000,
     sellValue: 4e20,
-    unlockAtTotalEarned: 5e54,
+    unlockAtTotalEarned: 3e49,
   },
   {
     id: 'allschoepfungsbluete',
@@ -1132,7 +1132,7 @@ export const PLANTS: PlantDef[] = [
     regrowTime: 85000,
     yield: 5000000,
     sellValue: 1e21,
-    unlockAtTotalEarned: 2e56,
+    unlockAtTotalEarned: 1e50,
   },
 ]
 
