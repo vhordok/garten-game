@@ -2181,3 +2181,17 @@ fächern rekursiv im Sektor auf (echte Verzweigungen statt Einzelketten). Max-Ti
 (5,6 %), Akzente verkleinert, plus Auto-Scale-Sicherung. Per Chromium-Render verifiziert, dass die 75
 Knoten sauber in die Fläche passen. Neue Skills nutzen ein Effekt-basiertes Sprite-Fallback. Reine
 Daten/UI/Wiring, keine Save-Änderung. check/build grün, Tests 89/89.
+
+### 9.88 Phase 86 — Skill-Tree als Liste statt Diagramm (keine Save-Änderung)
+
+Spieler-Feedback zur 75-Knoten-Grafik (9.87): „ist jetzt klein und am Browser kaum was auszuwählen …
+lieber einen normalen Skilltree, aber nicht als Abbildung sondern als Liste untereinander". Das
+radiale Diagramm skaliert bei 75 Knoten zu klein für Touch/Klick. **Lösung:** `ui/SkillTree.svelte`
+entfernt, `ui/SkillsPanel.svelte` rendert die Skills jetzt als **gruppierte, eingerückte Liste**
+untereinander (voll klickbare Zeilen). Gruppierung nach Ast (Wurzel + 6 Äste), innerhalb jedes Astes
+ein Tiefensuch-Durchlauf (Spine + Splits lesen top-down), Einrückung per Tiefe
+(`margin-left: calc(var(--ind)*16px)`, gedeckelt bei 5) + Verbindungs-Strich → die Baumstruktur bleibt
+sichtbar, ohne ein Diagramm zu sein. Jede Zeile: Pixel-Sprite (30 px), Name, Stufe (`x/max`, `∞` bei
+maxLevel > 99), Beschreibung, Kauf/`MAX`/`gesperrt`-Status; Farb-Rand links kodiert eigen/max/gesperrt.
+Reine UI, keine Datei in `game/`/`data/` außer dem gelöschten Diagramm berührt, keine Save-Änderung.
+check/build grün, Tests 89/89.
