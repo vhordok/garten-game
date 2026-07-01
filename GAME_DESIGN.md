@@ -2304,3 +2304,20 @@ Profit-Sprung und die T-Ratio von ~18 auf **~1,2–1,4** fällt (glatt, milde ge
 Frühspiel); der Kosmos→Göttlich-Übergang ist jetzt nahtlos. Reiner **Buff** (früher erreichbar), Daten-only,
 **keine Save-Änderung**. Neue Pacing-Invariante im Test (Lücke/Profit-Ratio < 4 über die Göttlich-Leiter →
 schützt vor Regression). check/build grün, Tests 93/93.
+
+### 9.95 Phase 93 — Kampagne bis ins neueste Endgame verlängert (keine Save-Änderung)
+
+Die neuen Endgame-Features (mythische Relikte aus den tiefen Expeditionen §9.92, göttliche Pflanzen §9.91)
+wurden von der Mini-Kampagne noch nicht geführt/belohnt — die Kette endete bei „Sternengärtner (3 Welten)".
+Drei neue Kapitel **ans Ende angehängt**: **Mythischer Fund** (finde 1 mythisches Relikt) → **Mythischer
+Bund** (sammle alle 3) → **Göttlicher Garten** (erreiche die göttliche Pflanzen-Stufe via
+`maxUnlockEarned ≥ 3e47`, überlebt Prestige). Einmal-Belohnungen über die üblichen Kampagnen-Währungen
+(Kompost/Lose/Dünger), auto-eingelöst im Tick, headlinen das Ziel-Panel.
+
+**Save-sicher ohne Version-Bump** (wie §9.54, nur angehängt → Index bleibt gültig): das **erste** neue
+Kapitel braucht brandneuen Inhalt (ein mythisches Relikt), und da die Kette **linear** ist, stoppt
+`claimCampaign` dort — ein tiefer Alt-Spieler (auch mit 8 Welten) bekommt **keine rückwirkende
+Belohnungsflut** für Kapitel, die er noch nicht berührt hat. `mythicRelicCount` aus `data/relics`
+(rarity `mythic`). check/build grün, Tests 93/93 (maxed-Zustand inkl. 3 Mythen + Divine-Tier schließt die
+Kette; neuer No-Flood-Test: tiefer Spieler ohne neuen Inhalt bleibt beim Mythischen Fund stehen, zahlt
+nichts).

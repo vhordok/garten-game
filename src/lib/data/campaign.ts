@@ -11,7 +11,13 @@
 // migration (the index points into THIS array).
 
 import { CONFIG } from './config'
+import { RELICS } from './relics'
 import type { GameState } from '../game/types'
+
+/** Owned mythic relics (PHASE 93) — the deepest expedition tier (see relics.ts). */
+const mythicRelicIds = RELICS.filter((r) => r.rarity === 'mythic').map((r) => r.id)
+const mythicRelicCount = (s: GameState): number =>
+  mythicRelicIds.reduce((n, id) => n + (s.relics?.[id] ?? 0), 0)
 
 export interface CampaignReward {
   compost?: number
@@ -204,5 +210,38 @@ export const CAMPAIGN: CampaignStep[] = [
     target: 3,
     reward: { tickets: 50, fertilizer: 15 },
     rewardDesc: '+50 Rubbellose, +15 Turbo-Dünger',
+  },
+  // ── PHASE 93: guide the maxed player through the newest endgame content
+  // (mythic relics from the deep expeditions, and the divine plant tier). Appended
+  // to the END → index stays save-safe (no version bump). The first new chapter
+  // needs brand-new content (a mythic relic), so the linear chain does NOT
+  // retroactively pay deep players for the later ones — claimCampaign stops at the
+  // first unmet step. ──
+  {
+    id: 'mythic-find',
+    title: 'Mythischer Fund',
+    objective: 'Finde ein mythisches Relikt (tiefe Expedition: Weltenriss/Schöpfungsquelle)',
+    metric: mythicRelicCount,
+    target: 1,
+    reward: { compost: 500, tickets: 40 },
+    rewardDesc: '+500 Kompost, +40 Rubbellose',
+  },
+  {
+    id: 'mythic-master',
+    title: 'Mythischer Bund',
+    objective: 'Sammle alle drei mythischen Relikte',
+    metric: mythicRelicCount,
+    target: 3,
+    reward: { compost: 1000, fertilizer: 20 },
+    rewardDesc: '+1000 Kompost, +20 Turbo-Dünger',
+  },
+  {
+    id: 'divine-garden',
+    title: 'Göttlicher Garten',
+    objective: 'Erreiche die göttlichen Pflanzen (verdiene 3×10⁴⁷ in einer Runde)',
+    metric: (s) => s.maxUnlockEarned,
+    target: 3e47,
+    reward: { compost: 2000, tickets: 60, fertilizer: 30 },
+    rewardDesc: '+2000 Kompost, +60 Rubbellose, +30 Turbo-Dünger',
   },
 ]
