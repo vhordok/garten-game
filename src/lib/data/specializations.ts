@@ -137,6 +137,19 @@ export const CATEGORY_SPECS: CategorySpecDef[] = [
     },
     milestoneDesc: 'Meilenstein verstärkt die Verkaufspreise',
   },
+  // PHASE 89: the divine endgame category — its plants grow supernaturally fast
+  // (a growth build axis distinct from the cosmic sell-price one).
+  {
+    id: 'goettlich',
+    label: 'Göttlich',
+    unique: {
+      kind: 'growth',
+      perLevel: 0.06,
+      desc: 'göttliche Pflanzen wachsen überirdisch schnell',
+      format: (l) => `+${pct(0.06 * l)} Wuchs`,
+    },
+    milestoneDesc: 'Meilenstein verstärkt den göttlichen Wuchs',
+  },
 ]
 
 const SPEC_BY_ID = new Map(CATEGORY_SPECS.map((s) => [s.id, s]))

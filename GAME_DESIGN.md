@@ -2224,3 +2224,24 @@ ausgegraute fehlende Mitglieds-Chips, Gold-Glühen + „✓ aktiv" bei Vollstän
 `relicSetGoal` (nächstliegender unvollständiger Bund, sobald man ≥1 seiner Relikte hat). check/build
 grün, Tests 90/90 (neuer Set-Test: kein Teil-Bonus, flach bei Vollständigkeit, Extrakopien stapeln
 den Set-Bonus nicht, Capstone summiert sich zu Urelemente).
+
+### 9.91 Phase 89 — Neue Pflanzen-Kategorie „Göttlich" jenseits von Kosmisch (keine Save-Änderung)
+
+Spielerwunsch: eine Kategorie **besser als Kosmisch** für weiteren Progress — aber **ohne**
+Parzellen-/Pacht-/Level-Cap, direkt kaufbar. Neu: Kategorie **`goettlich`** („Göttlich") mit **6
+Pflanzen** (Ätherblüte → Himmelslotus → Engelsrose → Paradiesblüte → Götterfrucht →
+Allschöpfungsblüte), die die Leiter über Ursprungsblüte hinaus fortsetzen (profit/s ~verdoppelt sich
+pro Stufe, ROI ~0,5, regrow + global cadence-floored wie die kosmische Spitze). **Bewusst KEIN
+`unlockParcel`** (anders als die kosmische Spitze P98→P131): sie werden **allein durch Einnahmen**
+freigeschaltet und direkt mit Gold gekauft — der Multiplikator-Runaway trägt einen hierher, nicht
+langsame Prestige-Wiederaufstiege. Genau der Punkt des Wunsches: keine Wiederaufstiegs-Wand.
+
+Voll datengetrieben über `plantById` — Plot/Save/Quest/Hotbar/Ziele/Beauty ziehen generisch mit; neue
+Logik: nur der `'goettlich'`-Eintrag im `PlantCategory`-Typ. Eigene **Spezialisierung** (`growth`-Build:
+göttliche Pflanzen wachsen überirdisch schnell, gewirkt per Kategorie in `tick.ts`) + Gold-Akzent im
+Shop. **Distinkte Gold/Weiß-Sprites** (seedling + 2 Wuchsstufen + 3 Reife-Blüten: Gold-Sternexplosion,
+Weißgold-Lotus, Rosengold-Krone), sichtbar unterschieden von der blauen Kosmisch-Optik; per
+`scripts/sprite-atlas.mjs` + Fokus-Render gegengeprüft. UI-Kategorie-Labels/Akzent in Shop/Quest/Hotbar
+ergänzt. Reine Daten/Sprites/UI, **keine Save-Änderung** (neue Pflanzen-IDs sind für alte Saves einfach
+noch nicht freigeschaltet). check/build grün, Tests 91/91 (neuer Test: kein Parzellen-Gate, jenseits
+Kosmisch, per Einnahmen direkt kaufbar, eigene Growth-Spezialisierung, alle Sprites vorhanden).

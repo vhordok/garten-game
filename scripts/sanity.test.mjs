@@ -3606,6 +3606,37 @@ test('offline progress runs through the same tick', () => {
   assert.ok(plotReady(getState().plots[0]))
 })
 
+test('PHASE 89: „Göttlich" category — beyond cosmic, NO parcel gate (buy by earnings)', () => {
+  const divine = PLANTS.filter((p) => p.category === 'goettlich')
+  assert.ok(divine.length >= 6, 'a full divine ladder exists')
+  const topCosmos = PLANTS.filter((p) => p.category === 'kosmos').at(-1)
+  for (const p of divine) {
+    // the whole point of the request: these must NOT be parcel-gated
+    assert.ok(!p.unlockParcel, `${p.id}: no parcel gate`)
+    // strictly beyond the cosmic top in both value and unlock
+    assert.ok(p.unlockAtTotalEarned > topCosmos.unlockAtTotalEarned, `${p.id}: unlocks past cosmic`)
+    assert.ok(p.regrowTime && p.regrowTime < p.growTime, `${p.id}: regrow plant`)
+  }
+  // reachable by EARNINGS alone with only a starter parcel count — no re-climb wall
+  const first = divine[0]
+  assert.equal(
+    isPlantUnlocked(first, { ...fresh(), totalEarned: first.unlockAtTotalEarned, parcels: 1 }),
+    true,
+    'one parcel + enough earnings is enough — bought directly'
+  )
+  assert.equal(
+    isPlantUnlocked(first, { ...fresh(), totalEarned: first.unlockAtTotalEarned * 0.5, parcels: 999 }),
+    false,
+    'below the earnings threshold it stays locked (earnings are the only gate)'
+  )
+  // the divine category has its own specialisation (growth build)
+  const spec = categorySpecById('goettlich')
+  assert.ok(spec && spec.unique.kind === 'growth', 'divine specialisation boosts growth')
+  // every stage sprite resolves (missing sprite would throw at render time)
+  for (const p of divine) for (const st of ['-1', '-2', '-3']) assert.ok(SPRITES[`${p.id}${st}`], `${p.id}${st} sprite`)
+  assert.ok(SPRITES['seedling-goettlich'], 'divine seedling sprite')
+})
+
 test('PHASE 88: relic sets grant a flat bonus only when every member is owned', () => {
   const s = fresh()
   s.relics = {}
