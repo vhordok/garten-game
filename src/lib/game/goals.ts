@@ -23,8 +23,9 @@ import { availableSkillPoints } from './skills'
 import { crossEligibility, discoverableVariants, produceStatus } from './seedlab'
 import { VARIANTS } from '../data/variants'
 import { EXPEDITIONS } from '../data/expeditions'
+import { RELIC_SETS } from '../data/relicSets'
 import { CREATURES } from '../data/creatures'
-import { expeditionReady } from './expeditions'
+import { expeditionReady, isRelicSetComplete, relicSetOwned } from './expeditions'
 import { befriendedCount, isCreatureAttracted } from './creatures'
 import type { GameState } from './types'
 
@@ -802,6 +803,33 @@ function expeditionGoal(state: GameState): Goal | null {
   }
 }
 
+// PHASE 88: nudge the player toward completing a relic SET once they've started
+// collecting — surfaces the closest incomplete set (most members owned) so the
+// last one or two relics feel like a collection goal, not random drops.
+function relicSetGoal(state: GameState): Goal | null {
+  let best: { set: (typeof RELIC_SETS)[number]; owned: number } | null = null
+  for (const set of RELIC_SETS) {
+    if (isRelicSetComplete(state, set.id)) continue
+    const owned = relicSetOwned(state, set.id)
+    if (owned === 0) continue // not started → don't nag before any relic of it
+    if (!best || owned / set.members.length > best.owned / best.set.members.length) best = { set, owned }
+  }
+  if (!best) return null
+  const { set, owned } = best
+  return {
+    id: `relicset-${set.id}`,
+    tier: 'mittel',
+    icon: set.emoji,
+    label: `Relikt-Bund vollenden: ${set.name}`,
+    reward: set.desc,
+    current: owned,
+    target: set.members.length,
+    fraction: owned / set.members.length,
+    ready: false,
+    why: `Noch ${set.members.length - owned} Relikt(e) für einen dauerhaften Set-Bonus — Expeditionen bringen sie`,
+  }
+}
+
 const TIER_ORDER: Record<GoalTier, number> = { kurz: 0, mittel: 1, lang: 2, endgame: 3 }
 
 /**
@@ -832,6 +860,7 @@ export function activeGoals(state: GameState): Goal[] {
     compostGoal(state),
     buildGoal(state),
     collectionGoal(state),
+    relicSetGoal(state),
   ].filter((g): g is Goal => g !== null)
   goals.sort((a, b) => {
     const t = TIER_ORDER[a.tier] - TIER_ORDER[b.tier]

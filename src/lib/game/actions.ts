@@ -11,6 +11,7 @@ import { purchaseStarUpgrade, starseedGain, starUpgradeBonus } from './worldseed
 import {
   claimExpedition as claimExpeditionPure,
   relicBonus,
+  relicSetBonus,
   startExpedition as startExpeditionPure,
   type ExpeditionResult,
 } from './expeditions'
@@ -507,6 +508,7 @@ export function compostGain(state: GameState): number {
         starUpgradeBonus(state, 'compostGain') +
         worldMilestoneBonus(state.worldResets ?? 0, 'compostGain') +
         relicBonus(state, 'compostGain') +
+        relicSetBonus(state, 'compostGain') +
         creatureBonus(state, 'compostGain')) *
       event
   )

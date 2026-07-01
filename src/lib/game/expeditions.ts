@@ -7,6 +7,7 @@
 
 import { EXPEDITIONS, expeditionById, isExpeditionUnlocked, type ExpeditionMode } from '../data/expeditions'
 import { RELICS, type RelicEffect } from '../data/relics'
+import { RELIC_SETS } from '../data/relicSets'
 import { creatureLevel } from './creatures'
 import { creatureById } from '../data/creatures'
 import type { GameState } from './types'
@@ -39,6 +40,36 @@ export function relicBonus(state: GameState, effect: RelicEffect): number {
     if (r.effect !== effect) continue
     const n = state.relics?.[r.id] ?? 0
     if (n > 0) bonus += r.perCopy * n
+  }
+  return bonus
+}
+
+// ── PHASE 88: relic SETS ─────────────────────────────────────────────────────
+// A set is complete when the player owns >= 1 of each member relic. Completing a
+// set adds a flat, permanent bonus on top of the individual relic bonuses — so
+// collecting BREADTH pays off, not just stacking one relic. Pure derivation over
+// state.relics: no new save field.
+
+/** How many member relics of a set are owned (>= 1 counts once). */
+export function relicSetOwned(state: GameState, setId: string): number {
+  const set = RELIC_SETS.find((s) => s.id === setId)
+  if (!set) return 0
+  return set.members.reduce((n, id) => n + ((state.relics?.[id] ?? 0) > 0 ? 1 : 0), 0)
+}
+
+/** Whether every member relic of a set is owned (>= 1). */
+export function isRelicSetComplete(state: GameState, setId: string): boolean {
+  const set = RELIC_SETS.find((s) => s.id === setId)
+  if (!set) return false
+  return set.members.every((id) => (state.relics?.[id] ?? 0) > 0)
+}
+
+/** Summed set-completion bonus for an effect (flat per completed set). */
+export function relicSetBonus(state: GameState, effect: RelicEffect): number {
+  let bonus = 0
+  for (const set of RELIC_SETS) {
+    if (set.effect !== effect) continue
+    if (set.members.every((id) => (state.relics?.[id] ?? 0) > 0)) bonus += set.bonus
   }
   return bonus
 }

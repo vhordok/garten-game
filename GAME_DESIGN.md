@@ -2205,3 +2205,22 @@ Diagnose-Fund: das Ziel-Panel („Erstes Gartentier anfreunden") warb noch mit *
 `game/creatures.ts` und `data/creatures.ts` beschreiben ebenfalls wieder das Geschenk-Loop statt des
 alten Fütterns. Reine Text-/Kommentar-Korrektur, keine Logik-, Daten- oder Save-Änderung. check/build
 grün, Tests 89/89.
+
+### 9.90 Phase 88 — Relikt-Bünde: Sammel-Sets über die Expeditions-Relikte (keine Save-Änderung)
+
+Die 8 Relikte stapelten bisher nur linear — es gab keinen Grund, **Breite** zu sammeln statt ein
+einziges Relikt zu horten. Neu (`data/relicSets.ts`): **4 themenbasierte Bünde**, die einen flachen,
+dauerhaften Bonus **zusätzlich** zu den Einzel-Relikt-Boni geben, sobald man **je 1×** aller
+Mitglieder besitzt — Bund der Urelemente (3 gewöhnliche → +15 % Ertrag), Sternenbund (3 seltene →
++25 % Kompost-Gewinn), Weltenbund (2 legendäre → +30 % Tempo) und die Capstone „Vollständige
+Sammlung" (alle 8 → +50 % Ertrag). Alle Sets sind vollständig erreichbar (jedes Relikt liegt in
+mindestens einem Expeditions-Pool). Rein **abgeleitet aus `state.relics`** — kein neues Save-Feld;
+Boni überstehen Prestige UND Weltensaat wie die Relikte selbst.
+
+Logik in `game/expeditions.ts` (`isRelicSetComplete`/`relicSetBonus`/`relicSetOwned`), eingehängt an
+denselben 5 additiven Modifier-Stellen wie `relicBonus` (yield/growth/sellPrice/compostGain/ticketLuck
+in `modifiers.ts` + `actions.ts`). UI: neue Sektion „Relikt-Bünde" im `ExpeditionPanel` (Fortschritt,
+ausgegraute fehlende Mitglieds-Chips, Gold-Glühen + „✓ aktiv" bei Vollständigkeit). Ziel-Nudge
+`relicSetGoal` (nächstliegender unvollständiger Bund, sobald man ≥1 seiner Relikte hat). check/build
+grün, Tests 90/90 (neuer Set-Test: kein Teil-Bonus, flach bei Vollständigkeit, Extrakopien stapeln
+den Set-Bonus nicht, Capstone summiert sich zu Urelemente).
