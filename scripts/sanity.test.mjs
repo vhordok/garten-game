@@ -1790,6 +1790,9 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
     s.discoveredVariants = ['a', 'b', 'c', 'd']
     s.worldResets = 5
     s.starUpgrades = { sternenfeuer: 2 }
+    // PHASE 93 endgame chapters: all three mythic relics + reached the divine tier
+    s.relics = { urrelikt: 1, chronosplitter: 1, fuellhornsiegel: 1 }
+    s.maxUnlockEarned = 3e47
     claimCampaign(s)
     assert.equal(getState().campaign, CAMPAIGN.length, 'a maxed deep state finishes the whole campaign')
 
@@ -1810,6 +1813,21 @@ test('PHASE 54: the campaign extends through the Weltensaat/Sternenkammer endgam
     claimCampaign(mid)
     assert.ok(getState().campaign < CAMPAIGN.length, 'the endgame chapters remain ahead of a parcel-8 player')
     assert.equal(currentCampaignStep(getState()).id, 'landlord', 'next chapter is the first endgame one')
+
+    // PHASE 93: a deep Weltensaat player WITHOUT the newest content (no mythic
+    // relics, not at the divine tier) must STOP at the mythic chapter — the linear
+    // chain never retroactively pays them for content they haven't touched.
+    const deep = fresh()
+    // a player who already finished the OLD campaign sits at the first new chapter
+    const firstNew = CAMPAIGN.findIndex((c) => c.id === 'mythic-find')
+    deep.campaign = firstNew
+    deep.worldResets = 8 // even with 8 worlds…
+    deep.relics = {} // …no mythic relics yet, and not at the divine tier
+    deep.maxUnlockEarned = 1e30
+    const compostBefore = deep.compost
+    claimCampaign(deep)
+    assert.equal(currentCampaignStep(getState()).id, 'mythic-find', 'blocked at the first new (mythic) chapter')
+    assert.equal(getState().compost, compostBefore, 'no retroactive reward flood for untouched new content')
   })
 })
 
