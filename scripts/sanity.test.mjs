@@ -3789,4 +3789,39 @@ test('PHASE 91: a second expedition slot unlocks with worlds (parallel runs)', (
   assert.equal(fresh2.activeExpedition2, null, 'second slot defaults to free')
 })
 
+test('PHASE 95: offline catch-up scales linearly with plots (no quadratic helper scan)', () => {
+  // The helper passes used to call findIndex() from index 0 inside their while
+  // loop, making each offline chunk O(plots²) — a returning endgame player with a
+  // big field froze the app for seconds before the first render. Guard the SCALING
+  // ratio rather than absolute milliseconds so the test is machine-independent.
+  const bigField = (n) => {
+    const s = fresh()
+    s.money = 1e40
+    s.totalEarned = 1e40
+    s.parcels = 60
+    s.level = 5000
+    s.upgrades = { erntehelfer: 10, erntedrohnen: 5, saegnom: 10, marktkarren: 6 }
+    s.plots = Array.from({ length: n }, () => ({ plantId: 'erdbeere', progress: 0, waterLeft: 0, regrowing: false }))
+    return s
+  }
+  const timeOffline = (n) => {
+    const s = bigField(n)
+    tick(s, 60, { offline: true }) // warm up
+    const t0 = process.hrtime.bigint()
+    for (let i = 0; i < 300; i++) tick(s, 60, { offline: true })
+    return Number(process.hrtime.bigint() - t0) / 1e6
+  }
+  const small = Math.max(timeOffline(200), 1) // floor avoids divide-by-noise on fast machines
+  const large = timeOffline(800) // 4x the plots
+  const ratio = large / small
+  // Verified empirically by reintroducing the old findIndex scan: the quadratic
+  // version measures ~7x here, the cursor version ~1.2-2x. A threshold of 4 sits
+  // clearly between the two, so this fails loudly on regression without being
+  // flaky from timer noise.
+  assert.ok(
+    ratio < 4,
+    `offline catch-up must scale ~linearly with plot count (4x plots gave ${ratio.toFixed(1)}x time; the quadratic scan measures ~7x)`
+  )
+})
+
 console.log(`\nAlle ${passed} Sanity-Tests bestanden.`)

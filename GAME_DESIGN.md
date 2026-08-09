@@ -2332,3 +2332,37 @@ war die Abwesenheit länger als das simulierte Fenster, sagt ein zweiter Toast k
 begrenzt" und nennt die Hebel (Nachteule/Sternenschlaf/Sternwarte/Sternenuhr) — vorher verlor ein
 Langzeit-Rückkehrer stillschweigend Ertrag. Reine UI in `App.svelte` (liest den vorhandenen OfflineReport +
 Live-State), keine Save-Änderung. check/build grün, Tests 93/93.
+### 9.97 Phase 95 — Offline-Nachholen entblockiert: quadratischer Helfer-Scan behoben (keine Save-Änderung)
+
+Gesamt-Audit-Fund (Performance-Achse, vorher nie gemessen). **Symptom:** `initGame()` läuft
+`applyOfflineProgress()` **synchron vor `mount(App)`** — der Spieler sieht eine weiße Seite, bis das
+Nachholen fertig ist. Gemessen mit vollem Endgame-Spielstand: 8 h Abwesenheit ≈ **2,0 s**, bei
+ausgebautem Offline-Cap (bis 70 h erreichbar) hochgerechnet **≈ 17,6 s eingefrorene UI** — sieht aus wie
+ein Absturz.
+
+**Ursache** (zwei Terme in `processHelpers`, `game/tick.ts`):
+1. **Quadratischer Scan:** Auto-Ernte und Auto-Saat riefen `s.plots.findIndex(...)` *innerhalb* ihrer
+   `while`-Schleife auf, also jedes Mal wieder ab Index 0 → O(Beete²) pro Chunk. Belegt durch Messung:
+   3,55× Kosten pro Verdopplung der Beete (linear wäre 2,0×).
+2. **Multiplikator-Neuberechnung pro Ernte:** `yieldMultiplier(s)` (läuft über ~12 Bonus-Quellen) wurde
+   pro geernteter Einheit neu berechnet — bei 800 Beeten × 480 Chunks bis zu 384.000 Mal.
+
+**Fix:** (1) Vorwärts-Cursor statt `findIndex` — Ernten macht ein Beet immer nicht-reif und innerhalb der
+Schleife reift nichts nach, also wählt der Cursor **exakt dieselben Beete in derselben Reihenfolge**;
+(2) `yieldMultiplier` innerhalb der Schleife gecacht und **nur bei Level-Änderung** neu berechnet (der
+einzige Eingang, der sich mitten in der Schleife ändern kann — `grantXp` kann hochleveln).
+
+**Ergebnis** (byte-identischer Endzustand gegen eine Referenzmessung mit festem RNG-Seed — Geld, Ernten,
+Lager, Level und jedes einzelne Beet stimmen exakt überein):
+
+| Szenario | vorher | nachher |
+|---|---|---|
+| 800 Beete, 8 h offline | 966 ms | **41 ms** (23×) |
+| voller Endgame-Stand, 8 h | 2013 ms | **182 ms** (11×) |
+| 70 h-Cap (weiße Seite beim Laden) | ~17,6 s | **~1,6 s** |
+
+Skalierung jetzt linear (1,9× pro Verdopplung statt 3,6×). Der Live-Tick war nie das Problem (0,03 ms bei
+948 Beeten, 0,2 % des 60-fps-Budgets). Neuer Regressionstest prüft das **Skalierungsverhältnis** statt
+absoluter Millisekunden (maschinenunabhängig) und wurde per Mutationstest in beide Richtungen verifiziert:
+mit Fix 1,2×, mit wieder eingebautem `findIndex` 7,8× → Schwelle 4 trennt sauber. check/build grün,
+Tests 94/94.
