@@ -214,14 +214,31 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
   const harvestRate = autoHarvestRate(s)
   if (harvestRate > 0) {
     s.helperAcc.harvest = Math.min(s.helperAcc.harvest + dt * harvestRate, s.plots.length)
+    // PHASE 95 perf: scan forward with a cursor instead of restarting findIndex()
+    // at 0 on every iteration. Harvesting always leaves the plot not-ready and
+    // nothing ripens inside this loop, so the cursor picks exactly the same plots
+    // in the same order — but the pass is O(plots) instead of O(plots²). That
+    // quadratic term was what froze the offline catch-up on big endgame fields.
+    let harvestCursor = 0
+    // PHASE 95 perf: inside this loop the global yield multiplier only depends on
+    // the gardener level (grantXp can level us up mid-loop) — every other input
+    // (parcels, compost, relics, skills, achievements, weather) is fixed for the
+    // whole tick. So cache it and recompute only when the level actually changes:
+    // identical numbers, but one multiplier walk per level instead of per harvest.
+    let cachedYieldLevel = -1
+    let cachedYieldMult = 1
     while (s.helperAcc.harvest >= 1) {
-      const index = s.plots.findIndex(plotReady)
-      if (index === -1) break
-      const plot = s.plots[index]
+      while (harvestCursor < s.plots.length && !plotReady(s.plots[harvestCursor])) harvestCursor++
+      if (harvestCursor >= s.plots.length) break
+      const plot = s.plots[harvestCursor]
       const def = plantById(plot.plantId!)!
       const cycleSeconds = cycleTime(plot, def)
+      if (s.level !== cachedYieldLevel) {
+        cachedYieldLevel = s.level
+        cachedYieldMult = yieldMultiplier(s)
+      }
       const units = rollUnits(
-        def.yield * yieldMultiplier(s) * masteryYieldBonus(s, def.id) * specializationYieldBonus(s, def.category)
+        def.yield * cachedYieldMult * masteryYieldBonus(s, def.id) * specializationYieldBonus(s, def.category)
       )
       s.inventory[def.id] = (s.inventory[def.id] ?? 0) + units
       s.mastery[def.id] =
@@ -261,11 +278,14 @@ function processHelpers(s: GameState, dt: number, offline: boolean): boolean {
     // the gnome only auto-replants harvestable crops — ornamentals and timber
     // are "plant once" and shouldn't drain money on autopilot (PHASE 11)
     const autoSowable = def !== undefined && def.beautyBonus === undefined && def.passiveIncome === undefined
+    // PHASE 95 perf: same forward-cursor trick as the harvest pass — sowing fills
+    // the plot, so the cursor never needs to revisit an earlier one.
+    let sowCursor = 0
     while (autoSowable && s.helperAcc.sow >= 1) {
       if (!def || s.totalEarned < def.unlockAtTotalEarned || s.money < def.seedCost) break
-      const index = s.plots.findIndex((p) => p.plantId === null)
-      if (index === -1) break
-      const plot = s.plots[index]
+      while (sowCursor < s.plots.length && s.plots[sowCursor].plantId !== null) sowCursor++
+      if (sowCursor >= s.plots.length) break
+      const plot = s.plots[sowCursor]
       s.money -= def.seedCost
       plot.plantId = def.id
       plot.progress = 0
