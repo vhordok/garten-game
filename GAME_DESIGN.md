@@ -2321,3 +2321,14 @@ Belohnungsflut** für Kapitel, die er noch nicht berührt hat. `mythicRelicCount
 (rarity `mythic`). check/build grün, Tests 93/93 (maxed-Zustand inkl. 3 Mythen + Divine-Tier schließt die
 Kette; neuer No-Flood-Test: tiefer Spieler ohne neuen Inhalt bleibt beim Mythischen Fund stehen, zahlt
 nichts).
+
+### 9.96 Phase 94 — Willkommen-zurück ehrlicher & wegweisend (keine Save-Änderung)
+
+Der Rückkehr-Toast nannte reifgewordene Pflanzen/Helfer-Gold, aber nicht die **echtzeit-gegateten
+Belohnungen**, die beim Laden nicht von selbst schreien: **zurückgekehrte Expeditionen** (beide Slots) und
+**bereite Tier-Geschenke** werden jetzt mitgezählt („2 Expeditionen zurück 🧭, 3 Tier-Geschenke bereit 🎁")
+→ der Spieler wird direkt zu den wartenden Belohnungen geführt. Außerdem **Ehrlichkeit beim Offline-Cap**:
+war die Abwesenheit länger als das simulierte Fenster, sagt ein zweiter Toast klar „Offline-Ertrag auf Xh
+begrenzt" und nennt die Hebel (Nachteule/Sternenschlaf/Sternwarte/Sternenuhr) — vorher verlor ein
+Langzeit-Rückkehrer stillschweigend Ertrag. Reine UI in `App.svelte` (liest den vorhandenen OfflineReport +
+Live-State), keine Save-Änderung. check/build grün, Tests 93/93.
