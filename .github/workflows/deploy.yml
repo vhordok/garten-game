@@ -40,6 +40,15 @@ jobs:
       - name: Abhängigkeiten installieren
         run: npm ci
 
+      # Riegel vor dem Deploy: die öffentliche Seite bekommt nur einen Stand, der
+      # Typprüfung und Core-Tests besteht. Schlägt einer fehl, bricht der Job ab
+      # und der bisherige (funktionierende) Stand bleibt online.
+      - name: Typen prüfen
+        run: npm run check
+
+      - name: Core-Sanity-Tests
+        run: npm test
+
       - name: Build
         run: npm run build
         env:

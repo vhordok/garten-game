@@ -1,0 +1,41 @@
+# Prüft jeden Push und jeden Pull Request: Typen, Core-Tests, Produktions-Build.
+# Läuft absichtlich auf ALLEN Branches — so fällt ein Fehler auf, bevor er in
+# dreamy landet und damit auf die öffentliche Pages-Seite deployt wird.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Bei schnell aufeinanderfolgenden Pushes reicht der neueste Lauf.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v5
+
+      - name: Node einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      # Reihenfolge wie in CLAUDE.md: erst Typen, dann Core-Tests, dann Build.
+      - name: Typen prüfen (svelte-check + TS)
+        run: npm run check
+
+      - name: Core-Sanity-Tests
+        run: npm test
+
+      - name: Produktions-Build
+        run: npm run build

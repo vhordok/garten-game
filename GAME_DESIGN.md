@@ -2366,3 +2366,21 @@ Skalierung jetzt linear (1,9× pro Verdopplung statt 3,6×). Der Live-Tick war n
 absoluter Millisekunden (maschinenunabhängig) und wurde per Mutationstest in beide Richtungen verifiziert:
 mit Fix 1,2×, mit wieder eingebautem `findIndex` 7,8× → Schwelle 4 trennt sauber. check/build grün,
 Tests 94/94.
+
+### 9.98 Phase 96 — CI-Riegel vor dem Deploy + Boot-Screen (keine Save-Änderung)
+
+Zwei Empfehlungen aus dem Gesamt-Audit umgesetzt.
+
+**CI (§ Audit-Empfehlung 1):** Es gab einen Deploy-Workflow auf GitHub Pages, aber `npm run check` und
+`npm test` liefen **nirgends automatisch** — ein kaputter Push wäre direkt auf die öffentliche Seite
+gegangen. Neu: `.github/workflows/ci.yml` prüft **jeden Push und jeden PR** (Typen → Core-Tests →
+Produktions-Build). Zusätzlich hat `deploy.yml` jetzt denselben Riegel **vor** dem Build: schlägt
+Typprüfung oder Test fehl, bricht der Job ab und der bisherige funktionierende Stand bleibt online.
+
+**Boot-Screen (§ Audit-Empfehlung 2):** `initGame()` läuft synchron vor `mount(App)` (Save laden +
+Offline-Nachholen, nach §9.97 noch bis ~1,6 s). Bisher sah der Rückkehrer in dieser Zeit eine leere
+Seite. Der Boot-Screen steht jetzt **direkt in `index.html`** (nicht in der Svelte-App) — er wird
+gemalt, bevor das Modul überhaupt lädt und den Thread blockiert: wippender Setzling, „Garten wird
+geladen …", Unterzeile „Abwesenheit wird nachgeholt". `main.ts` entfernt ihn nach dem Mount;
+`prefers-reduced-motion` schaltet die Animation ab. Reine Startup-UX, kein Core-Eingriff.
+check/build grün, Tests 94/94.
